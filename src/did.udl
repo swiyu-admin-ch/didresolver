@@ -1,0 +1,39 @@
+namespace did {
+
+};
+
+dictionary Jwk {
+  string kty;
+  string crv;
+  string x;
+};
+
+dictionary PublicKey {
+  string id;
+  string key_type;
+  string controller;
+  string? public_key_multibase;
+  Jwk? public_key_jwk;
+};
+
+[Error]
+enum DidResolveError {
+  "DidNotSupported",
+  "HttpError"
+};
+
+dictionary DidDoc {
+  sequence<string> context;
+  string id;
+  sequence<PublicKey> verification_method;
+  sequence<PublicKey> authentication;
+  sequence<PublicKey> capability_invocation;
+  sequence<PublicKey> capability_delegation;
+  sequence<PublicKey> assertion_method;
+};
+
+interface Did {
+    constructor(string text);
+    [Throws=DidResolveError]
+    DidDoc resolve();
+};
