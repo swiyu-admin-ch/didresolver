@@ -85,6 +85,15 @@ mod tests {
     }
 
     #[test]
+    fn resolve_bbs() {
+        let did_url = "did:web:gist.githubusercontent.com:bit-jniestroj:f23a80ba382f94fdb93436424f6e4e01:raw:d1bfa1f6c0bfee7687e9fc4ca6f86c2340c6b6f5";
+
+        let did = Did::new(did_url.to_string());
+
+        did.resolve().unwrap();
+    }
+
+    #[test]
     fn resolve_did_jwk() {
         let did_url = "did:jwk:ansjdasd";
 
