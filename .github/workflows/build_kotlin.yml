@@ -13,7 +13,7 @@ jobs:
               with:
                 ssh-key: ${{ secrets.SSH_KEY }}
                 submodules: recursive
-                ref: build/kotlin
+                ref: main
             - name: Install rust
               run: |
                 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
