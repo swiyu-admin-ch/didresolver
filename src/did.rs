@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::keys::PublicKey;
-use crate::methods::{resolve_did_web, DidMethod};
+use crate::methods::{resolve_did_tdw, resolve_did_web, DidMethod};
 
 #[derive(Error, Debug, PartialEq)]
 pub enum DidResolveError {
@@ -39,6 +39,10 @@ pub struct DidDoc {
         default
     )]
     pub assertion_method: Vec<PublicKey>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub controller: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub deactivated: Option<bool>,
 }
 
 pub struct Did {
@@ -51,8 +55,12 @@ impl Did {
         let mut method = DidMethod::UNKOWN;
         let splitted_did: Vec<String> = text.split(":").map(|x| x.to_string()).collect();
 
-        if splitted_did[0] == "did" && splitted_did[1] == "web" {
-            method = DidMethod::WEB;
+        if splitted_did[0] == "did"  {
+            method = match splitted_did[1].as_str() {
+                "web" => DidMethod::WEB,
+                "tdw" => DidMethod::TDW,
+                _ => DidMethod::UNKOWN,
+            };
         }
 
         return Did {
@@ -64,6 +72,7 @@ impl Did {
     pub fn resolve(&self) -> Result<DidDoc, DidResolveError> {
         match self.method {
             DidMethod::WEB => resolve_did_web(self),
+            DidMethod::TDW => resolve_did_tdw(self),
             DidMethod::UNKOWN => Err(DidResolveError::DidNotSupported),
         }
     }
@@ -72,8 +81,15 @@ impl Did {
 #[cfg(test)]
 mod tests {
     use crate::did::DidResolveError;
-
     use super::Did;
+
+    #[test]
+    fn resolve_did_tdw() {
+        let did_url = "did:tdw:raw.githubusercontent.com:frithjofhoppebit:sample_did_tdw:main:gfstmoddgyywmmtfgbswmntemrrdezdegmzdiojzgi3wgmruga4wkztdgfrtayjxheztendbmrstintdgbsggmzyhe3wgzryhbqwmma=";
+        let did = Did::new(did_url.to_string());
+        let did_doc = did.resolve().unwrap();
+        assert_eq!(did_doc.id, did_url);
+    }
 
     #[test]
     fn resolve() {

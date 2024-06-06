@@ -30,6 +30,8 @@ dictionary DidDoc {
   sequence<PublicKey> capability_invocation;
   sequence<PublicKey> capability_delegation;
   sequence<PublicKey> assertion_method;
+  sequence<string> controller;
+  boolean? deactivated;
 };
 
 interface Did {

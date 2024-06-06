@@ -1,11 +1,26 @@
 use std::sync::Arc;
+use trustdidweb::trustdidweb::{DidMethodOperation, TrustDidWebProcessor};
 
 use crate::did::{Did, DidDoc, DidResolveError};
 
 #[derive(PartialEq)]
 pub enum DidMethod {
     WEB,
+    TDW,
     UNKOWN,
+}
+
+pub fn resolve_did_tdw(did: &Did) -> Result<DidDoc, DidResolveError> {
+    let processor = TrustDidWebProcessor::new();
+    let full_did = did.parts.join(":");
+    let did_doc_json = processor.read(full_did);
+    match serde_json::from_str::<DidDoc>(&did_doc_json) {
+        Ok(doc) => Ok(doc),
+        Err(e) => {
+            println!("Error parsing DID tdw document: {:?}", e);
+            Err(DidResolveError::HttpError(500, String::from("Error parsing DID tdw document")))
+        },
+    }
 }
 
 pub fn resolve_did_web(did: &Did) -> Result<DidDoc, DidResolveError> {
