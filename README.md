@@ -54,6 +54,9 @@ classDiagram
         +PublicKey[] capabilityInvocation
         +PublicKey[] capabilityDelegation
         +PublicKey[] assertionMethod
+        +String[] controller
+        +bool deactivated
+
     }
 ```
 
