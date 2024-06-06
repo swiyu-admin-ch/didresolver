@@ -7,6 +7,7 @@ Resolves a did and returns the diddoc for the given did.
 ## Supported DIDs
 
 - did:web
+- did:tdw
 
 ## Test data
 
