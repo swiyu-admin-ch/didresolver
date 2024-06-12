@@ -1,4 +1,0 @@
-[submodule "trustdidweb"]
-	path = trustdidweb
-	url = git@github.com:admin-ch-ssi/trustdidweb.git
-	branch = build/rust
