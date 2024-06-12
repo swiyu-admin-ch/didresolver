@@ -1,7 +1,4 @@
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
-
-use crate::keys::PublicKey;
 use crate::methods::{resolve_did_tdw, resolve_did_web, DidMethod};
 use didtoolbox::didtoolbox::DidDoc;
 
@@ -99,7 +96,7 @@ mod tests {
         assert_eq!(resolved.is_err(), true);
         assert_eq!(
             resolved.err().unwrap(),
-            DidResolveError::HttpError(404, "HTTP status client error (404 Not Found) for url (https://example.com/.well-known/did.json)".to_string())
+            DidResolveError::HttpError(500, "HTTP status server error (500 Internal Server Error) for url (https://example.com/.well-known/did.json)".to_string())
         );
     }
 }

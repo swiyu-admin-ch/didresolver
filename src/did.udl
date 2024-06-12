@@ -5,20 +5,6 @@ namespace did {
 [External="didtoolbox"]
 typedef extern DidDoc;
 
-dictionary Jwk {
-  string kty;
-  string crv;
-  string x;
-};
-
-dictionary PublicKey {
-  string id;
-  string key_type;
-  string controller;
-  string? public_key_multibase;
-  Jwk? public_key_jwk;
-};
-
 [Error]
 enum DidResolveError {
   "DidNotSupported",
