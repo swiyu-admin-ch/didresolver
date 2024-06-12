@@ -12,7 +12,7 @@ serde_json = "1.0.115"
 thiserror = "1.0.58"
 openssl = { version = "0.10.35", features = ["vendored"] }
 uniffi = { version = "0.26.1", features = ["cli"] }
-trustdidweb = {path = "trustdidweb", version = "*"}
+didtoolbox = {path = "didtoolbox", version = "*"}
  
 [build-dependencies]
 uniffi = { version = "0.26.1", features = ["build"] }

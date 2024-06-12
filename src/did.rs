@@ -3,6 +3,7 @@ use thiserror::Error;
 
 use crate::keys::PublicKey;
 use crate::methods::{resolve_did_tdw, resolve_did_web, DidMethod};
+use didtoolbox::didtoolbox::DidDoc;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum DidResolveError {
@@ -11,40 +12,6 @@ pub enum DidResolveError {
     #[error("a http error occured while trying to read the did")]
     HttpError(u16, String),
 }
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct DidDoc {
-    #[serde(rename = "@context")]
-    pub context: Vec<String>,
-    pub id: String,
-    #[serde(rename = "verificationMethod")]
-    pub verification_method: Vec<PublicKey>,
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub authentication: Vec<PublicKey>,
-    #[serde(
-        rename = "capabilityInvocation",
-        skip_serializing_if = "Vec::is_empty",
-        default
-    )]
-    pub capability_invocation: Vec<PublicKey>,
-    #[serde(
-        rename = "capabilityDelegation",
-        skip_serializing_if = "Vec::is_empty",
-        default
-    )]
-    pub capability_delegation: Vec<PublicKey>,
-    #[serde(
-        rename = "assertionMethod",
-        skip_serializing_if = "Vec::is_empty",
-        default
-    )]
-    pub assertion_method: Vec<PublicKey>,
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub controller: Vec<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub deactivated: Option<bool>,
-}
-
 pub struct Did {
     pub parts: Vec<String>,
     method: DidMethod,

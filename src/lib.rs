@@ -1,5 +1,6 @@
 use crate::did::*;
 use crate::keys::*;
+use didtoolbox::didtoolbox::DidDoc;
 
 pub mod did;
 pub mod keys;

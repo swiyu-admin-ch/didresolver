@@ -1,7 +1,7 @@
 use std::sync::Arc;
-use trustdidweb::trustdidweb::{DidMethodOperation, TrustDidWebProcessor};
+use didtoolbox::didtoolbox::{DidMethodOperation, TrustDidWebProcessor, DidDoc};
 
-use crate::did::{Did, DidDoc, DidResolveError};
+use crate::did::{Did, DidResolveError};
 
 #[derive(PartialEq)]
 pub enum DidMethod {

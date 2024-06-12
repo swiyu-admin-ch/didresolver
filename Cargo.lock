@@ -429,13 +429,35 @@ dependencies = [
 name = "didresolver"
 version = "0.1.0"
 dependencies = [
+ "didtoolbox",
  "openssl",
  "reqwest",
  "serde",
  "serde_json",
  "thiserror",
- "trustdidweb",
  "uniffi",
+]
+
+[[package]]
+name = "didtoolbox"
+version = "0.0.1"
+dependencies = [
+ "base32",
+ "base64 0.22.1",
+ "chrono",
+ "ed25519-dalek",
+ "hex",
+ "hex-literal",
+ "rand",
+ "regex",
+ "rstest",
+ "serde",
+ "serde_jcs",
+ "serde_json",
+ "sha2",
+ "uniffi",
+ "ureq",
+ "url-escape",
 ]
 
 [[package]]
@@ -1833,28 +1855,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c06d3da6113f116aaee68e4d601191614c9053067f9ab7f6edbcb161237daa54"
 dependencies = [
  "once_cell",
-]
-
-[[package]]
-name = "trustdidweb"
-version = "0.0.1"
-dependencies = [
- "base32",
- "base64 0.22.1",
- "chrono",
- "ed25519-dalek",
- "hex",
- "hex-literal",
- "rand",
- "regex",
- "rstest",
- "serde",
- "serde_jcs",
- "serde_json",
- "sha2",
- "uniffi",
- "ureq",
- "url-escape",
 ]
 
 [[package]]

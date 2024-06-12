@@ -2,6 +2,9 @@ namespace did {
 
 };
 
+[External="didtoolbox"]
+typedef extern DidDoc;
+
 dictionary Jwk {
   string kty;
   string crv;
@@ -20,18 +23,6 @@ dictionary PublicKey {
 enum DidResolveError {
   "DidNotSupported",
   "HttpError"
-};
-
-dictionary DidDoc {
-  sequence<string> context;
-  string id;
-  sequence<PublicKey> verification_method;
-  sequence<PublicKey> authentication;
-  sequence<PublicKey> capability_invocation;
-  sequence<PublicKey> capability_delegation;
-  sequence<PublicKey> assertion_method;
-  sequence<string> controller;
-  boolean? deactivated;
 };
 
 interface Did {
