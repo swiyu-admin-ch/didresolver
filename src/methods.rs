@@ -1,5 +1,6 @@
 use std::sync::Arc;
-use didtoolbox::didtoolbox::{DidMethodOperation, TrustDidWebProcessor, DidDoc};
+use didtoolbox::didtoolbox::DidDoc;
+use didtoolbox::did_tdw::{TrustDidWebProcessor, DidMethodOperation};
 
 use crate::did::{Did, DidResolveError};
 
