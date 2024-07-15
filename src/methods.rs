@@ -14,7 +14,7 @@ pub enum DidMethod {
 pub fn resolve_did_tdw(did: &Did) -> Result<DidDoc, DidResolveError> {
     let processor = TrustDidWebProcessor::new();
     let full_did = did.parts.join(":");
-    let did_doc_json = processor.read(full_did);
+    let did_doc_json = processor.read(full_did, None);
     match serde_json::from_str::<DidDoc>(&did_doc_json) {
         Ok(doc) => Ok(doc),
         Err(e) => {
@@ -52,7 +52,7 @@ pub fn resolve_did_web(did: &Did) -> Result<DidDoc, DidResolveError> {
 
             let did_doc: DidDoc = serde_json::from_str(text.as_str()).unwrap();
 
-            Ok(did_doc)
+            Ok(did_doc.into())
         }
         Err(err) => Err(DidResolveError::HttpError(
             err.status().unwrap().as_u16(),

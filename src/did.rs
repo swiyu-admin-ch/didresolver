@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use thiserror::Error;
 use crate::methods::{resolve_did_tdw, resolve_did_web, DidMethod};
 use didtoolbox::didtoolbox::DidDoc;
@@ -33,11 +35,15 @@ impl Did {
         };
     }
 
-    pub fn resolve(&self) -> Result<DidDoc, DidResolveError> {
-        match self.method {
-            DidMethod::WEB => resolve_did_web(self),
-            DidMethod::TDW => resolve_did_tdw(self),
-            DidMethod::UNKOWN => Err(DidResolveError::DidNotSupported),
+    pub fn resolve(&self) -> Result<Arc<DidDoc>, DidResolveError> {
+        let res = match self.method {
+                DidMethod::WEB => resolve_did_web(self),
+                DidMethod::TDW => resolve_did_tdw(self),
+                DidMethod::UNKOWN => Err(DidResolveError::DidNotSupported),
+        };
+        match res {
+            Ok(doc) => Ok(Arc::new(doc)),
+            Err(e) => Err(e),
         }
     }
 }
