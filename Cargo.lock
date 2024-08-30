@@ -441,6 +441,7 @@ dependencies = [
 [[package]]
 name = "didtoolbox"
 version = "0.0.1"
+source = "git+https://github.com/admin-ch-ssi/didtoolbox.git?branch=build/rust#9a2a0c5305435fdd741b792a52cc4c60fc599395"
 dependencies = [
  "base32",
  "base64 0.22.1",
