@@ -72,3 +72,6 @@ Copy the bindings/swift/files/did.swift to your project
 Add "net.java.dev.jna:jna:5.13.0@aar" as a dependency
 Create the folder "bindings/kotlin/jniLibs" under app/src/main
 Copy bindings/kotlin/uniffi/did/did.kt to your project (in the package uniffi.did)
+
+## License
+This project is licensed under the terms of the MIT license. See the [LICENSE](LICENSE.md) file for details.

@@ -2,6 +2,15 @@
 name = "didresolver"
 version = "0.1.0"
 edition = "2021"
+description = "DID resolver for different did methods"
+authors = ["Jonas Niestroj", "Frithjof Hoppe"]
+homepage = "https://github.com/e-id-admin"
+readme = "README.md"
+include = [
+    "Cargo.toml",
+    "README.md",
+    "src/**/*",
+]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

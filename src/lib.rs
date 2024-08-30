@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 use crate::did::*;
 use didtoolbox::didtoolbox::DidDoc;
 

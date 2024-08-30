@@ -1,5 +1,5 @@
+// SPDX-License-Identifier: MIT
 use std::sync::Arc;
-
 use thiserror::Error;
 use crate::methods::{resolve_did_tdw, resolve_did_web, DidMethod};
 use didtoolbox::didtoolbox::DidDoc;

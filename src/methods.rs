@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 use std::sync::Arc;
 use didtoolbox::didtoolbox::DidDoc;
 use didtoolbox::did_tdw::{TrustDidWebProcessor, DidMethodOperation};
