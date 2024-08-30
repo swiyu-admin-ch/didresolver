@@ -4,66 +4,64 @@ on:
   workflow_dispatch:
 
 jobs:
-    build:
-        name: Build swift bindings
-        runs-on: macos-latest
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-              with:
-                ssh-key: ${{ secrets.SSH_KEY }}
-                submodules: recursive
-                ref: build/swift
-            - name: Install rust
-              run: |
-                curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-            - name: Update gitmodules
-              run: |
-                git submodule update --init --recursive
-            - name: Install ios target
-              run: |
-                rustup target add aarch64-apple-ios-sim
-                rustup target add aarch64-apple-ios
+  build:
+    name: Build swift bindings
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: build/swift
+      - name: Install rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+      - uses: de-vri-es/setup-git-credentials@v2
+        with:
+          credentials: ${{ secrets.WORFKLOW_TOKEN_LIBRARIES }}
+      - name: Cache rust modules
+        id: cache-rust
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-rust-modules
+        with:
+          path: target
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
 
-            - name: Install xcode build tools
-              run: |
-                echo "Checking Xcode CLI tools"
-                # Only run if the tools are not installed yet
-                # To check that try to print the SDK path
-                xcode-select -p &> /dev/null
-                if [ $? -ne 0 ]; then
-                  echo "Xcode CLI tools not found. Installing them..."
-                  touch /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress;
-                  PROD=$(softwareupdate -l |
-                    grep "\*.*Command Line" |
-                    head -n 1 | awk -F"*" '{print $2}' |
-                    sed -e 's/^ *//' |
-                    tr -d '\n')
-                  softwareupdate -i "$PROD" -v;
-                else
-                  echo "Xcode CLI tools OK"
-                fi
+      - name: Install ios target
+        run: |
+          rustup target add aarch64-apple-ios-sim
+          rustup target add aarch64-apple-ios
 
-            - name: Cache rust modules
-              id: cache-rust
-              uses: actions/cache@v3
-              env:
-                cache-name: cache-rust-modules
-              with:
-                path: target
-                key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/Cargo.lock') }}
-                restore-keys: |
-                  ${{ runner.os }}-build-${{ env.cache-name }}-
-                  ${{ runner.os }}-build-
-                  ${{ runner.os }}-
-              
-            - name: Build bindings and swift package
-              run: |
-                bash swift-build.sh
-            
-            - name: Save swift package
-              uses: actions/upload-artifact@v4
-              with:
-                name: swift-bindings
-                path: |
-                  output
+      - name: Install xcode build tools
+        run: |
+          echo "Checking Xcode CLI tools"
+          # Only run if the tools are not installed yet
+          # To check that try to print the SDK path
+          xcode-select -p &> /dev/null
+          if [ $? -ne 0 ]; then
+            echo "Xcode CLI tools not found. Installing them..."
+            touch /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress;
+            PROD=$(softwareupdate -l |
+              grep "\*.*Command Line" |
+              head -n 1 | awk -F"*" '{print $2}' |
+              sed -e 's/^ *//' |
+              tr -d '\n')
+            softwareupdate -i "$PROD" -v;
+          else
+            echo "Xcode CLI tools OK"
+          fi
+
+      - name: Build bindings and swift package
+        run: |
+          bash swift-build.sh
+
+      - name: Save swift package
+        uses: actions/upload-artifact@v4
+        with:
+          name: swift-bindings
+          path: |
+            output
