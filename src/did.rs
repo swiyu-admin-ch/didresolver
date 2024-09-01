@@ -55,7 +55,7 @@ mod tests {
 
     #[test]
     fn resolve_did_tdw() {
-        let did_url = "did:tdw:localhost%3A8000:gu4geodcmvsgmzbqge3wimrugeygeolcgzsgenlggbtdczdcge3dcnzwgi3tonzsg5sweyjwmrswintbguytimbsmm3tcmzsmiywimy=";
+        let did_url = "did:tdw:raw.githubusercontent.com:frithjofhoppebit:sample_did_tdw:main:guzwcmdfhfrgcyjvgbrwcmjxheywmyzqha3dkyjtgjstizjxgezdozjtmu4dgm3egjrdemlbhe3daoddgq2dgnjumy4dcyrvme2tinq=";
         let did = Did::new(did_url.to_string());
         let did_doc = did.resolve().unwrap();
         assert_eq!(did_doc.id, did_url);
