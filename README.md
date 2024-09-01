@@ -1,31 +1,50 @@
-# DID Resolver
+# didresolver
 
-## Functionality
+> Latest version of the did methods might not be supported yet
 
-Resolves a did and returns the diddoc for the given did.
+This project contains a didresolver which allows to resolve the following methods:
+- [did:web](https://w3c-ccg.github.io/did-method-web/)
+- [did:tdw](https://bcgov.github.io/trustdidweb/#create-register)
 
-## Supported DIDs
+## Using the library
+The library can be used either directly in rust as is or through the different built bindings which are published in different submodules
+### Rust
+The library can be used directly in rust by adding the following dependency to your `Cargo.toml`:
+````toml
+[dependencies]
+didresolver = {git="https://github.com/e-id-admin/didresolver.git", branch="main"}
 
-- did:web
-- did:tdw
+# Optional: For manipulating the json content in the example
+serde_json = "1.0.115"
+````
+### Additional language bindings
+> General information how the bindings are generated can be found in the [UniFFI user guide](https://mozilla.github.io/uniffi-rs/latest/)
 
-## Test data
+The library is also available in other languages. Please consult the documentation of the subsequent repositories for more information:
+- [Examples](https://github.com/e-id-admin/didresolver-examples)
+- [Kotlin / Java](https://github.com/e-id-admin/didresolver-kotlin)
+- [Kotlin for android](https://github.com/e-id-admin/didresolver-kotlin-android)
+- [Swift](https://github.com/e-id-admin/didresolver-swift)
 
-To test the library you can use the `did:web:gist.githubusercontent.com:bit-jniestroj:f23a80ba382f94fdb93436424f6e4e01:raw:d1bfa1f6c0bfee7687e9fc4ca6f86c2340c6b6f5` did. This one resolves to a bbs public key.
+## Example
+In the example the following steps are shown:
+1. Resolve a did by providing the did string
+2. Get different data from DidDoc according to [data model](#models)
+```rust
+use didresolver::did::Did;
 
-## How to use
+fn main() {
+    let did = match Did::new(String::from("did:web:gist.githubusercontent.com:bit-jniestroj:7fb3cce550db5a239b543035298429fe:raw:5e5540c6f67ffe30cca2dfc4bb950a68f412c406")).resolve() {
+        Ok(did) => did.as_ref().to_owned(),
+        Err(e) => panic!("Error occurred during resolution")
+    };
+    did.get_verification_method().iter().for_each(|method| {
+        println!("id: {}, publicKey: {:?}, publicKeyJwk: {:?}", method.id, method.public_key_multibase, method.public_key_jwk)
+    })
+}
+```
 
-To resolve a did you first need to create a new Did object. For that you can use the constructor of the did structure that is abailable in the did resolver library. As a parameter you need to pass your did you want to resolve.
-
-After creating the Did object you can call the resolve method on this object. This method returns a diddoc or an error.
-
-### Possible errors
-
-- HttpError: Forward of the http error that happened in the background while trying to access did:web
-- DidNotSupported: If the given did is currently not supported by the resolver
-
-## Types
-
+## Models
 ```mermaid
 ---
 title: Available types
@@ -59,19 +78,6 @@ classDiagram
 
     }
 ```
-
-## How to install
-
-### ios
-
-Add the bindings/swift/didresolver.xcframework as a library in xCode
-Copy the bindings/swift/files/did.swift to your project
-
-### Android
-
-Add "net.java.dev.jna:jna:5.13.0@aar" as a dependency
-Create the folder "bindings/kotlin/jniLibs" under app/src/main
-Copy bindings/kotlin/uniffi/did/did.kt to your project (in the package uniffi.did)
 
 ## License
 This project is licensed under the terms of the MIT license. See the [LICENSE](LICENSE.md) file for details.
