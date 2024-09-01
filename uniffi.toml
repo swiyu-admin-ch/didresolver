@@ -1,3 +1,4 @@
 [bindings.kotlin]
 android = false
 android_cleaner = false
+package_name = "ch.admin.eid.didresolver"

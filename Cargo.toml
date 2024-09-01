@@ -21,13 +21,13 @@ serde_json = "1.0.115"
 thiserror = "1.0.58"
 openssl = { version = "0.10.35", features = ["vendored"] }
 uniffi = { version = "0.26.1", features = ["cli"] }
-didtoolbox = {git = "https://github.com/e-id-admin/didtoolbox.git", branch = "build/rust"}
+didtoolbox = {git = "https://github.com/e-id-admin/didtoolbox.git", branch = "main"}
  
 [build-dependencies]
 uniffi = { version = "0.26.1", features = ["build"] }
 
 [lib]
-crate-type = ["lib","cdylib"]
+crate-type = ["lib","cdylib","staticlib"]
 name = "didresolver"
 
 [[bin]]
