@@ -27,7 +27,7 @@ didtoolbox = {git = "https://github.com/e-id-admin/didtoolbox.git", branch = "bu
 uniffi = { version = "0.26.1", features = ["build"] }
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["lib","cdylib"]
 name = "didresolver"
 
 [[bin]]
