@@ -45,7 +45,7 @@ jobs:
 
       - name: Build kotlin bindings
         run: |
-          bash kotlind-android-build.sh
+          bash kotlin-android-build.sh
 
       - name: Save kotlin artifact
         uses: actions/upload-artifact@v4
