@@ -1,6 +1,6 @@
 [package]
 name = "didresolver"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2021"
 description = "DID resolver for different did methods"
 authors = ["Jonas Niestroj", "Frithjof Hoppe"]

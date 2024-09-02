@@ -436,7 +436,7 @@ dependencies = [
 
 [[package]]
 name = "didresolver"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "didtoolbox",
  "openssl",
@@ -450,7 +450,7 @@ dependencies = [
 [[package]]
 name = "didtoolbox"
 version = "0.0.1"
-source = "git+https://github.com/e-id-admin/didtoolbox.git?branch=main#7631960eaf5796d654a7c1bb2e182eb80cda7a77"
+source = "git+https://github.com/e-id-admin/didtoolbox.git?branch=main#7cbf67278a7df5ac95ac5917e66ae621f7f01942"
 dependencies = [
  "base32",
  "base64",

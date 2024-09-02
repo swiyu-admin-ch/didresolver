@@ -55,7 +55,7 @@ mod tests {
 
     #[test]
     fn resolve_did_tdw() {
-        let did_url = "did:tdw:raw.githubusercontent.com:frithjofhoppebit:sample_did_tdw:main:guzwcmdfhfrgcyjvgbrwcmjxheywmyzqha3dkyjtgjstizjxgezdozjtmu4dgm3egjrdemlbhe3daoddgq2dgnjumy4dcyrvme2tinq=";
+        let did_url = "did:tdw:g5qtkytbmnsgiolegizgczrwgazdgzjymq2gcmbyg5rtizbtmrrwimzqhbqtgojwgq4winrumzrtinbtgzstgmtemrsgkmdemiztiyy=:raw.githubusercontent.com:frithjofhoppebit:sample_did_tdw:main";
         let did = Did::new(did_url.to_string());
         let did_doc = did.resolve().unwrap();
         assert_eq!(did_doc.id, did_url);
@@ -102,7 +102,7 @@ mod tests {
         assert_eq!(resolved.is_err(), true);
         assert_eq!(
             resolved.err().unwrap(),
-            DidResolveError::HttpError(500, "HTTP status server error (500 Internal Server Error) for url (https://example.com/.well-known/did.json)".to_string())
+            DidResolveError::HttpError(404, "HTTP status client error (404 Not Found) for url (https://example.com/.well-known/did.json)".to_string())
         );
     }
 }
