@@ -79,5 +79,10 @@ classDiagram
     }
 ```
 
+## Changelog
+| Version | Description                                                                         |
+|---------|-------------------------------------------------------------------------------------|
+| 0.0.3   | Upgrade didresolver dependency to version 0.0.2 to add missing jwk model properties |
+
 ## License
 This project is licensed under the terms of the MIT license. See the [LICENSE](LICENSE.md) file for details.
