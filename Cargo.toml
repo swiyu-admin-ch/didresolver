@@ -1,6 +1,6 @@
 [package]
 name = "didresolver"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2021"
 description = "DID resolver for different did methods"
 authors = ["Jonas Niestroj", "Frithjof Hoppe"]
@@ -21,7 +21,7 @@ serde_json = "1.0.115"
 thiserror = "1.0.58"
 openssl = { version = "0.10.35", features = ["vendored"] }
 uniffi = { version = "0.26.1", features = ["cli"] }
-didtoolbox = {git = "https://github.com/e-id-admin/didtoolbox.git", branch = "main"}
+didtoolbox = {git = "https://github.com/e-id-admin/didtoolbox.git",tag="0.0.2"}
  
 [build-dependencies]
 uniffi = { version = "0.26.1", features = ["build"] }
