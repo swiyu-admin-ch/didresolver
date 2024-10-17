@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
-use std::sync::Arc;
 use didtoolbox::didtoolbox::DidDoc;
-use didtoolbox::did_tdw::{TrustDidWebProcessor, DidMethodOperation};
+use didtoolbox::did_tdw::{TrustDidWebId, TrustDidWeb, DidMethodOperation};
 
 use crate::did::{Did, DidResolveError};
 
@@ -9,19 +8,29 @@ use crate::did::{Did, DidResolveError};
 pub enum DidMethod {
     WEB,
     TDW,
-    UNKOWN,
+    UNKNOWN,
 }
 
-pub fn resolve_did_tdw(did: &Did) -> Result<DidDoc, DidResolveError> {
-    let processor = TrustDidWebProcessor::new();
+pub fn resolve_did_tdw(did: &Did, did_log_raw: String) -> Result<DidDoc, DidResolveError> {
     let full_did = did.parts.join(":");
-    let did_doc_json = processor.read(full_did, None);
-    match serde_json::from_str::<DidDoc>(&did_doc_json) {
-        Ok(doc) => Ok(doc),
-        Err(e) => {
-            println!("Error parsing DID tdw document: {:?}", e);
-            Err(DidResolveError::HttpError(500, String::from("Error parsing DID tdw document")))
-        },
+    match TrustDidWebId::parse_did_tdw(full_did, Some(false)) {
+        Ok(tdw_id) => {
+            let scid = tdw_id.get_scid();
+
+            let did_doc_json = match TrustDidWeb::read(scid, did_log_raw) {
+                Ok(tdw) => tdw.get_did_doc(),
+                Err(e) => return Err(DidResolveError::InvalidDidLog(e.to_string())),
+            };
+
+            match serde_json::from_str::<DidDoc>(&did_doc_json) {
+                Ok(doc) => Ok(doc),
+                Err(e) => {
+                    println!("Error parsing DID tdw document: {:?}", e);
+                    Err(DidResolveError::HttpError(500, String::from("Error parsing DID tdw document")))
+                }
+            }
+        }
+        Err(e) => Err(DidResolveError::DidNotSupported(e.to_string())),
     }
 }
 

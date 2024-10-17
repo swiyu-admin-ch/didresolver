@@ -4,10 +4,16 @@ namespace did {
 };
 
 [ExternalInterface="didtoolbox"]
-typedef extern TrustDidWebProcessor;
+typedef extern TrustDidWebId;
+
+//[ExternalInterface="didtoolbox"]
+//typedef extern TrustDidWebIdResolutionError;
 
 [ExternalInterface="didtoolbox"]
 typedef extern TrustDidWeb;
+
+//[ExternalInterface="didtoolbox"]
+//typedef extern TrustDidWebError;
 
 [ExternalInterface="didtoolbox"]
 typedef extern Ed25519Signature;
@@ -35,12 +41,13 @@ typedef extern DidDoc;
 
 [Error]
 enum DidResolveError {
-  "DidNotSupported",
-  "HttpError"
+    "DidNotSupported",
+    "HttpError",
+    "InvalidDidLog"
 };
 
 interface Did {
     constructor(string text);
     [Throws=DidResolveError]
-    DidDoc resolve();
+    DidDoc resolve(string did_tdw_log);
 };
