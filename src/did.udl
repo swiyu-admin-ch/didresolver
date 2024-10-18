@@ -42,11 +42,15 @@ typedef extern DidDoc;
 [Error]
 enum DidResolveError {
     "DidNotSupported",
+    "MalformedDid",
     "InvalidDidLog"
 };
 
 interface Did {
     constructor(string text);
+    /// Returns the url part from the supplied DID, if supported and not malformed.
+    [Throws=DidResolveError]
+    string get_url();
     [Throws=DidResolveError]
     DidDoc resolve(string did_tdw_log);
 };
