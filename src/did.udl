@@ -42,7 +42,6 @@ typedef extern DidDoc;
 [Error]
 enum DidResolveError {
     "DidNotSupported",
-    "HttpError",
     "InvalidDidLog"
 };
 
