@@ -23,8 +23,7 @@ uniffi = { version = "0.28.2", features = ["cli"] }
 ssi = { version = "0.9.0", features = ["example", "http-did"] }
 strum = { version = "0.26", features = ["derive"] }
 minify = "1.3"
-# TODO Set the tag properly for didtoolbox - it should be probably 0.0.3 (after merging of https://github.com/e-id-admin/didtoolbox/pull/2)
-didtoolbox = { git = "https://github.com/e-id-admin/didtoolbox.git", branch = "feat/EIDSYS-262" }
+didtoolbox = { git = "https://github.com/e-id-admin/didtoolbox.git", tag = "0.0.3" }
 # When building on a container (podman run -it --rm -v $(pwd):$(pwd):Z -v $HOME/.ssh:/root/.ssh:Z -w $(pwd) rust), the local repo may be used:
 #didtoolbox = { path = "../didtoolbox" }
 
