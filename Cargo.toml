@@ -1,9 +1,9 @@
 [package]
 name = "didresolver"
-version = "0.0.3"
+version = "0.0.4"
 edition = "2021"
 description = "DID resolver for different did methods"
-authors = ["Jonas Niestroj", "Frithjof Hoppe"]
+authors = ["Jonas Niestroj", "Frithjof Hoppe", "Vladica Stojic"]
 homepage = "https://github.com/e-id-admin"
 readme = "README.md"
 include = [
