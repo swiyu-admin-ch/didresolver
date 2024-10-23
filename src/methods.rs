@@ -17,7 +17,6 @@ pub fn resolve_did_tdw(did: &Did, did_log_raw: String) -> Result<DidDoc, DidReso
             Ok(json_from_str::<DidDoc>(&did_doc_json).unwrap())
         }
         Err(e) => {
-            //eprintln!("{e}");
             Err(DidResolveError::DidNotSupported(e.to_string()))
         },
     }

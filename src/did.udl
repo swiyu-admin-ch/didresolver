@@ -6,14 +6,8 @@ namespace did {
 [ExternalInterface="didtoolbox"]
 typedef extern TrustDidWebId;
 
-//[ExternalInterface="didtoolbox"]
-//typedef extern TrustDidWebIdResolutionError;
-
 [ExternalInterface="didtoolbox"]
 typedef extern TrustDidWeb;
-
-//[ExternalInterface="didtoolbox"]
-//typedef extern TrustDidWebError;
 
 [ExternalInterface="didtoolbox"]
 typedef extern Ed25519Signature;
