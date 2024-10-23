@@ -4,7 +4,7 @@ namespace did {
 };
 
 [ExternalInterface="didtoolbox"]
-typedef extern TrustDidWebProcessor;
+typedef extern TrustDidWebId;
 
 [ExternalInterface="didtoolbox"]
 typedef extern TrustDidWeb;
@@ -35,12 +35,16 @@ typedef extern DidDoc;
 
 [Error]
 enum DidResolveError {
-  "DidNotSupported",
-  "HttpError"
+    "DidNotSupported",
+    "MalformedDid",
+    "InvalidDidLog"
 };
 
 interface Did {
     constructor(string text);
+    /// Returns the url part from the supplied DID, if supported and not malformed.
     [Throws=DidResolveError]
-    DidDoc resolve();
+    string get_url();
+    [Throws=DidResolveError]
+    DidDoc resolve(string did_tdw_log);
 };
