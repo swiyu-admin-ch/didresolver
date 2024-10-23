@@ -176,13 +176,13 @@ mod tests {
     impl TdwMock {
         pub fn new() -> Self {
             let mut server = Server::new_with_opts(ServerOpts {
-                port: 61646, // CAUTION Must the one residing in the test data file
+                port: 61646, // CAUTION Must match the one residing in the test data file
                 ..Default::default()
             });
 
             let url = format!("{}/123456789/did.jsonl", server.url());
             let did_log_raw_filepath = "test_data/did.jsonl";
-            // CAUTION Must the one residing in the test data file
+            // CAUTION Must match the one residing in the test data file
             let did = String::from("did:tdw:E18kSmXiyfjSQfZgNdNnXi9JN7WADEfZycWvYXAu7VXAYso4CvifyEma7D3yhv7bmZ3cYHzgEQQTLq7rfuF7HjiY2fAi3:127.0.0.1%3A61646:123456789");
 
             // To setup the GET mock, just load did_log (as body) from the test dats file
