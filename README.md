@@ -92,9 +92,10 @@ classDiagram
 ```
 
 ## Changelog
-| Version | Description                                                                         |
-|---------|-------------------------------------------------------------------------------------|
-| 0.0.3   | Upgrade didresolver dependency to version 0.0.2 to add missing jwk model properties |
+| Version | Description                                                                                                                                                                        |
+|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 0.0.3   | Upgrade didresolver dependency to version 0.0.2 to add missing jwk model p-roperties                                                                                               |
+| 0.0.4   | **BREAKING CHANGE** `TrustDidWebProcessor` discontinued. <br/>Signature of the `resolve` method now requires a DID log (as string). <br/>It may also throw new `TrustDidWebError`. |
 
 ## License
 This project is licensed under the terms of the MIT license. See the [LICENSE](LICENSE.md) file for details.
