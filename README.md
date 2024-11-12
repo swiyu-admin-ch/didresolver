@@ -15,7 +15,7 @@ The library can be used directly in rust by adding the following dependency to y
 didresolver = {git="https://github.com/e-id-admin/didresolver.git", branch="main"}
 
 # Optional: For manipulating the json content in the example
-serde_json = "1.0.115"
+serde_json = "1.0.215"
 ````
 ### Additional language bindings
 > General information how the bindings are generated can be found in the [UniFFI user guide](https://mozilla.github.io/uniffi-rs/latest/)
@@ -96,6 +96,7 @@ classDiagram
 |---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | 0.0.3   | Upgrade didresolver dependency to version 0.0.2 to add missing jwk model p-roperties                                                                                               |
 | 0.0.4   | **BREAKING CHANGE** `TrustDidWebProcessor` discontinued. <br/>Signature of the `resolve` method now requires a DID log (as string). <br/>It may also throw new `TrustDidWebError`. |
+| 0.0.5   | **BUGFIX** Large `*.jsonl` files handled properly                                                                                                                                  |
 
 ## License
 This project is licensed under the terms of the MIT license. See the [LICENSE](LICENSE.md) file for details.

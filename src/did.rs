@@ -298,8 +298,8 @@ mod tests {
 
     #[rstest]
     #[case("did:tdw:scid:domain:path")]
-    #[case("did:tdw:E18kSmXiyfjSQfZgNdNnXi9JN7WADEfZycWvYXAu7VXAYso4CvifyEma7D3yhv7bmZ3cYHzgEQQTLq7rfuF7HjiY2fAi3:127.0.0.1%3A61646:123456789"
-    )]
+    #[case("did:tdw:E18kSmXiyfjSQfZgNdNnXi9JN7WADEfZycWvYXAu7VXAYso4CvifyEma7D3yhv7bmZ3cYHzgEQQTLq7rfuF7HjiY2fAi3:127.0.0.1%3A61646:123456789")]
+    #[case("did:tdw:23kk6mXqB9Ftr3Q1nzNJPRsYdR8T8wZimhTjiYejTD9mM3oQFzFC5MUg5va8EXz2MhkHohPEz2ebztebJBERKkyD:identifier-data-service-r.bit.admin.ch:api:v1:did:62c3d89f-2ab3-4129-ac1f-595a28c9115")]
     fn did_ok(#[case] did_url: String) {
         let did = Did::new(did_url.to_owned());
         let did = did.get_url();
@@ -311,6 +311,7 @@ mod tests {
     #[rstest]
     #[case("did:tdw:malformed::::::")]
     #[case("did:tdw:malformed")]
+    #[case("did:tdw:grsgcnzqgfstsmbsgbstsmzzgy2diolgheztayzwme4tgzrxmnrtqoddmy2wkzjwgm4tgyjumntgmzrthezggnbwmjstgzjug42tioa=:identifier-data-service-r.bit.admin.ch:api:v1:did:62c3d89f-2ab3-4129-ac1f-595a28c9115f")]
     fn did_malformed(#[case] did_url: String) {
         let did = Did::new(did_url.to_owned());
         let url = did.get_url();

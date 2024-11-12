@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 use didtoolbox::didtoolbox::DidDoc;
 use didtoolbox::did_tdw::{TrustDidWebId, TrustDidWeb};
-use minify::json::minify;
 use serde_json::from_str as json_from_str;
 use crate::did::{Did, DidResolveError};
 
 pub fn resolve_did_tdw(did: &Did, did_log_raw: String) -> Result<DidDoc, DidResolveError> {
     match TrustDidWebId::parse_did_tdw(did.to_string(), Some(false)) {
         Ok(tdw_id) => {
-            let did_doc_json = match TrustDidWeb::read(did.to_string(), minify(did_log_raw.as_str()), Some(false)) {
+            let did_doc_json = match TrustDidWeb::read(did.to_string(), did_log_raw, Some(false)) {
                 Ok(tdw) => tdw.get_did_doc(),
                 Err(e) => return Err(DidResolveError::InvalidDidLog(e.to_string())),
             };
