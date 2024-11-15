@@ -176,14 +176,14 @@ mod tests {
     impl TdwMock {
         pub fn new() -> Self {
             let mut server = Server::new_with_opts(ServerOpts {
-                port: 61646, // CAUTION Must match the one residing in the test data file
+                port: 59342, // CAUTION Must match the one residing in the test data file
                 ..Default::default()
             });
 
             let url = format!("{}/123456789/did.jsonl", server.url());
             let did_log_raw_filepath = "test_data/did.jsonl";
             // CAUTION Must match the one residing in the test data file
-            let did = String::from("did:tdw:E18kSmXiyfjSQfZgNdNnXi9JN7WADEfZycWvYXAu7VXAYso4CvifyEma7D3yhv7bmZ3cYHzgEQQTLq7rfuF7HjiY2fAi3:127.0.0.1%3A61646:123456789");
+            let did = String::from("did:tdw:Dr9YeFeAc6XGveY8TopKZWhTmArQYrKS4Uye753UucKQz224LrHiopZ42JXnmHGrT4m1jXTbEbqVCKZYVw9rgK6TojkXY:127.0.0.1%3A59342:123456789");
 
             // To setup the GET mock, just load did_log (as body) from the test dats file
             server.mock("GET",
@@ -241,7 +241,7 @@ mod tests {
 
     #[rstest]
     // CAUTION A did_url (param #2) MUST match the one residing in did_log_raw_filepath (param #1)
-    #[case("test_data/did.jsonl", "did:tdw:E18kSmXiyfjSQfZgNdNnXi9JN7WADEfZycWvYXAu7VXAYso4CvifyEma7D3yhv7bmZ3cYHzgEQQTLq7rfuF7HjiY2fAi3:127.0.0.1%3A61646:123456789"
+    #[case("test_data/did.jsonl", "did:tdw:Dr9YeFeAc6XGveY8TopKZWhTmArQYrKS4Uye753UucKQz224LrHiopZ42JXnmHGrT4m1jXTbEbqVCKZYVw9rgK6TojkXY:127.0.0.1%3A59342:123456789"
     )]
     fn resolve_did_tdw(#[case] did_log_raw_filepath: String, #[case] did_url: String) {
         let did = Did::new(did_url.to_string());
@@ -258,17 +258,65 @@ mod tests {
 
     #[rstest]
     // CAUTION A did_url (param #2) MUST match the one residing in did_log_raw_filepath (param #1)
-    #[case("test_data/did.jsonl", "did:tdw:E18kSmXiyfjSQfZgNdNnXi9JN7WADEfZycWvYXAu7VXAYso4CvifyEma7D3yhv7bmZ3cYHzgEQQTLq7rfuF7HjiY2fAi3:127.0.0.1%3A61646:123456789"
+    #[case("test_data/did.jsonl", "did:tdw:Dr9YeFeAc6XGveY8TopKZWhTmArQYrKS4Uye753UucKQz224LrHiopZ42JXnmHGrT4m1jXTbEbqVCKZYVw9rgK6TojkXY:127.0.0.1%3A59342:123456789"
     )]
     // TODO Remove the should_panic attribute as soon as the error handling is properly done in didtoolbox
     #[should_panic(expected = "Invalid did log. No entries found")]
-    fn resolve_did_tdw_invalid_did_log(#[case] _did_log_raw_filepath: String, #[case] did_url: String) {
+    fn resolve_did_tdw_invalid_did_log_no_entries(#[case] _did_log_raw_filepath: String, #[case] did_url: String) {
         let did = Did::new(did_url.to_string());
 
-        match did.resolve(String::new()) {
+        match did.resolve(String::new()) { // empty string
             Err(e) => assert_eq!(e.kind(), DidResolveErrorKind::InvalidDidLog),
             _ => (),
         }
+    }
+
+    #[rstest]
+    // CAUTION A did_url (param #2) MUST match the one residing in did_log_raw_filepath (param #1)
+    #[case("test_data/wrong_first_entry_did.jsonl", "did:tdw:Dr9YeFeAc6XGveY8TopKZWhTmArQYrKS4Uye753UucKQz224LrHiopZ42JXnmHGrT4m1jXTbEbqVCKZYVw9rgK6TojkXY:127.0.0.1%3A59342:123456789"
+    )]
+    // TODO Remove the should_panic attribute as soon as the error handling is properly done in didtoolbox
+    #[should_panic(expected = "Invalid did log. First entry has to have version id 1")]
+    fn resolve_did_tdw_invalid_did_log_wrong_first_entry(#[case] did_log_raw_filepath: String, #[case] did_url: String) {
+        let did = Did::new(did_url.to_string());
+
+        let did_log_raw = fs::read_to_string(Path::new(&did_log_raw_filepath));
+        assert!(did_log_raw.is_ok());
+        let did_log_raw = did_log_raw.unwrap();
+
+        let did_doc = did.resolve(did_log_raw);
+    }
+
+    #[rstest]
+    // CAUTION A did_url (param #2) MUST match the one residing in did_log_raw_filepath (param #1)
+    #[case("test_data/non_incremented_version_did.jsonl", "did:tdw:Dr9YeFeAc6XGveY8TopKZWhTmArQYrKS4Uye753UucKQz224LrHiopZ42JXnmHGrT4m1jXTbEbqVCKZYVw9rgK6TojkXY:127.0.0.1%3A59342:123456789"
+    )]
+    // TODO Remove the should_panic attribute as soon as the error handling is properly done in didtoolbox
+    #[should_panic(expected = "Invalid did log for version 2. Version id has to be incremented")]
+    fn resolve_did_tdw_invalid_did_log_non_incremented_version(#[case] did_log_raw_filepath: String, #[case] did_url: String) {
+        let did = Did::new(did_url.to_string());
+
+        let did_log_raw = fs::read_to_string(Path::new(&did_log_raw_filepath));
+        assert!(did_log_raw.is_ok());
+        let did_log_raw = did_log_raw.unwrap();
+
+        let did_doc = did.resolve(did_log_raw);
+    }
+
+    #[rstest]
+    // CAUTION A did_url (param #2) MUST match the one residing in did_log_raw_filepath (param #1)
+    #[case("test_data/scid_mismatch_did.jsonl", "did:tdw:Dr9YeFeAc6XGveY8TopKZWhTmArQYrKS4Uye753UucKQz224LrHiopZ42JXnmHGrT4m1jXTbEbqVCKZYVw9rgK6TojkXY:127.0.0.1%3A59342:123456789"
+    )]
+    // TODO Remove the should_panic attribute as soon as the error handling is properly done in didtoolbox
+    #[should_panic(expected = "The scid from the did doc E18kSmXiyfjSQfZgNdNnXi9JN7WADEfZycWvYXAu7VXAYso4CvifyEma7D3yhv7bmZ3cYHzgEQQTLq7rfuF7HjiY2fAi3 doesnt match the requested one Dr9YeFeAc6XGveY8TopKZWhTmArQYrKS4Uye753UucKQz224LrHiopZ42JXnmHGrT4m1jXTbEbqVCKZYVw9rgK6TojkXY")]
+    fn resolve_did_tdw_invalid_did_log_scid_mismatch(#[case] did_log_raw_filepath: String, #[case] did_url: String) {
+        let did = Did::new(did_url.to_string());
+
+        let did_log_raw = fs::read_to_string(Path::new(&did_log_raw_filepath));
+        assert!(did_log_raw.is_ok());
+        let did_log_raw = did_log_raw.unwrap();
+
+        let did_doc = did.resolve(did_log_raw);
     }
 
     #[rstest]
@@ -298,7 +346,7 @@ mod tests {
 
     #[rstest]
     #[case("did:tdw:scid:domain:path")]
-    #[case("did:tdw:E18kSmXiyfjSQfZgNdNnXi9JN7WADEfZycWvYXAu7VXAYso4CvifyEma7D3yhv7bmZ3cYHzgEQQTLq7rfuF7HjiY2fAi3:127.0.0.1%3A61646:123456789")]
+    #[case("did:tdw:Dr9YeFeAc6XGveY8TopKZWhTmArQYrKS4Uye753UucKQz224LrHiopZ42JXnmHGrT4m1jXTbEbqVCKZYVw9rgK6TojkXY:127.0.0.1%3A59342:123456789")]
     #[case("did:tdw:23kk6mXqB9Ftr3Q1nzNJPRsYdR8T8wZimhTjiYejTD9mM3oQFzFC5MUg5va8EXz2MhkHohPEz2ebztebJBERKkyD:identifier-data-service-r.bit.admin.ch:api:v1:did:62c3d89f-2ab3-4129-ac1f-595a28c9115")]
     fn did_ok(#[case] did_url: String) {
         let did = Did::new(did_url.to_owned());
