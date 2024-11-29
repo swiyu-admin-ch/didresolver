@@ -1,6 +1,6 @@
 [package]
 name = "didresolver"
-version = "0.0.5"
+version = "0.0.6"
 edition = "2021"
 description = "DID resolver for different did methods"
 authors = ["Jonas Niestroj", "Frithjof Hoppe", "Vladica Stojic"]
@@ -16,22 +16,22 @@ include = [
 
 [dependencies]
 serde = { version = "1.0.215", features = ["derive"] }
-serde_json = "1.0.132"
+serde_json = "1.0.133"
 thiserror = "1.0.65"
 openssl = { version = "0.10.68", features = ["vendored"] }
 uniffi = { version = "0.28.2", features = ["cli"] }
 ssi = { version = "0.9.0", features = ["example", "http-did"] }
 strum = { version = "0.26", features = ["derive"] }
-didtoolbox = { git = "https://github.com/e-id-admin/didtoolbox.git", tag = "0.0.3" }
+didtoolbox = { git = "https://github.com/e-id-admin/didtoolbox.git", tag = "0.0.5" }
 # When building on a container (podman run -it --rm -v $(pwd):$(pwd):Z -v $HOME/.ssh:/root/.ssh:Z -w $(pwd) rust), the local repo may be used:
 #didtoolbox = { path = "../didtoolbox" }
 
 [build-dependencies]
-uniffi = { version = "0.28.2", features = ["build"] }
+uniffi = { version = "0.28.3", features = ["build"] }
 
 [dev-dependencies]
 rstest = "0.23.0"
-mockito = "1.6.0"
+mockito = "1.6.1"
 ureq = "2.10.1"
 
 [lib]
