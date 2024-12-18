@@ -1,12 +1,36 @@
-# didresolver
+![Public Beta banner](https://github.com/e-id-admin/eidch-public-beta/blob/main/assets/github-banner-publicbeta.jpg)
 
-> Latest version of the did methods might not be supported yet
+# DID resolver
 
-This project contains a didresolver which allows to resolve the following methods:
+> Latest version of the DID methods might not be supported yet
+
+An official Swiss Government project made by the [Federal Office of Information Technology, Systems and Telecommunication FOITT](https://www.bit.admin.ch/)
+as part of the electronic identity (E-ID) project.
+
+This project contains a DID resolver which allows to resolve the following methods:
 - [did:web](https://w3c-ccg.github.io/did-method-web/)
 - [did:tdw](https://bcgov.github.io/trustdidweb/#create-register)
 
+## Table of contents
+
+- [Overview](#overview)
+- [Using the library](#using-the-library)
+- [Example](example)
+- [Models](models)
+- [Contributions and feedback](#contributions-and-feedback)
+- [License](#license)
+
+
+## Overview
+
+This repository is part of the ecosystem developed for the future official Swiss E-ID.
+The goal of this repository is to engage with the community and collaborate on developing the Swiss ecosystem for E-ID and other credentials.
+We warmly encourage you to engage with us by creating an issue in the repository.
+
+For more information about the project please visit the [introduction into open source of the public beta](https://github.com/e-id-admin/eidch-public-beta).
+
 ## Using the library
+
 The library can be used either directly in rust as is or through the different built bindings which are published in different submodules
 ### Rust
 The library can be used directly in rust by adding the following dependency to your `Cargo.toml`:
@@ -18,6 +42,7 @@ didresolver = {git="https://github.com/e-id-admin/didresolver.git", branch="main
 serde_json = "1.0.215"
 ````
 ### Additional language bindings
+
 > General information how the bindings are generated can be found in the [UniFFI user guide](https://mozilla.github.io/uniffi-rs/latest/)
 
 The library is also available in other languages. Please consult the documentation of the subsequent repositories for more information:
@@ -27,11 +52,12 @@ The library is also available in other languages. Please consult the documentati
 - [Swift](https://github.com/e-id-admin/didresolver-swift)
 
 ## Example
+
 In the example the following steps are shown:
-1. Convert supplied did string into the standard did representation, if possible
-2. Fetch a raw did log, using the url embedded in the did object created previously, if available 
-3. Try resolving the raw did log into a did doc
-4. Get different parts from the did doc w.r.t. [data model](#models)
+1. Convert supplied DID string into the standard did representation, if possible
+2. Fetch a raw DID log, using the url embedded in the did object created previously, if available 
+3. Try resolving the raw DOD log into a DID doc
+4. Get different parts from the DID doc w.r.t. [data model](#models)
 ```rust
 use didresolver::did::Did;
 use ureq::get as fetch_url;
@@ -90,14 +116,9 @@ classDiagram
 
     }
 ```
+## Contributions and feedback
 
-## Changelog
-| Version | Description                                                                                                                                                                       |
-|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 0.0.3   | Upgrade didresolver dependency to version 0.0.2 to add missing jwk model properties                                                                                               |
-| 0.0.4   | **BREAKING CHANGE** `TrustDidWebProcessor` discontinued. <br/>Signature of the `resolve` method now requires a DID log (as string). <br/>It may also throw new `TrustDidWebError` |
-| 0.0.5   | **BUGFIX** Large `*.jsonl` files handled properly                                                                                                                                 |
-| 0.0.6   | **IMPROVEMENT/FIX** Ensured conformity with [Trust DID Web - did:tdw - v0.3](https://identity.foundation/trustdidweb/v0.3/)                                                       |
+We welcome any feedback on the code regarding both the implementation and security aspects. Please follow the guidelines for contributing found in [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## License
 This project is licensed under the terms of the MIT license. See the [LICENSE](LICENSE.md) file for details.
