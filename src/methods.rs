@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+
 use crate::did::{Did, DidResolveError};
 use didtoolbox::did_tdw::{TrustDidWeb, TrustDidWebId};
 use didtoolbox::didtoolbox::DidDoc;

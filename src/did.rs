@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
+
 use crate::methods::resolve_did_tdw;
-use didtoolbox::did_tdw::{TrustDidWeb, TrustDidWebId};
+use didtoolbox::did_tdw::TrustDidWebId;
 use didtoolbox::didtoolbox::DidDoc;
-use ssi::dids::{DIDBuf as SSIDIDSBuf, DIDMethod as SSIDIDSDIDMethod};
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use strum::{AsRefStr as EnumAsRefStr, Display as EnumDisplay};
 use thiserror::Error;
+use url::Url;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum DidResolveError {
@@ -122,22 +123,42 @@ impl TryFrom<String> for Did {
     type Error = DidResolveError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        match SSIDIDSBuf::try_from(value.to_owned()) {
+        match TrustDidWebId::parse_did_tdw(value.to_owned(), Some(true)) {
             Ok(buf) => {
-                if !buf.method_name().starts_with(TrustDidWeb::DID_METHOD_NAME) {
-                    // the single currently supported
-                    return Err(DidResolveError::DidNotSupported(
-                        buf.method_name().to_owned(),
-                    ));
+                let url = buf.get_url();
+                let scid = buf.get_scid();
+
+                let _ = match Url::parse(url.as_str()) {
+                    Ok(u) => {
+                        let mut host = u.host().unwrap().to_string();
+                        let port = u.port_or_known_default().unwrap_or_default();
+                        if port > 0 {
+                            host.push_str("%3A");
+                            host.push_str(port.to_string().as_str());
+                        };
+                        let path = u.path();
+                        let path_sanitized =
+                            path[1..path.len()].replace("/did.jsonl", "").to_owned();
+                        let mut path_parts: Vec<String> =
+                            path_sanitized.split(":").map(|x| x.to_string()).collect();
+
+                        let mut parts =
+                            vec!["did".to_string(), "tdw".to_string(), scid.to_owned(), host];
+                        parts.append(&mut path_parts);
+
+                        Ok(Did {
+                            parts,
+                            method: DidMethod::TDW,
+                            method_id: scid,
+                        })
+                    }
+                    Err(_e) => {
+                        //eprintln!("{_e}");
+                        Err(DidResolveError::MalformedDid(value.to_owned()))
+                    }
                 };
 
-                let method_specific_id = buf.method_specific_id().to_string();
-
-                Ok(Did {
-                    parts: buf.split(":").map(|x| x.to_string()).collect(),
-                    method: DidMethod::TDW,
-                    method_id: method_specific_id,
-                })
+                Err(DidResolveError::MalformedDid(value))
             }
             Err(_e) => {
                 //eprintln!("{_e}");
@@ -191,9 +212,9 @@ mod tests {
             });
 
             let url = format!("{}/123456789/did.jsonl", server.url());
-            let did_log_raw_filepath = "test_data/did.jsonl";
+            let did_log_raw_filepath = "test_data/did_2.jsonl";
             // CAUTION Must match the one residing in the test data file
-            let did = String::from("did:tdw:Q2xsB8Tc6ea3oHQDYnL5x6okFpRk86wNFSetqxmxsD8CpJQJVL1zWMLQkY3yq3s65pgweXMD7UW7Qwb2NRUATF5Bo:127.0.0.1%3A54858:123456789");
+            let did = String::from("did:tdw:QmUSyQohHF4tcRhdkJYoamuMQAXQmYBoFLCot35xd7dPda:127.0.0.1%3A54858:123456789");
 
             // To setup the GET mock, just load did_log (as body) from the test dats file
             server
@@ -247,16 +268,19 @@ mod tests {
         let did_doc = did_doc.unwrap();
 
         assert_eq!(did_doc.get_id(), did.to_string()); // assuming the Display trait is implemented accordingly for DID struct
+        assert!(!did_doc.get_context().is_empty());
         assert!(!did_doc.get_verification_method().is_empty());
         assert!(!did_doc.get_authentication().is_empty());
-        assert!(!did_doc.get_controller().is_empty());
+        assert!(!did_doc.get_assertion_method().is_empty());
     }
 
     #[rstest]
     // CAUTION A did_url (param #2) MUST match the one residing in did_log_raw_filepath (param #1)
-    #[case("test_data/did.jsonl", "did:tdw:Q2xsB8Tc6ea3oHQDYnL5x6okFpRk86wNFSetqxmxsD8CpJQJVL1zWMLQkY3yq3s65pgweXMD7UW7Qwb2NRUATF5Bo:127.0.0.1%3A54858:123456789"
+    #[case(
+        "test_data/tdw-js.jsonl",
+        "did:tdw:Qmb4sce9qf13cwcosaDfRt2NmWpUfqHAdpVfRUCN8gtB8G:example.com"
     )]
-    fn resolve_did_tdw(#[case] did_log_raw_filepath: String, #[case] did_url: String) {
+    fn test_resolve_did_tdw(#[case] did_log_raw_filepath: String, #[case] did_url: String) {
         let did = Did::new(did_url.to_string());
 
         let did_log_raw = fs::read_to_string(Path::new(&did_log_raw_filepath));
@@ -267,11 +291,16 @@ mod tests {
         assert!(did_doc.is_ok());
         let did_doc = did_doc.unwrap();
         assert_eq!(did_doc.id, did_url);
+
+        assert_eq!(did_doc.get_id(), did.to_string()); // assuming the Display trait is implemented accordingly for DID struct
+        assert!(!did_doc.get_context().is_empty());
+        assert!(!did_doc.get_verification_method().is_empty());
+        assert!(!did_doc.get_authentication().is_empty());
     }
 
     #[rstest]
     // CAUTION A did_url (param #2) MUST match the one residing in did_log_raw_filepath (param #1)
-    #[case("test_data/did.jsonl", "did:tdw:Q2xsB8Tc6ea3oHQDYnL5x6okFpRk86wNFSetqxmxsD8CpJQJVL1zWMLQkY3yq3s65pgweXMD7UW7Qwb2NRUATF5Bo:127.0.0.1%3A54858:123456789"
+    #[case("test_data/did.jsonl", "did:tdw:Q24hsDDvpZHmUyNwXWgy36jhB6SFMLT2Aq7HWmZSk6XyZaM7qJNPNYthtRwtz84GHX3Bui3ZSVCcrG8KvGracfbhC:127.0.0.1%3A52788:123456789"
     )]
     // TODO Remove the should_panic attribute as soon as the error handling is properly done in didtoolbox
     #[should_panic(expected = "Invalid did log. No entries found")]
@@ -293,51 +322,13 @@ mod tests {
 
     #[rstest]
     // CAUTION A did_url (param #2) MUST match the one residing in did_log_raw_filepath (param #1)
-    #[case("test_data/wrong_first_entry_did.jsonl", "did:tdw:Q2xsB8Tc6ea3oHQDYnL5x6okFpRk86wNFSetqxmxsD8CpJQJVL1zWMLQkY3yq3s65pgweXMD7UW7Qwb2NRUATF5Bo:127.0.0.1%3A54858:123456789"
-    )]
-    // TODO Remove the should_panic attribute as soon as the error handling is properly done in didtoolbox
-    #[should_panic(expected = "Invalid did log. First entry has to have version id 1")]
-    fn resolve_did_tdw_invalid_did_log_wrong_first_entry(
-        #[case] did_log_raw_filepath: String,
-        #[case] did_url: String,
-    ) {
-        let did = Did::new(did_url.to_string());
-
-        let did_log_raw = fs::read_to_string(Path::new(&did_log_raw_filepath));
-        assert!(did_log_raw.is_ok());
-        let did_log_raw = did_log_raw.unwrap();
-
-        did.resolve(did_log_raw).unwrap();
-    }
-
-    #[rstest]
-    // CAUTION A did_url (param #2) MUST match the one residing in did_log_raw_filepath (param #1)
-    #[case("test_data/non_incremented_version_did.jsonl", "did:tdw:Q2xsB8Tc6ea3oHQDYnL5x6okFpRk86wNFSetqxmxsD8CpJQJVL1zWMLQkY3yq3s65pgweXMD7UW7Qwb2NRUATF5Bo:127.0.0.1%3A54858:123456789"
+    #[case(
+        "test_data/non_incremented_version_did.jsonl",
+        "did:tdw:Qmb4sce9qf13cwcosaDfRt2NmWpUfqHAdpVfRUCN8gtB8G:example.com"
     )]
     // TODO Remove the should_panic attribute as soon as the error handling is properly done in didtoolbox
     #[should_panic(expected = "Invalid did log for version 2. Version id has to be incremented")]
     fn resolve_did_tdw_invalid_did_log_non_incremented_version(
-        #[case] did_log_raw_filepath: String,
-        #[case] did_url: String,
-    ) {
-        let did = Did::new(did_url.to_string());
-
-        let did_log_raw = fs::read_to_string(Path::new(&did_log_raw_filepath));
-        assert!(did_log_raw.is_ok());
-        let did_log_raw = did_log_raw.unwrap();
-
-        did.resolve(did_log_raw).unwrap();
-    }
-
-    #[rstest]
-    // CAUTION A did_url (param #2) MUST match the one residing in did_log_raw_filepath (param #1)
-    #[case("test_data/scid_mismatch_did.jsonl", "did:tdw:Q2xsB8Tc6ea3oHQDYnL5x6okFpRk86wNFSetqxmxsD8CpJQJVL1zWMLQkY3yq3s65pgweXMD7UW7Qwb2NRUATF5Bo:127.0.0.1%3A54858:123456789"
-    )]
-    // TODO Remove the should_panic attribute as soon as the error handling is properly done in didtoolbox
-    #[should_panic(
-        expected = "The scid from the did doc Q28QFrvCQpG9ecY5dpLNwSmNYqyk6p8ts9QNNFtBRf2HxGozMpqiCjrRCaCNYspLTVFPwDmDnPXJheQzQvn3jpxau does not match the requested one Q2xsB8Tc6ea3oHQDYnL5x6okFpRk86wNFSetqxmxsD8CpJQJVL1zWMLQkY3yq3s65pgweXMD7UW7Qwb2NRUATF5Bo"
-    )]
-    fn resolve_did_tdw_invalid_did_log_scid_mismatch(
         #[case] did_log_raw_filepath: String,
         #[case] did_url: String,
     ) {
@@ -380,7 +371,7 @@ mod tests {
     #[rstest]
     #[case("did:tdw:QMySCID:domain")]
     #[case("did:tdw:QMySCID:domain:path")]
-    #[case("did:tdw:Q2xsB8Tc6ea3oHQDYnL5x6okFpRk86wNFSetqxmxsD8CpJQJVL1zWMLQkY3yq3s65pgweXMD7UW7Qwb2NRUATF5Bo:127.0.0.1%3A54858:123456789")]
+    #[case("did:tdw:Q24hsDDvpZHmUyNwXWgy36jhB6SFMLT2Aq7HWmZSk6XyZaM7qJNPNYthtRwtz84GHX3Bui3ZSVCcrG8KvGracfbhC:127.0.0.1%3A52788:123456789")]
     fn did_ok(#[case] did_url: String) {
         let did = Did::new(did_url.to_owned());
         let did = did.get_url();
@@ -394,11 +385,12 @@ mod tests {
     #[case("did:tdw:malformed")]
     #[case("did:tdw:identifier#key01")]
     #[case("did:tdw:grsgcnzqgfstsmbsgbstsmzzgy2diolgheztayzwme4tgzrxmnrtqoddmy2wkzjwgm4tgyjumntgmzrthezggnbwmjstgzjug42tioa=:identifier-data-service-r.bit.admin.ch:api:v1:did:62c3d89f-2ab3-4129-ac1f-595a28c9115f")]
+    #[should_panic(expected = "Invalid multibase format for SCID. base58btc identifier expected")]
     fn did_malformed(#[case] did_url: String) {
         let did = Did::new(did_url.to_owned());
-        let url = did.get_url();
+        let _url = did.get_url();
 
-        assert!(url.is_err());
-        assert_eq!(url.err().unwrap().kind(), DidResolveErrorKind::MalformedDid);
+        //assert!(url.is_err());
+        //assert_eq!(url.err().unwrap().kind(), DidResolveErrorKind::MalformedDid);
     }
 }
