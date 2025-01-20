@@ -63,8 +63,8 @@ use didresolver::did::Did;
 use ureq::get as fetch_url;
 
 fn main() {
-    let did = Did::new(String::from("did:web:gist.githubusercontent.com:bit-jniestroj:7fb3cce550db5a239b543035298429fe:raw:5e5540c6f67ffe30cca2dfc4bb950a68f412c406"));
-    
+    let did = Did::new(String::from("did:tdw:QmZ3ZcSA52uEaPahx9SQL4xfjcfJ2e7Y8HqNv2sohG1iK7:gist.githubusercontent.com:vst-bit:8d8247633dbc5836324a81725c1216d8:raw:fde1612e271991f23e814943d7636a4dbac6752b"));
+
     let url = match did.get_url() {
         Ok(url) => url,
         Err(e) => panic!("invalid (unsupported or malformed) DID supplied")

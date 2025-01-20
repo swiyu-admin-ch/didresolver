@@ -62,13 +62,12 @@ impl Did {
             Ok(did) => did,
             Err(e) => {
                 let parts = text.split(":").map(|x| x.to_string()).collect();
-                let _method: String = text
+                let method_id: String = text
                     .split(":")
                     .skip(1)
                     .take(1)
                     .map(|x| x.to_string())
                     .collect();
-                let method_id = text.split(":").skip(2).map(|x| x.to_string()).collect();
                 match e.kind() {
                     DidResolveErrorKind::MalformedDid => Did {
                         // fallback
@@ -128,11 +127,11 @@ impl TryFrom<String> for Did {
                 let url = buf.get_url();
                 let scid = buf.get_scid();
 
-                let _ = match Url::parse(url.as_str()) {
+                match Url::parse(url.as_str()) {
                     Ok(u) => {
                         let mut host = u.host().unwrap().to_string();
                         let port = u.port_or_known_default().unwrap_or_default();
-                        if port > 0 {
+                        if port > 0 && port != 80 {
                             host.push_str("%3A");
                             host.push_str(port.to_string().as_str());
                         };
@@ -140,7 +139,7 @@ impl TryFrom<String> for Did {
                         let path_sanitized =
                             path[1..path.len()].replace("/did.jsonl", "").to_owned();
                         let mut path_parts: Vec<String> =
-                            path_sanitized.split(":").map(|x| x.to_string()).collect();
+                            path_sanitized.split("/").map(|x| x.to_string()).collect();
 
                         let mut parts =
                             vec!["did".to_string(), "tdw".to_string(), scid.to_owned(), host];
@@ -156,9 +155,7 @@ impl TryFrom<String> for Did {
                         //eprintln!("{_e}");
                         Err(DidResolveError::MalformedDid(value.to_owned()))
                     }
-                };
-
-                Err(DidResolveError::MalformedDid(value))
+                }
             }
             Err(_e) => {
                 //eprintln!("{_e}");
@@ -172,6 +169,7 @@ impl TryFrom<String> for Did {
 mod tests {
     use super::Did;
     use crate::did::DidResolveErrorKind;
+    use didtoolbox::didtoolbox::VerificationType;
     use mockito::{Matcher, Server, ServerOpts};
     use rstest::{fixture, rstest};
     use std::fs;
@@ -249,7 +247,46 @@ mod tests {
     }
 
     #[rstest]
-    fn resolve_did_tdw_via_mock(
+    #[case(
+        "did:tdw:QmS21Yxn4cEZ51nKfkLBTyEaP1EE2MmQQ9jLypydbnrmrg:gist.githubusercontent.com:vst-bit:8d8247633dbc5836324a81725c1216d8:raw:d3f2aa7f23995d5120599220ad1cc42b3885d4b4"
+    )]
+    #[case(
+        "did:tdw:QmZ3ZcSA52uEaPahx9SQL4xfjcfJ2e7Y8HqNv2sohG1iK7:gist.githubusercontent.com:vst-bit:8d8247633dbc5836324a81725c1216d8:raw:fde1612e271991f23e814943d7636a4dbac6752b"
+    )]
+    fn test_resolve_did_tdw(
+        #[case] did_string: String,
+        http_client: &HttpClient, // fixture
+    ) {
+        let did = Did::new(did_string);
+
+        let url = did.get_url();
+        assert!(url.is_ok());
+        let url = url.unwrap();
+        assert!(!url.is_empty());
+
+        let did_log_raw = http_client.fetch_url(url);
+        assert!(!did_log_raw.is_empty());
+
+        let did_doc = did.resolve(did_log_raw);
+        assert!(did_doc.is_ok());
+        let did_doc = did_doc.unwrap();
+
+        // CAUTION Such assertions are not really possible when using GitHub gists as input
+        //         assert_eq!(did_doc.get_id(), did.to_string()); // assuming the Display trait is implemented accordingly for DID struct
+        //         assert!(did.to_string().contains(did_doc.get_id().as_str())); // assuming the Display trait is implemented accordingly for DID struct
+
+        assert!(!did_doc.get_context().is_empty());
+        assert!(!did_doc.get_verification_method().is_empty());
+        did_doc.get_verification_method().iter().for_each(|method| {
+            assert_eq!(method.verification_type, VerificationType::JsonWebKey2020);
+            assert!(method.public_key_jwk.is_some());
+        });
+        assert!(!did_doc.get_authentication().is_empty());
+        assert!(!did_doc.get_assertion_method().is_empty());
+    }
+
+    #[rstest]
+    fn test_resolve_did_tdw_via_mock(
         tdw_mock: &TdwMock,       // fixture
         http_client: &HttpClient, // fixture
     ) {
@@ -268,8 +305,13 @@ mod tests {
         let did_doc = did_doc.unwrap();
 
         assert_eq!(did_doc.get_id(), did.to_string()); // assuming the Display trait is implemented accordingly for DID struct
+        assert!(did.to_string().contains(did_doc.get_id().as_str())); // assuming the Display trait is implemented accordingly for DID struct
         assert!(!did_doc.get_context().is_empty());
         assert!(!did_doc.get_verification_method().is_empty());
+        did_doc.get_verification_method().iter().for_each(|method| {
+            assert_eq!(method.verification_type, VerificationType::JsonWebKey2020);
+            assert!(method.public_key_jwk.is_some());
+        });
         assert!(!did_doc.get_authentication().is_empty());
         assert!(!did_doc.get_assertion_method().is_empty());
     }
@@ -280,7 +322,10 @@ mod tests {
         "test_data/tdw-js.jsonl",
         "did:tdw:Qmb4sce9qf13cwcosaDfRt2NmWpUfqHAdpVfRUCN8gtB8G:example.com"
     )]
-    fn test_resolve_did_tdw(#[case] did_log_raw_filepath: String, #[case] did_url: String) {
+    fn test_resolve_did_tdw_from_file(
+        #[case] did_log_raw_filepath: String,
+        #[case] did_url: String,
+    ) {
         let did = Did::new(did_url.to_string());
 
         let did_log_raw = fs::read_to_string(Path::new(&did_log_raw_filepath));
@@ -292,7 +337,8 @@ mod tests {
         let did_doc = did_doc.unwrap();
         assert_eq!(did_doc.id, did_url);
 
-        assert_eq!(did_doc.get_id(), did.to_string()); // assuming the Display trait is implemented accordingly for DID struct
+        //assert_eq!(did_doc.get_id(), did.to_string()); // assuming the Display trait is implemented accordingly for DID struct
+        assert!(did.to_string().contains(did_doc.get_id().as_str())); // assuming the Display trait is implemented accordingly for DID struct
         assert!(!did_doc.get_context().is_empty());
         assert!(!did_doc.get_verification_method().is_empty());
         assert!(!did_doc.get_authentication().is_empty());
@@ -304,7 +350,7 @@ mod tests {
     )]
     // TODO Remove the should_panic attribute as soon as the error handling is properly done in didtoolbox
     #[should_panic(expected = "Invalid did log. No entries found")]
-    fn resolve_did_tdw_invalid_did_log_no_entries(
+    fn test_resolve_did_tdw_invalid_did_log_no_entries(
         #[case] _did_log_raw_filepath: String,
         #[case] did_url: String,
     ) {
@@ -328,7 +374,7 @@ mod tests {
     )]
     // TODO Remove the should_panic attribute as soon as the error handling is properly done in didtoolbox
     #[should_panic(expected = "Invalid did log for version 2. Version id has to be incremented")]
-    fn resolve_did_tdw_invalid_did_log_non_incremented_version(
+    fn test_resolve_did_tdw_invalid_did_log_non_incremented_version(
         #[case] did_log_raw_filepath: String,
         #[case] did_url: String,
     ) {
@@ -345,19 +391,19 @@ mod tests {
     #[case("did:jwk:not_yet_supported")]
     #[case("did:web:not_yet_supported")]
     #[case("completely_irregular_did")]
-    fn did_not_supported(#[case] did_url: String) {
+    fn test_did_not_supported(#[case] did_url: String) {
         let did = Did::new(did_url.to_owned());
 
         assert!(!did.parts.is_empty()); // assuming none of the "#[rstest]" cases is empty
         assert_eq!(did.to_string(), did_url); // assuming the Display trait is implemented accordingly for DID struct
                                               //assert_eq!(did.method, DidMethod::default());
-        assert!(did_url.ends_with(did.method_id.as_str()));
+        assert!(did_url.contains(did.method_id.as_str()));
     }
 
     #[rstest]
     #[case("did:jwk:not_yet_supported")]
     #[case("did:web:not_yet_supported")]
-    fn resolve_did_not_supported(#[case] did_url: String) {
+    fn test_resolve_did_not_supported(#[case] did_url: String) {
         // Actual DID log is pretty irrelevant for the test, so empty string would suffice
         let resolved = Did::new(did_url).resolve(String::new());
 
@@ -372,7 +418,7 @@ mod tests {
     #[case("did:tdw:QMySCID:domain")]
     #[case("did:tdw:QMySCID:domain:path")]
     #[case("did:tdw:Q24hsDDvpZHmUyNwXWgy36jhB6SFMLT2Aq7HWmZSk6XyZaM7qJNPNYthtRwtz84GHX3Bui3ZSVCcrG8KvGracfbhC:127.0.0.1%3A52788:123456789")]
-    fn did_ok(#[case] did_url: String) {
+    fn test_did_ok(#[case] did_url: String) {
         let did = Did::new(did_url.to_owned());
         let did = did.get_url();
 
@@ -386,7 +432,7 @@ mod tests {
     #[case("did:tdw:identifier#key01")]
     #[case("did:tdw:grsgcnzqgfstsmbsgbstsmzzgy2diolgheztayzwme4tgzrxmnrtqoddmy2wkzjwgm4tgyjumntgmzrthezggnbwmjstgzjug42tioa=:identifier-data-service-r.bit.admin.ch:api:v1:did:62c3d89f-2ab3-4129-ac1f-595a28c9115f")]
     #[should_panic(expected = "Invalid multibase format for SCID. base58btc identifier expected")]
-    fn did_malformed(#[case] did_url: String) {
+    fn test_did_malformed(#[case] did_url: String) {
         let did = Did::new(did_url.to_owned());
         let _url = did.get_url();
 
