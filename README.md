@@ -5,26 +5,26 @@
 > Latest version of the DID methods might not be supported yet
 
 An official Swiss Government project made by the [Federal Office of Information Technology, Systems and Telecommunication FOITT](https://www.bit.admin.ch/)
-as part of the electronic identity (E-ID) project.
+as part of the electronic identity (e-ID) project.
 
 This project contains a DID resolver which allows to resolve the following methods:
 - [did:web](https://w3c-ccg.github.io/did-method-web/)
-- [did:tdw](https://bcgov.github.io/trustdidweb/#create-register)
+- [did:tdw/did:webvh](https://bcgov.github.io/trustdidweb/#create-register)
 
 ## Table of contents
 
 - [Overview](#overview)
 - [Using the library](#using-the-library)
-- [Example](example)
-- [Models](models)
+- [Example](#example)
+- [Models](#models)
 - [Contributions and feedback](#contributions-and-feedback)
 - [License](#license)
 
 
 ## Overview
 
-This repository is part of the ecosystem developed for the future official Swiss E-ID.
-The goal of this repository is to engage with the community and collaborate on developing the Swiss ecosystem for E-ID and other credentials.
+This repository is part of the ecosystem developed for the future official Swiss e-ID.
+The goal of this repository is to engage with the community and collaborate on developing the Swiss ecosystem for e-ID and other credentials.
 We warmly encourage you to engage with us by creating an issue in the repository.
 
 For more information about the project please visit the [introduction into open source of the public beta](https://github.com/e-id-admin/eidch-public-beta).
