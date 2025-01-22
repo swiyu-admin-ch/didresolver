@@ -46,7 +46,7 @@ serde_json = "1.0.215"
 > General information how the bindings are generated can be found in the [UniFFI user guide](https://mozilla.github.io/uniffi-rs/latest/)
 
 The library is also available in other languages. Please consult the documentation of the subsequent repositories for more information:
-- Examples → will be published soon
+- [Examples](https://github.com/e-id-admin/didresolver-examples)
 - [Kotlin / Java](https://github.com/e-id-admin/didresolver-kotlin)
 - [Kotlin for android](https://github.com/e-id-admin/didresolver-kotlin-android)
 - [Swift](https://github.com/e-id-admin/didresolver-swift)
