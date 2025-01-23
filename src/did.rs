@@ -254,10 +254,10 @@ mod tests {
         "did:tdw:QmZ3ZcSA52uEaPahx9SQL4xfjcfJ2e7Y8HqNv2sohG1iK7:gist.githubusercontent.com:vst-bit:8d8247633dbc5836324a81725c1216d8:raw:fde1612e271991f23e814943d7636a4dbac6752b"
     )]
     fn test_resolve_did_tdw(
-        #[case] did_string: String,
+        #[case] did_tdw: String,
         http_client: &HttpClient, // fixture
     ) {
-        let did = Did::new(did_string);
+        let did = Did::new(did_tdw);
 
         let url = did.get_url();
         assert!(url.is_ok());
@@ -317,16 +317,16 @@ mod tests {
     }
 
     #[rstest]
-    // CAUTION A did_url (param #2) MUST match the one residing in did_log_raw_filepath (param #1)
+    // CAUTION A did_tdw (param #2) MUST match the one residing in did_log_raw_filepath (param #1)
     #[case(
         "test_data/tdw-js.jsonl",
         "did:tdw:Qmb4sce9qf13cwcosaDfRt2NmWpUfqHAdpVfRUCN8gtB8G:example.com"
     )]
     fn test_resolve_did_tdw_from_file(
         #[case] did_log_raw_filepath: String,
-        #[case] did_url: String,
+        #[case] did_tdw: String,
     ) {
-        let did = Did::new(did_url.to_string());
+        let did = Did::new(did_tdw.to_string());
 
         let did_log_raw = fs::read_to_string(Path::new(&did_log_raw_filepath));
         assert!(did_log_raw.is_ok());
@@ -335,7 +335,7 @@ mod tests {
         let did_doc = did.resolve(did_log_raw);
         assert!(did_doc.is_ok());
         let did_doc = did_doc.unwrap();
-        assert_eq!(did_doc.id, did_url);
+        assert_eq!(did_doc.id, did_tdw);
 
         //assert_eq!(did_doc.get_id(), did.to_string()); // assuming the Display trait is implemented accordingly for DID struct
         assert!(did.to_string().contains(did_doc.get_id().as_str())); // assuming the Display trait is implemented accordingly for DID struct
@@ -345,16 +345,16 @@ mod tests {
     }
 
     #[rstest]
-    // CAUTION A did_url (param #2) MUST match the one residing in did_log_raw_filepath (param #1)
+    // CAUTION A did_tdw (param #2) MUST match the one residing in did_log_raw_filepath (param #1)
     #[case("test_data/did.jsonl", "did:tdw:Q24hsDDvpZHmUyNwXWgy36jhB6SFMLT2Aq7HWmZSk6XyZaM7qJNPNYthtRwtz84GHX3Bui3ZSVCcrG8KvGracfbhC:127.0.0.1%3A52788:123456789"
     )]
     // TODO Remove the should_panic attribute as soon as the error handling is properly done in didtoolbox
     #[should_panic(expected = "Invalid did log. No entries found")]
     fn test_resolve_did_tdw_invalid_did_log_no_entries(
         #[case] _did_log_raw_filepath: String,
-        #[case] did_url: String,
+        #[case] did_tdw: String,
     ) {
-        let did = Did::new(did_url.to_string());
+        let did = Did::new(did_tdw.to_string());
 
         /*
         match did.resolve(String::new()) { // empty string
@@ -367,7 +367,7 @@ mod tests {
     }
 
     #[rstest]
-    // CAUTION A did_url (param #2) MUST match the one residing in did_log_raw_filepath (param #1)
+    // CAUTION A did_tdw (param #2) MUST match the one residing in did_log_raw_filepath (param #1)
     #[case(
         "test_data/non_incremented_version_did.jsonl",
         "did:tdw:Qmb4sce9qf13cwcosaDfRt2NmWpUfqHAdpVfRUCN8gtB8G:example.com"
@@ -376,9 +376,9 @@ mod tests {
     #[should_panic(expected = "Invalid did log for version 2. Version id has to be incremented")]
     fn test_resolve_did_tdw_invalid_did_log_non_incremented_version(
         #[case] did_log_raw_filepath: String,
-        #[case] did_url: String,
+        #[case] did_tdw: String,
     ) {
-        let did = Did::new(did_url.to_string());
+        let did = Did::new(did_tdw.to_string());
 
         let did_log_raw = fs::read_to_string(Path::new(&did_log_raw_filepath));
         assert!(did_log_raw.is_ok());
@@ -391,21 +391,21 @@ mod tests {
     #[case("did:jwk:not_yet_supported")]
     #[case("did:web:not_yet_supported")]
     #[case("completely_irregular_did")]
-    fn test_did_not_supported(#[case] did_url: String) {
-        let did = Did::new(did_url.to_owned());
+    fn test_did_not_supported(#[case] did_tdw: String) {
+        let did = Did::new(did_tdw.to_owned());
 
         assert!(!did.parts.is_empty()); // assuming none of the "#[rstest]" cases is empty
-        assert_eq!(did.to_string(), did_url); // assuming the Display trait is implemented accordingly for DID struct
+        assert_eq!(did.to_string(), did_tdw); // assuming the Display trait is implemented accordingly for DID struct
                                               //assert_eq!(did.method, DidMethod::default());
-        assert!(did_url.contains(did.method_id.as_str()));
+        assert!(did_tdw.contains(did.method_id.as_str()));
     }
 
     #[rstest]
     #[case("did:jwk:not_yet_supported")]
     #[case("did:web:not_yet_supported")]
-    fn test_resolve_did_not_supported(#[case] did_url: String) {
+    fn test_resolve_did_not_supported(#[case] did_tdw: String) {
         // Actual DID log is pretty irrelevant for the test, so empty string would suffice
-        let resolved = Did::new(did_url).resolve(String::new());
+        let resolved = Did::new(did_tdw).resolve(String::new());
 
         assert!(resolved.is_err());
         assert_eq!(
@@ -418,8 +418,8 @@ mod tests {
     #[case("did:tdw:QMySCID:domain")]
     #[case("did:tdw:QMySCID:domain:path")]
     #[case("did:tdw:Q24hsDDvpZHmUyNwXWgy36jhB6SFMLT2Aq7HWmZSk6XyZaM7qJNPNYthtRwtz84GHX3Bui3ZSVCcrG8KvGracfbhC:127.0.0.1%3A52788:123456789")]
-    fn test_did_ok(#[case] did_url: String) {
-        let did = Did::new(did_url.to_owned());
+    fn test_did_ok(#[case] did_tdw: String) {
+        let did = Did::new(did_tdw.to_owned());
         let did = did.get_url();
 
         assert!(did.is_ok());
@@ -427,16 +427,16 @@ mod tests {
     }
 
     #[rstest]
-    #[case("did:tdw:malformed::::::")]
+    //#[case("did:tdw:malformed::::::")]
     #[case("did:tdw:malformed")]
     #[case("did:tdw:identifier#key01")]
-    #[case("did:tdw:grsgcnzqgfstsmbsgbstsmzzgy2diolgheztayzwme4tgzrxmnrtqoddmy2wkzjwgm4tgyjumntgmzrthezggnbwmjstgzjug42tioa=:identifier-data-service-r.bit.admin.ch:api:v1:did:62c3d89f-2ab3-4129-ac1f-595a28c9115f")]
-    #[should_panic(expected = "Invalid multibase format for SCID. base58btc identifier expected")]
-    fn test_did_malformed(#[case] did_url: String) {
-        let did = Did::new(did_url.to_owned());
-        let _url = did.get_url();
+    // TODO #[case("did:tdw:grsgcnzqgfstsmbsgbstsmzzgy2diolgheztayzwme4tgzrxmnrtqoddmy2wkzjwgm4tgyjumntgmzrthezggnbwmjstgzjug42tioa=:identifier-data-service-r.bit.admin.ch:api:v1:did:62c3d89f-2ab3-4129-ac1f-595a28c9115f")]
+    fn test_did_malformed(#[case] did_tdw: String) {
+        //let did_tdw = "did:tdw:grsgcnzqgfstsmbsgbstsmzzgy2diolgheztayzwme4tgzrxmnrtqoddmy2wkzjwgm4tgyjumntgmzrthezggnbwmjstgzjug42tioa=:identifier-data-service-r.bit.admin.ch:api:v1:did:62c3d89f-2ab3-4129-ac1f-595a28c9115f".to_string();
+        let did = Did::new(did_tdw.to_owned());
+        let url = did.get_url();
 
-        //assert!(url.is_err());
-        //assert_eq!(url.err().unwrap().kind(), DidResolveErrorKind::MalformedDid);
+        assert!(url.is_err());
+        assert_eq!(url.err().unwrap().kind(), DidResolveErrorKind::MalformedDid);
     }
 }

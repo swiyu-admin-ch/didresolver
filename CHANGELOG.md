@@ -1,11 +1,12 @@
 # DID resolver changelog
 
-| Version | Description                                                                                                                                                                       |
-|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 1.0.0   | **IMPROVEMENT/FIX** Fixed interop issue. Final attempt to ensure conformity with [Trust DID Web - did:tdw - v0.3](https://identity.foundation/trustdidweb/v0.3/)                  |
-| 0.0.6   | **IMPROVEMENT/FIX** Ensured conformity with [Trust DID Web - did:tdw - v0.3](https://identity.foundation/trustdidweb/v0.3/)                                                       |
-| 0.0.5   | **BUGFIX** Large `*.jsonl` files handled properly                                                                                                                                 |
-| 0.0.4   | **BREAKING CHANGE** `TrustDidWebProcessor` discontinued. <br/>Signature of the `resolve` method now requires a DID log (as string). <br/>It may also throw new `TrustDidWebError` |
-| 0.0.3   | Upgrade didresolver dependency to version 0.0.2 to add missing jwk model properties                                                                                               |
+| Version | Description                                                                                                                                                                                                                                                                                |
+|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1.0.1   | **IMPROVEMENT/FIX (security)**: Rectify faulty proof verification for DID log updates. It fixes a faulty proof verification that allowed to use updateKeys contained in a to be added DID log line for generating valid proofs. Proper error handling (no panics) impl. across all modules |
+| 1.0.0   | **IMPROVEMENT/FIX** Fixed interop issue. Final attempt to ensure conformity with [Trust DID Web - did:tdw - v0.3](https://identity.foundation/trustdidweb/v0.3/)                                                                                                                           |
+| 0.0.6   | **IMPROVEMENT/FIX** Ensured conformity with [Trust DID Web - did:tdw - v0.3](https://identity.foundation/trustdidweb/v0.3/)                                                                                                                                                                |
+| 0.0.5   | **BUGFIX** Large `*.jsonl` files handled properly                                                                                                                                                                                                                                          |
+| 0.0.4   | **BREAKING CHANGE** `TrustDidWebProcessor` discontinued. <br/>Signature of the `resolve` method now requires a DID log (as string). <br/>It may also throw new `TrustDidWebError`                                                                                                          |
+| 0.0.3   | Upgrade didresolver dependency to version 0.0.2 to add missing jwk model properties                                                                                                                                                                                                        |
 
 
