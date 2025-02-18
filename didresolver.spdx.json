@@ -913,7 +913,7 @@
       "SPDXID": "SPDXRef-Package-didresolver-1.0.1",
       "description": "DID resolver for different did methods",
       "downloadLocation": "NONE",
-      "homepage": "https://github.com/e-id-admin",
+      "homepage": "https://github.com/swiyu-admin-ch",
       "licenseConcluded": "NOASSERTION",
       "name": "didresolver",
       "versionInfo": "1.0.1"
@@ -2485,8 +2485,8 @@
     {
       "SPDXID": "SPDXRef-Package-didtoolbox-1.0.1",
       "description": "Toolbox containing did:tdw",
-      "downloadLocation": "git+https://github.com/e-id-admin/didtoolbox.git?tag=1.0.1#f4e3d03111c2560e844c8f3023133220989a4b91",
-      "homepage": "https://github.com/e-id-admin/didtoolbox",
+      "downloadLocation": "git+https://github.com/swiyu-admin-ch/didtoolbox.git?tag=1.0.1#f4e3d03111c2560e844c8f3023133220989a4b91",
+      "homepage": "https://github.com/swiyu-admin-ch/didtoolbox",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
       "name": "didtoolbox",
