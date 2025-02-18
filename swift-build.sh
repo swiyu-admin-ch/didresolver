@@ -1,3 +1,5 @@
+echo ">> Cleanup"
+cargo clean
 echo ">> Build release"
 cargo build --release
 

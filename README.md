@@ -36,7 +36,7 @@ The library can be used either directly in rust as is or through the different b
 The library can be used directly in rust by adding the following dependency to your `Cargo.toml`:
 ````toml
 [dependencies]
-didresolver = {git="https://github.com/e-id-admin/didresolver.git", branch="main"}
+didresolver = {git="https://github.com/swiyu-admin-ch/didresolver.git", branch="main"}
 
 # Optional: For manipulating the json content in the example
 serde_json = "1.0.215"
@@ -46,10 +46,10 @@ serde_json = "1.0.215"
 > General information how the bindings are generated can be found in the [UniFFI user guide](https://mozilla.github.io/uniffi-rs/latest/)
 
 The library is also available in other languages. Please consult the documentation of the subsequent repositories for more information:
-- [Examples](https://github.com/e-id-admin/didresolver-examples)
-- [Kotlin / Java](https://github.com/e-id-admin/didresolver-kotlin)
-- [Kotlin for android](https://github.com/e-id-admin/didresolver-kotlin-android)
-- [Swift](https://github.com/e-id-admin/didresolver-swift)
+- [Examples](https://github.com/swiyu-admin-ch/didresolver-examples)
+- [Kotlin / Java](https://github.com/swiyu-admin-ch/didresolver-kotlin)
+- [Kotlin for android](https://github.com/swiyu-admin-ch/didresolver-kotlin-android)
+- [Swift](https://github.com/swiyu-admin-ch/didresolver-swift)
 
 ## Example
 
