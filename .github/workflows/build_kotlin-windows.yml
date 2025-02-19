@@ -1,0 +1,25 @@
+name: Build Windows library (kotlin)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build kotlin bindings for Windows
+    runs-on: windows-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        ref: main
+    - name: Build kotlin bindings
+      run: |
+        cargo build --release
+        cargo run --bin uniffi-bindgen generate --library target/release/didresolver.dll --language kotlin --out-dir bindings/kotlin
+        cp target/release/didresolver.dll bindings/kotlin/
+    - name: Save kotlin artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: kotlin-bindings
+        path: |
+          bindings/kotlin
