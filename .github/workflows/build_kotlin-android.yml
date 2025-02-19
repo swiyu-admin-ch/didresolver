@@ -11,15 +11,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ssh-key: ${{ secrets.SSH_KEY }}
+          #ssh-key: ${{ secrets.SSH_KEY }}
           submodules: recursive
           ref: build/kotlin-android
       - name: Install rust
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-      - uses: de-vri-es/setup-git-credentials@v2
-        with:
-          credentials: ${{ secrets.WORFKLOW_TOKEN_LIBRARIES }}
+      #- uses: de-vri-es/setup-git-credentials@v2
+      #  with:
+      #    credentials: ${{ secrets.WORFKLOW_TOKEN_LIBRARIES }}
       - name: Install targets
         run: |
           cargo install cargo-ndk
