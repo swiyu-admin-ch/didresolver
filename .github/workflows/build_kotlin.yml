@@ -1,44 +1,57 @@
-name: Build library (kotlin)
+name: Build library (Kotlin)
 
 on:
   workflow_dispatch:
 
+# limit the concurrency of entire workflow runs for a specific branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-    build:
-        name: Build kotlin bindings
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-              with:
-                ref: main
-            - name: Install rust
-              run: |
-                curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-            #- uses: de-vri-es/setup-git-credentials@v2
-            #  with:
-            #    credentials: ${{ secrets.WORFKLOW_TOKEN_LIBRARIES }}
-            - name: Cache rust modules
-              id: cache-rust
-              uses: actions/cache@v3
-              env:
-                cache-name: cache-rust-modules
-              with:
-                # npm cache files are stored in `~/.npm` on Linux/macOS
-                path: target
-                key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/Cargo.lock') }}
-                restore-keys: |
-                  ${{ runner.os }}-build-${{ env.cache-name }}-
-                  ${{ runner.os }}-build-
-                  ${{ runner.os }}-
-              
-            - name: Build kotlin bindings
-              run: |
-                bash kotlin-build.sh
-            
-            - name: Save kotlin artifact
-              uses: actions/upload-artifact@v4
-              with:
-                name: kotlin-bindings
-                path: |
-                  bindings/kotlin
+  build-for-matrix:
+    name: Build Kotlin bindings
+    strategy:
+      max-parallel: 3
+      matrix:
+        os: [ ubuntu, windows, macos ]
+        include:
+          - os: ubuntu
+            file-extension: so
+          - os: windows
+            file-extension: dll
+          - os: macos
+            file-extension: dylib
+    # See https://docs.github.com/en/actions/using-github-hosted-runners/using-github-hosted-runners/about-github-hosted-runners#standard-github-hosted-runners-for-public-repositories
+    runs-on: ${{ matrix.os }}-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Rust toolchain (stable)
+        # For more Rust extensions, please visit: https://github.com/marketplace?query=rust&type=actions
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Cache Rust
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Build
+        run:  cargo build --release
+      - name: Generate UniFFI bindings
+        run:  |
+          cargo run --bin uniffi-bindgen generate --library target/release/didresolver.${{ matrix.file-extension }} --language kotlin --out-dir bindings/kotlin
+          cp target/release/didresolver.${{ matrix.file-extension }} bindings/kotlin/
+      - name: Save kotlin artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kotlin-bindings
+          path: bindings/kotlin
