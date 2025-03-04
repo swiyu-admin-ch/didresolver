@@ -1,4 +1,4 @@
-![Public Beta banner](https://github.com/e-id-admin/eidch-public-beta/blob/main/assets/github-banner-publicbeta.jpg)
+![Public Beta banner](https://github.com/swiyu-admin-ch/swiyu-admin-ch.github.io/blob/main/assets/images/github-banner.jpg)
 
 # DID resolver
 
@@ -27,7 +27,7 @@ This repository is part of the ecosystem developed for the future official Swiss
 The goal of this repository is to engage with the community and collaborate on developing the Swiss ecosystem for e-ID and other credentials.
 We warmly encourage you to engage with us by creating an issue in the repository.
 
-For more information about the project please visit the [introduction into open source of the public beta](https://github.com/e-id-admin/eidch-public-beta).
+For more information about the project please visit the [introduction for the Public Beta](https://www.eid.admin.ch/de/public-beta) or the [Open Source Community](https://github.com/swiyu-admin-ch/community) repository.
 
 ## Using the library
 
