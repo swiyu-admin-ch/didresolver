@@ -89,7 +89,7 @@ impl Did {
     /// Returns the url part from the supplied DID, if supported and not malformed.
     pub fn get_url(&self) -> Result<String, DidResolveError> {
         let res = match self.method {
-            DidMethod::TDW => TrustDidWebId::parse_did(self.to_string()),
+            DidMethod::TDW => TrustDidWebId::parse_did_tdw(self.to_string()),
             DidMethod::UNKNOWN => return Err(DidResolveError::DidNotSupported(String::new())),
         };
         match res {
@@ -122,7 +122,7 @@ impl TryFrom<String> for Did {
     type Error = DidResolveError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        match TrustDidWebId::parse_did(value.to_owned()) {
+        match TrustDidWebId::parse_did_tdw(value.to_owned()) {
             Ok(buf) => {
                 let url = buf.get_url();
                 let scid = buf.get_scid();
