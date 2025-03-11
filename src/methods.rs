@@ -6,9 +6,9 @@ use didtoolbox::didtoolbox::DidDoc;
 use serde_json::from_str as json_from_str;
 
 pub fn resolve_did_tdw(did: &Did, did_log_raw: String) -> Result<DidDoc, DidResolveError> {
-    match TrustDidWebId::parse_did_tdw(did.to_string(), Some(false)) {
+    match TrustDidWebId::parse_did(did.to_string()) {
         Ok(_) => {
-            let did_doc_json = match TrustDidWeb::read(did.to_string(), did_log_raw, Some(false)) {
+            let did_doc_json = match TrustDidWeb::read_log(did.to_string(), did_log_raw) {
                 Ok(tdw) => tdw.get_did_doc(),
                 Err(e) => return Err(DidResolveError::InvalidDidLog(e.to_string())),
             };

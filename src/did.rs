@@ -89,7 +89,7 @@ impl Did {
     /// Returns the url part from the supplied DID, if supported and not malformed.
     pub fn get_url(&self) -> Result<String, DidResolveError> {
         let res = match self.method {
-            DidMethod::TDW => TrustDidWebId::parse_did_tdw(self.to_string(), Some(false)),
+            DidMethod::TDW => TrustDidWebId::parse_did(self.to_string()),
             DidMethod::UNKNOWN => return Err(DidResolveError::DidNotSupported(String::new())),
         };
         match res {
@@ -122,7 +122,7 @@ impl TryFrom<String> for Did {
     type Error = DidResolveError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        match TrustDidWebId::parse_did_tdw(value.to_owned(), Some(true)) {
+        match TrustDidWebId::parse_did(value.to_owned()) {
             Ok(buf) => {
                 let url = buf.get_url();
                 let scid = buf.get_scid();
@@ -170,7 +170,6 @@ mod tests {
     use super::Did;
     use crate::did::DidResolveErrorKind;
     use didtoolbox::didtoolbox::VerificationType;
-    use mockito::{Matcher, Server, ServerOpts};
     use rstest::{fixture, rstest};
     use std::fs;
     use std::path::Path;
@@ -195,55 +194,6 @@ mod tests {
     #[once]
     fn http_client() -> HttpClient {
         HttpClient {}
-    }
-
-    // For testing purposes only. Offers everything a test may need.
-    struct TdwMock {
-        did: String,
-        _server: Server, // CAUTION Must be in the struct, otherwise 501 (server) error status is returned
-    }
-    impl TdwMock {
-        pub fn new() -> Self {
-            let mut server = Server::new_with_opts(ServerOpts {
-                port: 54858, // CAUTION Must match the one residing in the test data file
-                ..Default::default()
-            });
-
-            let url = format!("{}/123456789/did.jsonl", server.url());
-            let did_log_raw_filepath = "test_data/did_2.jsonl";
-            // CAUTION Must match the one residing in the test data file
-            let did = String::from("did:tdw:QmUSyQohHF4tcRhdkJYoamuMQAXQmYBoFLCot35xd7dPda:127.0.0.1%3A54858:123456789");
-
-            // To setup the GET mock, just load did_log (as body) from the test dats file
-            server
-                .mock(
-                    "GET",
-                    Matcher::Regex(r"/[a-z0-9=]+/did.jsonl$".to_string()),
-                    //Matcher::Any,
-                )
-                .with_body_from_file(Path::new(did_log_raw_filepath))
-                .create();
-
-            // Smoke test
-            let http_client = http_client();
-            let _did_log = http_client.fetch_url(url.to_owned());
-            //println!("{_did_log}");
-
-            TdwMock {
-                did,
-                _server: server,
-            }
-        }
-
-        pub fn get_did(&self) -> String {
-            self.did.to_owned()
-        }
-    }
-
-    #[fixture]
-    #[once]
-    fn tdw_mock() -> TdwMock {
-        TdwMock::new()
     }
 
     #[rstest]
@@ -275,37 +225,6 @@ mod tests {
         //         assert_eq!(did_doc.get_id(), did.to_string()); // assuming the Display trait is implemented accordingly for DID struct
         //         assert!(did.to_string().contains(did_doc.get_id().as_str())); // assuming the Display trait is implemented accordingly for DID struct
 
-        assert!(!did_doc.get_context().is_empty());
-        assert!(!did_doc.get_verification_method().is_empty());
-        did_doc.get_verification_method().iter().for_each(|method| {
-            assert_eq!(method.verification_type, VerificationType::JsonWebKey2020);
-            assert!(method.public_key_jwk.is_some());
-        });
-        assert!(!did_doc.get_authentication().is_empty());
-        assert!(!did_doc.get_assertion_method().is_empty());
-    }
-
-    #[rstest]
-    fn test_resolve_did_tdw_via_mock(
-        tdw_mock: &TdwMock,       // fixture
-        http_client: &HttpClient, // fixture
-    ) {
-        let did = Did::new(tdw_mock.get_did());
-
-        let url = did.get_url();
-        assert!(url.is_ok());
-        let url = url.unwrap();
-        assert!(!url.is_empty());
-
-        let did_log_raw = http_client.fetch_url(url);
-        assert!(!did_log_raw.is_empty());
-
-        let did_doc = did.resolve(did_log_raw);
-        assert!(did_doc.is_ok());
-        let did_doc = did_doc.unwrap();
-
-        assert_eq!(did_doc.get_id(), did.to_string()); // assuming the Display trait is implemented accordingly for DID struct
-        assert!(did.to_string().contains(did_doc.get_id().as_str())); // assuming the Display trait is implemented accordingly for DID struct
         assert!(!did_doc.get_context().is_empty());
         assert!(!did_doc.get_verification_method().is_empty());
         did_doc.get_verification_method().iter().for_each(|method| {
