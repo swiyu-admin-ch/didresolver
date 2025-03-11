@@ -399,7 +399,6 @@ dependencies = [
  "thiserror 1.0.69",
  "uniffi",
  "ureq",
- "url",
 ]
 
 [[package]]

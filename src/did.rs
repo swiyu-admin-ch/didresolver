@@ -7,7 +7,6 @@ use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use strum::{AsRefStr as EnumAsRefStr, Display as EnumDisplay};
 use thiserror::Error;
-use url::Url;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum DidResolveError {
@@ -57,33 +56,11 @@ pub struct Did {
 }
 
 impl Did {
-    pub fn new(text: String) -> Self {
-        match Self::try_from(text.to_owned()) {
-            Ok(did) => did,
-            Err(e) => {
-                let parts = text.split(":").map(|x| x.to_string()).collect();
-                let method_id: String = text
-                    .split(":")
-                    .skip(1)
-                    .take(1)
-                    .map(|x| x.to_string())
-                    .collect();
-                match e.kind() {
-                    DidResolveErrorKind::MalformedDid => Did {
-                        // fallback
-                        parts,
-                        method: DidMethod::TDW, // TODO convert _method to DidMethod, if possible
-                        method_id,
-                    },
-                    _ => Did {
-                        // fallback
-                        parts,
-                        method: DidMethod::default(),
-                        method_id,
-                    },
-                }
-            }
-        }
+    const DID: &'static str = "did";
+
+    /// A UniFFI-compliant constructor.
+    pub fn new(did_tdw: String) -> Result<Self, DidResolveError> {
+        Self::try_from(did_tdw.to_owned())
     }
 
     /// Returns the url part from the supplied DID, if supported and not malformed.
@@ -122,45 +99,28 @@ impl TryFrom<String> for Did {
     type Error = DidResolveError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        match TrustDidWebId::parse_did_tdw(value.to_owned()) {
-            Ok(buf) => {
-                let url = buf.get_url();
-                let scid = buf.get_scid();
+        let did_split: Vec<&str> = value.splitn(4, ":").collect();
+        if did_split.len() < 4 {
+            return Err(DidResolveError::MalformedDid(value));
+        };
 
-                match Url::parse(url.as_str()) {
-                    Ok(u) => {
-                        let mut host = u.host().unwrap().to_string();
-                        let port = u.port_or_known_default().unwrap_or_default();
-                        if port > 0 && port != 80 {
-                            host.push_str("%3A");
-                            host.push_str(port.to_string().as_str());
-                        };
-                        let path = u.path();
-                        let path_sanitized =
-                            path[1..path.len()].replace("/did.jsonl", "").to_owned();
-                        let mut path_parts: Vec<String> =
-                            path_sanitized.split("/").map(|x| x.to_string()).collect();
+        if did_split[0] != Self::DID {
+            return Err(DidResolveError::DidNotSupported(value));
+        }
 
-                        let mut parts =
-                            vec!["did".to_string(), "tdw".to_string(), scid.to_owned(), host];
-                        parts.append(&mut path_parts);
-
-                        Ok(Did {
-                            parts,
-                            method: DidMethod::TDW,
-                            method_id: scid,
-                        })
-                    }
-                    Err(_e) => {
-                        //eprintln!("{_e}");
-                        Err(DidResolveError::MalformedDid(value.to_owned()))
-                    }
+        match did_split[1] {
+            TrustDidWebId::DID_METHOD_NAME => match TrustDidWebId::parse_did_tdw(value.to_owned()) {
+                Ok(buf) => {
+                    let scid = buf.get_scid();
+                    Ok(Did {
+                        parts: did_split.into_iter().map(|v| v.to_string()).collect(),
+                        method: DidMethod::TDW,
+                        method_id: scid,
+                    })
                 }
-            }
-            Err(_e) => {
-                //eprintln!("{_e}");
-                Err(DidResolveError::MalformedDid(value))
-            }
+                Err(_e) => Err(DidResolveError::MalformedDid(value)),
+            },
+            _ => Err(DidResolveError::DidNotSupported(value)),
         }
     }
 }
@@ -206,8 +166,8 @@ mod tests {
     fn test_resolve_did_tdw(
         #[case] did_tdw: String,
         http_client: &HttpClient, // fixture
-    ) {
-        let did = Did::new(did_tdw);
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let did = Did::new(did_tdw)?; // no error expected here
 
         let url = did.get_url();
         assert!(url.is_ok());
@@ -233,6 +193,8 @@ mod tests {
         });
         assert!(!did_doc.get_authentication().is_empty());
         assert!(!did_doc.get_assertion_method().is_empty());
+
+        Ok(())
     }
 
     #[rstest]
@@ -244,8 +206,8 @@ mod tests {
     fn test_resolve_did_tdw_from_file(
         #[case] did_log_raw_filepath: String,
         #[case] did_tdw: String,
-    ) {
-        let did = Did::new(did_tdw.to_string());
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let did = Did::new(did_tdw.to_string())?; // no error expected here
 
         let did_log_raw = fs::read_to_string(Path::new(&did_log_raw_filepath));
         assert!(did_log_raw.is_ok());
@@ -261,28 +223,25 @@ mod tests {
         assert!(!did_doc.get_context().is_empty());
         assert!(!did_doc.get_verification_method().is_empty());
         assert!(!did_doc.get_authentication().is_empty());
+
+        Ok(())
     }
 
     #[rstest]
     // CAUTION A did_tdw (param #2) MUST match the one residing in did_log_raw_filepath (param #1)
     #[case("test_data/did.jsonl", "did:tdw:Q24hsDDvpZHmUyNwXWgy36jhB6SFMLT2Aq7HWmZSk6XyZaM7qJNPNYthtRwtz84GHX3Bui3ZSVCcrG8KvGracfbhC:127.0.0.1%3A52788:123456789"
     )]
-    // TODO Remove the should_panic attribute as soon as the error handling is properly done in didtoolbox
-    #[should_panic(expected = "Invalid did log. No entries found")]
     fn test_resolve_did_tdw_invalid_did_log_no_entries(
         #[case] _did_log_raw_filepath: String,
         #[case] did_tdw: String,
-    ) {
-        let did = Did::new(did_tdw.to_string());
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let did = Did::new(did_tdw.to_string())?; // no error expected here
 
-        /*
-        match did.resolve(String::new()) { // empty string
-            Err(e) => assert_eq!(e.kind(), DidResolveErrorKind::InvalidDidLog),
-            _ => (),
-        }
-         */
+        let res = did.resolve(String::new()); // empty string
+        assert!(res.is_err());
+        assert_eq!(res.unwrap_err().kind(), DidResolveErrorKind::InvalidDidLog); // panic-safe unwrap call (see the previous line)
 
-        did.resolve(String::new()).unwrap(); // empty string
+        Ok(())
     }
 
     #[rstest]
@@ -291,44 +250,37 @@ mod tests {
         "test_data/non_incremented_version_did.jsonl",
         "did:tdw:Qmb4sce9qf13cwcosaDfRt2NmWpUfqHAdpVfRUCN8gtB8G:example.com"
     )]
-    // TODO Remove the should_panic attribute as soon as the error handling is properly done in didtoolbox
-    #[should_panic(expected = "Invalid did log for version 2. Version id has to be incremented")]
     fn test_resolve_did_tdw_invalid_did_log_non_incremented_version(
         #[case] did_log_raw_filepath: String,
         #[case] did_tdw: String,
-    ) {
-        let did = Did::new(did_tdw.to_string());
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let did = Did::new(did_tdw.to_string())?; // no error expected here
 
         let did_log_raw = fs::read_to_string(Path::new(&did_log_raw_filepath));
         assert!(did_log_raw.is_ok());
         let did_log_raw = did_log_raw.unwrap();
 
-        did.resolve(did_log_raw).unwrap();
+        let res = did.resolve(did_log_raw); // panic-safe unwrap call (see above)
+        assert!(res.is_err());
+        let err = res.unwrap_err(); // panic-safe unwrap call (see the previous line)
+        assert_eq!(err.kind(), DidResolveErrorKind::InvalidDidLog);
+        assert!(err
+            .to_string()
+            .contains("Invalid did log for version 2. Version id has to be incremented"));
+
+        Ok(())
     }
 
     #[rstest]
-    #[case("did:jwk:not_yet_supported")]
-    #[case("did:web:not_yet_supported")]
-    #[case("completely_irregular_did")]
+    #[case("did:jwk:did_method_not_yet_supported:my_domain")]
+    #[case("did:web:did_method_not_yet_supported:my_domain")]
+    #[case("did:XYZ:did_method_does_not_exist_at_all:my_domain")]
     fn test_did_not_supported(#[case] did_tdw: String) {
         let did = Did::new(did_tdw.to_owned());
 
-        assert!(!did.parts.is_empty()); // assuming none of the "#[rstest]" cases is empty
-        assert_eq!(did.to_string(), did_tdw); // assuming the Display trait is implemented accordingly for DID struct
-                                              //assert_eq!(did.method, DidMethod::default());
-        assert!(did_tdw.contains(did.method_id.as_str()));
-    }
-
-    #[rstest]
-    #[case("did:jwk:not_yet_supported")]
-    #[case("did:web:not_yet_supported")]
-    fn test_resolve_did_not_supported(#[case] did_tdw: String) {
-        // Actual DID log is pretty irrelevant for the test, so empty string would suffice
-        let resolved = Did::new(did_tdw).resolve(String::new());
-
-        assert!(resolved.is_err());
+        assert!(did.is_err());
         assert_eq!(
-            resolved.err().unwrap().kind(),
+            did.unwrap_err().kind(), // panic-safe unwrap call (see the previous line)
             DidResolveErrorKind::DidNotSupported
         );
     }
@@ -337,25 +289,24 @@ mod tests {
     #[case("did:tdw:QMySCID:domain")]
     #[case("did:tdw:QMySCID:domain:path")]
     #[case("did:tdw:Q24hsDDvpZHmUyNwXWgy36jhB6SFMLT2Aq7HWmZSk6XyZaM7qJNPNYthtRwtz84GHX3Bui3ZSVCcrG8KvGracfbhC:127.0.0.1%3A52788:123456789")]
-    fn test_did_ok(#[case] did_tdw: String) {
-        let did = Did::new(did_tdw.to_owned());
+    fn test_did_ok(#[case] did_tdw: String) -> Result<(), Box<dyn std::error::Error>> {
+        let did = Did::new(did_tdw.to_owned())?; // no error expected here
         let did = did.get_url();
 
         assert!(did.is_ok());
-        assert!(!did.unwrap().is_empty());
+        assert!(!did.unwrap().is_empty()); // panic-safe unwrap call (see the previous line)
+
+        Ok(())
     }
 
     #[rstest]
-    //#[case("did:tdw:malformed::::::")]
+    #[case("did:tdw:malformed::::::")]
     #[case("did:tdw:malformed")]
     #[case("did:tdw:identifier#key01")]
-    // TODO #[case("did:tdw:grsgcnzqgfstsmbsgbstsmzzgy2diolgheztayzwme4tgzrxmnrtqoddmy2wkzjwgm4tgyjumntgmzrthezggnbwmjstgzjug42tioa=:identifier-data-service-r.bit.admin.ch:api:v1:did:62c3d89f-2ab3-4129-ac1f-595a28c9115f")]
     fn test_did_malformed(#[case] did_tdw: String) {
-        //let did_tdw = "did:tdw:grsgcnzqgfstsmbsgbstsmzzgy2diolgheztayzwme4tgzrxmnrtqoddmy2wkzjwgm4tgyjumntgmzrthezggnbwmjstgzjug42tioa=:identifier-data-service-r.bit.admin.ch:api:v1:did:62c3d89f-2ab3-4129-ac1f-595a28c9115f".to_string();
         let did = Did::new(did_tdw.to_owned());
-        let url = did.get_url();
 
-        assert!(url.is_err());
-        assert_eq!(url.err().unwrap().kind(), DidResolveErrorKind::MalformedDid);
+        assert!(did.is_err());
+        assert_eq!(did.unwrap_err().kind(), DidResolveErrorKind::MalformedDid); // panic-safe unwrap call (see the previous line)
     }
 }
