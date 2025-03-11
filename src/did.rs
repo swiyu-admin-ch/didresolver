@@ -104,7 +104,7 @@ impl Did {
             DidMethod::UNKNOWN => Err(DidResolveError::DidNotSupported(String::new())),
         };
         match res {
-            Ok(doc) => Ok(Arc::new(doc)),
+            Ok(doc) => Ok(doc),
             Err(e) => Err(e),
         }
     }
