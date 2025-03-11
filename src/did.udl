@@ -41,7 +41,8 @@ enum DidResolveError {
 };
 
 interface Did {
-    constructor(string text);
+    [Throws=DidResolveError]
+    constructor(string did_tdw);
     /// Returns the url part from the supplied DID, if supported and not malformed.
     [Throws=DidResolveError]
     string get_url();
