@@ -19,23 +19,18 @@ jobs:
           - os: ubuntu
             label: -latest
             file-prefix: lib
-            #file-suffix:
             file-extension: so
           - os: ubuntu-24.04-arm
             #label:
             file-prefix: lib
-            # to be able to distinguish between various SO libs
-            file-suffix: -arm64
             file-extension: so
           - os: windows
             label: -latest
             #file-prefix:
-            #file-suffix:
             file-extension: dll
           - os: macos
             label: -latest
             file-prefix: lib
-            #file-suffix:
             file-extension: dylib
     # See https://docs.github.com/en/actions/using-github-hosted-runners/using-github-hosted-runners/about-github-hosted-runners#standard-github-hosted-runners-for-public-repositories
     runs-on: ${{ matrix.os }}${{ matrix.label }}
@@ -64,7 +59,7 @@ jobs:
       - name: Generate UniFFI bindings
         run:  |
           cargo run --bin uniffi-bindgen generate --library target/release/${{ matrix.file-prefix }}didresolver.${{ matrix.file-extension }} --language kotlin --out-dir bindings/kotlin
-          cp target/release/${{ matrix.file-prefix }}didresolver.${{ matrix.file-extension }} bindings/kotlin/${{ matrix.file-prefix }}didresolver${{ matrix.file-suffix }}.${{ matrix.file-extension }}
+          cp target/release/${{ matrix.file-prefix }}didresolver.${{ matrix.file-extension }} bindings/kotlin/
       - name: Save kotlin artifact
         uses: actions/upload-artifact@v4
         with:
