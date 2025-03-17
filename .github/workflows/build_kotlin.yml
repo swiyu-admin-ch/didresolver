@@ -15,7 +15,7 @@ jobs:
       max-parallel: 4
       matrix:
         #os: [ ubuntu, ubuntu-24.04-arm, windows, macos ]
-        os: [ ubuntu, windows, macos ]
+        os: [ ubuntu-24.04-arm ]
         include:
           - os: ubuntu
             label: -latest
@@ -23,12 +23,12 @@ jobs:
             file-prefix: lib
             #file-suffix:
             file-extension: so
-          #- os: ubuntu-24.04-arm
-          #  #label:
-          #  arch: arm64
-          #  file-prefix: lib
-          #  file-suffix: arm64
-          #  file-extension: so
+          - os: ubuntu-24.04-arm
+            #label:
+            arch: arm64
+            file-prefix: lib
+            file-suffix: arm64
+            file-extension: so
           - os: windows
             label: -latest
             arch: x64
