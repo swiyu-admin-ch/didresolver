@@ -18,25 +18,22 @@ jobs:
         include:
           - os: ubuntu
             label: -latest
-            arch: x64
             file-prefix: lib
             #file-suffix:
             file-extension: so
           - os: ubuntu-24.04-arm
             #label:
-            arch: arm64
             file-prefix: lib
-            file-suffix: arm64
+            # to be able to distinguish between various SO libs
+            file-suffix: -arm64
             file-extension: so
           - os: windows
             label: -latest
-            arch: x64
             #file-prefix:
             #file-suffix:
             file-extension: dll
           - os: macos
             label: -latest
-            arch: arm64
             file-prefix: lib
             #file-suffix:
             file-extension: dylib
@@ -61,7 +58,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-${{ matrix.arch }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: Build
         run:  cargo build --release
       - name: Generate UniFFI bindings
@@ -71,5 +68,5 @@ jobs:
       - name: Save kotlin artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kotlin-bindings-${{ matrix.os }}-${{ matrix.arch }}
+          name: kotlin-bindings-${{ matrix.os }}
           path: bindings/kotlin
