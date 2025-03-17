@@ -29,7 +29,7 @@ jobs:
           - os: windows
             label: -latest
             #file-prefix:
-            jna-dir:
+            jna-dir: win32-x86-64
             file-extension: dll
           - os: macos
             label: -latest
