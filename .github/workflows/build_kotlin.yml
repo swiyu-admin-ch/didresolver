@@ -18,27 +18,23 @@ jobs:
         include:
           - os: ubuntu
             label: -latest
-            arch: x64
+            jna-dir: linux-x86-64
             file-prefix: lib
-            #file-suffix:
             file-extension: so
           - os: ubuntu-24.04-arm
             #label:
-            arch: arm64
+            jna-dir: linux-aarch64
             file-prefix: lib
-            file-suffix: arm64
             file-extension: so
           - os: windows
             label: -latest
-            arch: x64
             #file-prefix:
-            #file-suffix:
+            jna-dir: win32-x86-64
             file-extension: dll
           - os: macos
             label: -latest
-            arch: arm64
+            jna-dir: darwin-aarch64
             file-prefix: lib
-            #file-suffix:
             file-extension: dylib
     # See https://docs.github.com/en/actions/using-github-hosted-runners/using-github-hosted-runners/about-github-hosted-runners#standard-github-hosted-runners-for-public-repositories
     runs-on: ${{ matrix.os }}${{ matrix.label }}
@@ -61,15 +57,16 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: Build
         run:  cargo build --release
       - name: Generate UniFFI bindings
         run:  |
-          cargo run --bin uniffi-bindgen generate --library target/release/${{ matrix.file-prefix }}didresolver${{ matrix.file-suffix }}.${{ matrix.file-extension }} --language kotlin --out-dir bindings/kotlin
-          cp target/release/${{ matrix.file-prefix }}didresolver${{ matrix.file-suffix }}.${{ matrix.file-extension }} bindings/kotlin/
+          cargo run --bin uniffi-bindgen generate --library target/release/${{ matrix.file-prefix }}didresolver.${{ matrix.file-extension }} --language kotlin --out-dir bindings/kotlin
+          mkdir -p bindings/kotlin/${{ matrix.jna-dir }}
+          cp target/release/${{ matrix.file-prefix }}didresolver.${{ matrix.file-extension }} bindings/kotlin/${{ matrix.jna-dir }}/
       - name: Save kotlin artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kotlin-bindings-${{ matrix.os }}-${{ matrix.arch }}
+          name: kotlin-bindings-${{ matrix.os }}
           path: bindings/kotlin
