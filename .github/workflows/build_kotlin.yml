@@ -61,13 +61,13 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}${{ matrix.arch }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ matrix.arch }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: Build
         run:  cargo build --release
       - name: Generate UniFFI bindings
         run:  |
-          cargo run --bin uniffi-bindgen generate --library target/release/${{ matrix.file-prefix }}didresolver${{ matrix.file-suffix }}.${{ matrix.file-extension }} --language kotlin --out-dir bindings/kotlin
-          cp target/release/${{ matrix.file-prefix }}didresolver${{ matrix.file-suffix }}.${{ matrix.file-extension }} bindings/kotlin/
+          cargo run --bin uniffi-bindgen generate --library target/release/${{ matrix.file-prefix }}didresolver.${{ matrix.file-extension }} --language kotlin --out-dir bindings/kotlin
+          cp target/release/${{ matrix.file-prefix }}didresolver.${{ matrix.file-extension }} bindings/kotlin/${{ matrix.file-prefix }}didresolver${{ matrix.file-suffix }}.${{ matrix.file-extension }}
       - name: Save kotlin artifact
         uses: actions/upload-artifact@v4
         with:
