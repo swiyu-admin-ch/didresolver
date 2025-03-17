@@ -18,18 +18,22 @@ jobs:
         include:
           - os: ubuntu
             label: -latest
+            jna-dir: linux-x86-64
             file-prefix: lib
             file-extension: so
           - os: ubuntu-24.04-arm
             #label:
+            jna-dir: linux-aarch64
             file-prefix: lib
             file-extension: so
           - os: windows
             label: -latest
             #file-prefix:
+            jna-dir: 
             file-extension: dll
           - os: macos
             label: -latest
+            jna-dir: darwin-aarch64
             file-prefix: lib
             file-extension: dylib
     # See https://docs.github.com/en/actions/using-github-hosted-runners/using-github-hosted-runners/about-github-hosted-runners#standard-github-hosted-runners-for-public-repositories
@@ -59,7 +63,7 @@ jobs:
       - name: Generate UniFFI bindings
         run:  |
           cargo run --bin uniffi-bindgen generate --library target/release/${{ matrix.file-prefix }}didresolver.${{ matrix.file-extension }} --language kotlin --out-dir bindings/kotlin
-          cp target/release/${{ matrix.file-prefix }}didresolver.${{ matrix.file-extension }} bindings/kotlin/
+          cp target/release/${{ matrix.file-prefix }}didresolver.${{ matrix.file-extension }} bindings/kotlin/${{ matrix.jna-dir }}/
       - name: Save kotlin artifact
         uses: actions/upload-artifact@v4
         with:
