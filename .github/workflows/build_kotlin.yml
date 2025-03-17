@@ -17,16 +17,32 @@ jobs:
         os: [ ubuntu, windows, macos ]
         include:
           - os: ubuntu
+            label: latest
+            arch: x64
             file-prefix: lib
+            #file-suffix:
+            file-extension: so
+          # ubuntu-24.04-arm,  ubuntu-22.04-arm
+          - os: ubuntu
+            label: 24.04-arm
+            arch: arm64
+            file-prefix: lib
+            file-suffix: arm64
             file-extension: so
           - os: windows
+            label: latest
+            arch: x64
             #file-prefix:
+            #file-suffix:
             file-extension: dll
           - os: macos
+            label: latest
+            arch: arm64
             file-prefix: lib
+            #file-suffix:
             file-extension: dylib
     # See https://docs.github.com/en/actions/using-github-hosted-runners/using-github-hosted-runners/about-github-hosted-runners#standard-github-hosted-runners-for-public-repositories
-    runs-on: ${{ matrix.os }}-latest
+    runs-on: ${{ matrix.os }}-${{ matrix.label }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -51,10 +67,10 @@ jobs:
         run:  cargo build --release
       - name: Generate UniFFI bindings
         run:  |
-          cargo run --bin uniffi-bindgen generate --library target/release/${{ matrix.file-prefix }}didresolver.${{ matrix.file-extension }} --language kotlin --out-dir bindings/kotlin
-          cp target/release/${{ matrix.file-prefix }}didresolver.${{ matrix.file-extension }} bindings/kotlin/
+          cargo run --bin uniffi-bindgen generate --library target/release/${{ matrix.file-prefix }}didresolver${{ matrix.file-suffix }}.${{ matrix.file-extension }} --language kotlin --out-dir bindings/kotlin
+          cp target/release/${{ matrix.file-prefix }}didresolver${{ matrix.file-suffix }}.${{ matrix.file-extension }} bindings/kotlin/
       - name: Save kotlin artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kotlin-bindings-${{ matrix.os }}
+          name: kotlin-bindings-${{ matrix.os }}-${{ matrix.arch }}
           path: bindings/kotlin
