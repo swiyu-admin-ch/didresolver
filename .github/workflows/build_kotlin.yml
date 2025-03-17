@@ -14,8 +14,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        #os: [ ubuntu, ubuntu-24.04-arm, windows, macos ]
-        os: [ ubuntu-24.04-arm ]
+        os: [ ubuntu, ubuntu-24.04-arm, windows, macos ]
         include:
           - os: ubuntu
             label: -latest
@@ -62,7 +61,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}${{ matrix.arch }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: Build
         run:  cargo build --release
       - name: Generate UniFFI bindings
