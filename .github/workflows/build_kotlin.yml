@@ -12,37 +12,36 @@ jobs:
   build-for-matrix:
     name: Build Kotlin bindings
     strategy:
-      max-parallel: 3
+      max-parallel: 4
       matrix:
-        os: [ ubuntu, windows, macos ]
+        os: [ ubuntu, ubuntu-24.04-arm, windows, macos ]
         include:
           - os: ubuntu
-            label: latest
+            label: -latest
             arch: x64
             file-prefix: lib
             #file-suffix:
             file-extension: so
-          # ubuntu-24.04-arm,  ubuntu-22.04-arm
-          - os: ubuntu
-            label: 24.04-arm
+          - os: ubuntu-24.04-arm
+            #label:
             arch: arm64
             file-prefix: lib
             file-suffix: arm64
             file-extension: so
           - os: windows
-            label: latest
+            label: -latest
             arch: x64
             #file-prefix:
             #file-suffix:
             file-extension: dll
           - os: macos
-            label: latest
+            label: -latest
             arch: arm64
             file-prefix: lib
             #file-suffix:
             file-extension: dylib
     # See https://docs.github.com/en/actions/using-github-hosted-runners/using-github-hosted-runners/about-github-hosted-runners#standard-github-hosted-runners-for-public-repositories
-    runs-on: ${{ matrix.os }}-${{ matrix.label }}
+    runs-on: ${{ matrix.os }}${{ matrix.label }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
