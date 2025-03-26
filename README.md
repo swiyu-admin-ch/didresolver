@@ -17,6 +17,7 @@ This project contains a DID resolver which allows to resolve the following metho
 - [Using the library](#using-the-library)
 - [Example](#example)
 - [Models](#models)
+- [Known Issues](#known-issues)
 - [Contributions and feedback](#contributions-and-feedback)
 - [License](#license)
 
@@ -116,6 +117,11 @@ classDiagram
 
     }
 ```
+
+## Known Issues
+
+The swiyu Public Beta Trust Infrastructure was deliberately released at an early stage to enable future ecosystem participants. There may still be minor bugs or security vulnerabilities in the test system. We will publish them in the near future as ‘KnownIssues’ in this repository.
+
 ## Contributions and feedback
 
 We welcome any feedback on the code regarding both the implementation and security aspects. Please follow the guidelines for contributing found in [CONTRIBUTING.md](./CONTRIBUTING.md).
