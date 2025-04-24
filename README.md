@@ -21,7 +21,6 @@ This project contains a DID resolver which allows to resolve the following metho
 - [Contributions and feedback](#contributions-and-feedback)
 - [License](#license)
 
-
 ## Overview
 
 This repository is part of the ecosystem developed for the future official Swiss e-ID.
@@ -33,7 +32,9 @@ For more information about the project please visit the [introduction for the Pu
 ## Using the library
 
 The library can be used either directly in rust as is or through the different built bindings which are published in different submodules
+
 ### Rust
+
 The library can be used directly in rust by adding the following dependency to your `Cargo.toml`:
 ````toml
 [dependencies]
@@ -42,6 +43,7 @@ didresolver = {git="https://github.com/swiyu-admin-ch/didresolver.git", branch="
 # Optional: For manipulating the json content in the example
 serde_json = "1.0.215"
 ````
+
 ### Additional language bindings
 
 > General information how the bindings are generated can be found in the [UniFFI user guide](https://mozilla.github.io/uniffi-rs/latest/)
@@ -84,6 +86,7 @@ fn main() {
 ```
 
 ## Models
+
 ```mermaid
 ---
 title: Available types
@@ -120,11 +123,12 @@ classDiagram
 
 ## Known Issues
 
-The swiyu Public Beta Trust Infrastructure was deliberately released at an early stage to enable future ecosystem participants. There may still be minor bugs or security vulnerabilities in the test system. We will publish them in the near future as ‘KnownIssues’ in this repository.
+The swiyu Public Beta Trust Infrastructure was deliberately released at an early stage to enable future ecosystem participants. There may still be minor bugs or security vulnerabilities in the test system. We publish them as [KnownIssues](https://github.com/swiyu-admin-ch/didresolver/issues?q=is%3Aissue%20state%3Aopen%20type%3AKnownIssue) in this repository.
 
 ## Contributions and feedback
 
 We welcome any feedback on the code regarding both the implementation and security aspects. Please follow the guidelines for contributing found in [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## License
+
 This project is licensed under the terms of the MIT license. See the [LICENSE](LICENSE.md) file for details.
