@@ -2,7 +2,7 @@
 name = "didresolver"
 version = "2.0.0"
 edition = "2021"
-description = "DID resolver for different did methods"
+description = "DID resolver for different did:tdw methods"
 authors = ["Jonas Niestroj", "Frithjof Hoppe", "Vladica Stojic"]
 homepage = "https://github.com/swiyu-admin-ch"
 readme = "README.md"
@@ -15,11 +15,11 @@ include = [
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-thiserror = "1.0.69"
+thiserror = "2.0.12"
 #openssl = { version = "0.10.68", features = ["vendored"] }
 uniffi = { version = "0.28.3", features = ["cli"] }
 strum = { version = "0.27.1", features = ["derive"] }
-didtoolbox = { git = "https://github.com/swiyu-admin-ch/didtoolbox.git", tag = "2.0.0" }
+didtoolbox = { git = "https://github.com/swiyu-admin-ch/didtoolbox.git", tag = "2.1.0" }
 # When building on a container (podman run -it --rm -v $(pwd):$(pwd):Z -v $HOME/.ssh:/root/.ssh:Z -w $(pwd) rust), the local repo may be used:
 #didtoolbox = { path = "../didtoolbox" }
 
@@ -27,7 +27,7 @@ didtoolbox = { git = "https://github.com/swiyu-admin-ch/didtoolbox.git", tag = "
 uniffi = { version = "0.28.3", features = ["build"] }
 
 [dev-dependencies]
-rstest = "0.24.0"
+rstest = "0.25.0"
 ureq = "2.12.1"
 
 [lib]

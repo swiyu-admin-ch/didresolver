@@ -4,7 +4,13 @@ namespace did {
 };
 
 [ExternalInterface="didtoolbox"]
+typedef extern TrustDidWebIdResolutionError;
+
+[ExternalInterface="didtoolbox"]
 typedef extern TrustDidWebId;
+
+[ExternalInterface="didtoolbox"]
+typedef extern TrustDidWebError;
 
 [ExternalInterface="didtoolbox"]
 typedef extern TrustDidWeb;
@@ -28,10 +34,22 @@ typedef extern DidDocumentState;
 typedef extern Jwk;
 
 [External="didtoolbox"]
+typedef extern VerificationType;
+
+[External="didtoolbox"]
 typedef extern VerificationMethod;
 
 [ExternalInterface="didtoolbox"]
 typedef extern DidDoc;
+
+[ExternalInterface="didtoolbox"]
+typedef extern DidLogEntryJsonSchema;
+
+[ExternalInterface="didtoolbox"]
+typedef extern DidLogEntryValidatorError;
+
+[ExternalInterface="didtoolbox"]
+typedef extern DidLogEntryValidator;
 
 [Error]
 enum DidResolveError {
