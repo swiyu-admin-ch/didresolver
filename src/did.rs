@@ -109,17 +109,19 @@ impl TryFrom<String> for Did {
         }
 
         match did_split[1] {
-            TrustDidWebId::DID_METHOD_NAME => match TrustDidWebId::parse_did_tdw(value.to_owned()) {
-                Ok(buf) => {
-                    let scid = buf.get_scid();
-                    Ok(Did {
-                        parts: did_split.into_iter().map(|v| v.to_string()).collect(),
-                        method: DidMethod::TDW,
-                        method_id: scid,
-                    })
+            TrustDidWebId::DID_METHOD_NAME => {
+                match TrustDidWebId::parse_did_tdw(value.to_owned()) {
+                    Ok(buf) => {
+                        let scid = buf.get_scid();
+                        Ok(Did {
+                            parts: did_split.into_iter().map(|v| v.to_string()).collect(),
+                            method: DidMethod::TDW,
+                            method_id: scid,
+                        })
+                    }
+                    Err(_e) => Err(DidResolveError::MalformedDid(value)),
                 }
-                Err(_e) => Err(DidResolveError::MalformedDid(value)),
-            },
+            }
             _ => Err(DidResolveError::DidNotSupported(value)),
         }
     }
@@ -158,10 +160,10 @@ mod tests {
 
     #[rstest]
     #[case(
-        "did:tdw:QmS21Yxn4cEZ51nKfkLBTyEaP1EE2MmQQ9jLypydbnrmrg:gist.githubusercontent.com:vst-bit:8d8247633dbc5836324a81725c1216d8:raw:d3f2aa7f23995d5120599220ad1cc42b3885d4b4"
+        "did:tdw:QmRjT8JCbQkEffVBWSbQd8nbMVNfAxiXStLPmqkQUWcsfv:gist.githubusercontent.com:vst-bit:32b64cfac9075b2a3ab7301b772bcdef:raw:4775dd76799b35e99322bf738fafd6c10f421ed7"
     )]
     #[case(
-        "did:tdw:QmZ3ZcSA52uEaPahx9SQL4xfjcfJ2e7Y8HqNv2sohG1iK7:gist.githubusercontent.com:vst-bit:8d8247633dbc5836324a81725c1216d8:raw:fde1612e271991f23e814943d7636a4dbac6752b"
+        "did:tdw:QmRjT8JCbQkEffVBWSbQd8nbMVNfAxiXStLPmqkQUWcsfv:gist.githubusercontent.com:vst-bit:32b64cfac9075b2a3ab7301b772bcdef:raw:4775dd76799b35e99322bf738fafd6c10f421ed7"
     )]
     fn test_resolve_did_tdw(
         #[case] did_tdw: String,
@@ -177,9 +179,9 @@ mod tests {
         let did_log_raw = http_client.fetch_url(url);
         assert!(!did_log_raw.is_empty());
 
-        let did_doc = did.resolve(did_log_raw);
-        assert!(did_doc.is_ok());
-        let did_doc = did_doc.unwrap();
+        let res = did.resolve(did_log_raw);
+        assert!(res.is_ok(), "ERROR: {:?}", res.err().unwrap());
+        let did_doc = res.unwrap();
 
         // CAUTION Such assertions are not really possible when using GitHub gists as input
         //         assert_eq!(did_doc.get_id(), did.to_string()); // assuming the Display trait is implemented accordingly for DID struct
@@ -200,8 +202,12 @@ mod tests {
     #[rstest]
     // CAUTION A did_tdw (param #2) MUST match the one residing in did_log_raw_filepath (param #1)
     #[case(
-        "test_data/tdw-js.jsonl",
-        "did:tdw:Qmb4sce9qf13cwcosaDfRt2NmWpUfqHAdpVfRUCN8gtB8G:example.com"
+        "test_data/did.jsonl",
+        "did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
+    )]
+    #[case(
+        "test_data/did_without_controller.jsonl",
+        "did:tdw:QmYD2gdyU1opYus5bJSoJr4c78mgctJnGHRsgqPv9NoLBh:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
     )]
     fn test_resolve_did_tdw_from_file(
         #[case] did_log_raw_filepath: String,
@@ -213,9 +219,9 @@ mod tests {
         assert!(did_log_raw.is_ok());
         let did_log_raw = did_log_raw.unwrap();
 
-        let did_doc = did.resolve(did_log_raw);
-        assert!(did_doc.is_ok());
-        let did_doc = did_doc.unwrap();
+        let res = did.resolve(did_log_raw);
+        assert!(res.is_ok(), "ERROR: {:?}", res.err().unwrap());
+        let did_doc = res.unwrap();
         assert_eq!(did_doc.id, did_tdw);
 
         //assert_eq!(did_doc.get_id(), did.to_string()); // assuming the Display trait is implemented accordingly for DID struct
@@ -229,7 +235,7 @@ mod tests {
 
     #[rstest]
     // CAUTION A did_tdw (param #2) MUST match the one residing in did_log_raw_filepath (param #1)
-    #[case("test_data/did.jsonl", "did:tdw:Q24hsDDvpZHmUyNwXWgy36jhB6SFMLT2Aq7HWmZSk6XyZaM7qJNPNYthtRwtz84GHX3Bui3ZSVCcrG8KvGracfbhC:127.0.0.1%3A52788:123456789"
+    #[case("test_data/did.jsonl", "did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
     )]
     fn test_resolve_did_tdw_invalid_did_log_no_entries(
         #[case] _did_log_raw_filepath: String,
@@ -238,7 +244,7 @@ mod tests {
         let did = Did::new(did_tdw.to_string())?; // no error expected here
 
         let res = did.resolve(String::new()); // empty string
-        assert!(res.is_err());
+        assert!(res.is_err(), "ERROR: {:?}", res.err().unwrap());
         assert_eq!(res.unwrap_err().kind(), DidResolveErrorKind::InvalidDidLog); // panic-safe unwrap call (see the previous line)
 
         Ok(())
@@ -248,7 +254,7 @@ mod tests {
     // CAUTION A did_tdw (param #2) MUST match the one residing in did_log_raw_filepath (param #1)
     #[case(
         "test_data/non_incremented_version_did.jsonl",
-        "did:tdw:Qmb4sce9qf13cwcosaDfRt2NmWpUfqHAdpVfRUCN8gtB8G:example.com"
+        "did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
     )]
     fn test_resolve_did_tdw_invalid_did_log_non_incremented_version(
         #[case] did_log_raw_filepath: String,
@@ -266,7 +272,8 @@ mod tests {
         assert_eq!(err.kind(), DidResolveErrorKind::InvalidDidLog);
         assert!(err
             .to_string()
-            .contains("Invalid did log for version 2. Version id has to be incremented"));
+            .contains("Version numbers (`versionId`) must be in a sequence of positive consecutive integers"),
+                "ERROR: {:?}", err);
 
         Ok(())
     }
