@@ -25,16 +25,19 @@ jobs:
           cache-name: cache-rust-modules
         with:
           path: target
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/Cargo.lock') }}
+          #key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/Cargo.toml') }}
           restore-keys: |
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
 
       - name: Install ios target
+        # Only Tier: 2 (without Host Tools) targets (according to https://doc.rust-lang.org/rustc/platform-support/apple-ios.html)
         run: |
           rustup target add aarch64-apple-ios-sim
           rustup target add aarch64-apple-ios
+          rustup target add x86_64-apple-ios
 
       - name: Install xcode build tools
         run: |
