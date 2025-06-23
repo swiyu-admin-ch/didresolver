@@ -1,5 +1,8 @@
 name: Build library (swift)
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
 

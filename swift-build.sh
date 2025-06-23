@@ -16,7 +16,7 @@ cargo build --release --target aarch64-apple-ios-sim
 cargo build --release --target x86_64-apple-ios
 
 # CAUTION In case of iOS Simulator, all the simulator-relevant libs must be combined into one single "fat" static library
-lipo -create -output target/libdidresolver-ios-sim.a \
+lipo -create -output target/libdidresolver.a \
   target/aarch64-apple-ios-sim/release/libdidresolver.a \
   target/x86_64-apple-ios/release/libdidresolver.a
 
@@ -26,7 +26,7 @@ rm -r bindings/swift/didresolver.xcframework
 
 echo ">> Build XFC framework"
 xcodebuild -create-xcframework \
-  -library ./target/libdidresolver-ios-sim.a \
+  -library ./target/libdidresolver.a \
   -headers ./bindings/swift/files \
   -library ./target/aarch64-apple-ios/release/libdidresolver.a \
   -headers ./bindings/swift/files \
