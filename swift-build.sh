@@ -7,21 +7,31 @@ echo ">> Generate bindings"
 cargo run --bin uniffi-bindgen generate --library target/release/libdidresolver.dylib --language swift --out-dir bindings/swift/files
 
 echo ">> Build Swift package"
-# # Only Tier: 2 (without Host Tools) targets (according to https://doc.rust-lang.org/rustc/platform-support/apple-ios.html)
-cargo build --release --target aarch64-apple-ios-sim
+# Only Tier: 2 (without Host Tools) targets (according to https://doc.rust-lang.org/rustc/platform-support/apple-ios.html)
+# Apple iOS on ARM64
 cargo build --release --target aarch64-apple-ios
+# Apple iOS Simulator on ARM64
+cargo build --release --target aarch64-apple-ios-sim
+# Apple iOS Simulator on 64-bit x86
 cargo build --release --target x86_64-apple-ios
+
+# CAUTION In case of iOS Simulator, all the simulator-relevant libs must be combined into one single "fat" static library
+lipo -create -output target/libdidresolver-ios-sim.a \
+  target/aarch64-apple-ios-sim/release/libdidresolver.a \
+  target/x86_64-apple-ios/release/libdidresolver.a
+
 cat bindings/swift/files/didtoolboxFFI.modulemap >> bindings/swift/files/module.modulemap
 cat bindings/swift/files/didFFI.modulemap >> bindings/swift/files/module.modulemap
 rm -r bindings/swift/didresolver.xcframework
+
+echo ">> Build XFC framework"
 xcodebuild -create-xcframework \
-  -library ./target/aarch64-apple-ios-sim/release/libdidresolver.a \
+  -library ./target/libdidresolver-ios-sim.a \
   -headers ./bindings/swift/files \
   -library ./target/aarch64-apple-ios/release/libdidresolver.a \
   -headers ./bindings/swift/files \
-  -library ./target/x86_64-apple-ios/release/libdidresolver.a \
-  -headers ./bindings/swift/files \
   -output "./bindings/swift/didresolver.xcframework"
+
 rm bindings/swift/files/module.modulemap
 
 echo ">> Generate swift package structure"
