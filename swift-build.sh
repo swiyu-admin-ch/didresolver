@@ -7,12 +7,21 @@ echo ">> Generate bindings"
 cargo run --bin uniffi-bindgen generate --library target/release/libdidresolver.dylib --language swift --out-dir bindings/swift/files
 
 echo ">> Build Swift package"
+# # Only Tier: 2 (without Host Tools) targets (according to https://doc.rust-lang.org/rustc/platform-support/apple-ios.html)
 cargo build --release --target aarch64-apple-ios-sim
 cargo build --release --target aarch64-apple-ios
+cargo build --release --target x86_64-apple-ios
 cat bindings/swift/files/didtoolboxFFI.modulemap >> bindings/swift/files/module.modulemap
 cat bindings/swift/files/didFFI.modulemap >> bindings/swift/files/module.modulemap
 rm -r bindings/swift/didresolver.xcframework
-xcodebuild -create-xcframework -library ./target/aarch64-apple-ios-sim/release/libdidresolver.a -headers ./bindings/swift/files -library ./target/aarch64-apple-ios/release/libdidresolver.a -headers ./bindings/swift/files -output "./bindings/swift/didresolver.xcframework"
+xcodebuild -create-xcframework \
+  -library ./target/aarch64-apple-ios-sim/release/libdidresolver.a \
+  -headers ./bindings/swift/files \
+  -library ./target/aarch64-apple-ios/release/libdidresolver.a \
+  -headers ./bindings/swift/files \
+  -library ./target/x86_64-apple-ios/release/libdidresolver.a \
+  -headers ./bindings/swift/files \
+  -output "./bindings/swift/didresolver.xcframework"
 rm bindings/swift/files/module.modulemap
 
 echo ">> Generate swift package structure"
