@@ -1,5 +1,8 @@
 name: Build library (Kotlin)
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
 
