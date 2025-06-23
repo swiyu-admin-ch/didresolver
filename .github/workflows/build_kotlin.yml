@@ -12,7 +12,7 @@ jobs:
   build-for-matrix:
     name: Build Kotlin bindings
     strategy:
-      max-parallel: 4
+      max-parallel: 5
       matrix:
         os: [ ubuntu, ubuntu-24.04-arm, windows, macos, macos-13 ]
         include:
