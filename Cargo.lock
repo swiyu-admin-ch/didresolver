@@ -522,7 +522,7 @@ dependencies = [
 
 [[package]]
 name = "didresolver"
-version = "2.1.1"
+version = "2.1.2"
 dependencies = [
  "didtoolbox",
  "rstest",
