@@ -1,6 +1,6 @@
 [package]
 name = "didresolver"
-version = "2.1.1"
+version = "2.1.2"
 edition = "2021"
 description = "DID resolver for different did:tdw methods"
 authors = ["Jonas Niestroj", "Frithjof Hoppe", "Vladica Stojic"]

@@ -1,5 +1,8 @@
 name: Build library (Kotlin)
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
 
@@ -12,9 +15,9 @@ jobs:
   build-for-matrix:
     name: Build Kotlin bindings
     strategy:
-      max-parallel: 4
+      max-parallel: 5
       matrix:
-        os: [ ubuntu, ubuntu-24.04-arm, windows, macos ]
+        os: [ ubuntu, ubuntu-24.04-arm, windows, macos, macos-13 ]
         include:
           - os: ubuntu
             label: -latest
@@ -34,6 +37,12 @@ jobs:
           - os: macos
             label: -latest
             jna-dir: darwin-aarch64
+            file-prefix: lib
+            file-extension: dylib
+          - os: macos-13
+            # macOS 13 Ventura is the final macOS version to officially support Intel x86 processors
+            #label: -13
+            jna-dir: darwin-x86-64
             file-prefix: lib
             file-extension: dylib
     # See https://docs.github.com/en/actions/using-github-hosted-runners/using-github-hosted-runners/about-github-hosted-runners#standard-github-hosted-runners-for-public-repositories
@@ -57,7 +66,8 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          #key: ${{ runner.os }}-${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
       - name: Build
         run:  cargo build --release
       - name: Generate UniFFI bindings
