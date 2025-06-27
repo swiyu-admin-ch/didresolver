@@ -39,6 +39,7 @@ The library can be used directly in rust by adding the following dependency to y
 ````toml
 [dependencies]
 didresolver = {git="https://github.com/swiyu-admin-ch/didresolver.git", branch="main"}
+ureq = "3.0.12"
 
 # Optional: For manipulating the json content in the example
 serde_json = "1.0.215"
@@ -66,22 +67,29 @@ use didresolver::did::Did;
 use ureq::get as fetch_url;
 
 fn main() {
-    let did = Did::new(String::from("did:tdw:QmZ3ZcSA52uEaPahx9SQL4xfjcfJ2e7Y8HqNv2sohG1iK7:gist.githubusercontent.com:vst-bit:8d8247633dbc5836324a81725c1216d8:raw:fde1612e271991f23e814943d7636a4dbac6752b"));
+    let did = Did::new(String::from("did:tdw:QmRjT8JCbQkEffVBWSbQd8nbMVNfAxiXStLPmqkQUWcsfv:gist.githubusercontent.com:vst-bit:32b64cfac9075b2a3ab7301b772bcdef:raw:4775dd76799b35e99322bf738fafd6c10f421ed7"))
+        .expect("invalid DID supplied");
 
     let url = match did.get_url() {
         Ok(url) => url,
-        Err(e) => panic!("invalid (unsupported or malformed) DID supplied")
+        Err(reason) => panic!("invalid (unsupported or malformed) DID supplied: {}", reason)
     };
-    let did_log_raw = fetch_url(&url).call().into_string().unwrap();
-    
+
+    let did_log_raw = fetch_url(&url)
+        .call()
+        .expect("Failed to call did url")
+        .body_mut()
+        .read_to_string()
+        .expect("Failed to read DID to string");
+
     let did_doc = match did.resolve(did_log_raw) {
         Ok(did_doc) => did_doc,
-        Err(e) => panic!("Error occurred during resolution")
+        Err(reason) => panic!("Error occurred during resolution: {}", reason)
     };
-    
+
     did_doc.get_verification_method().iter().for_each(|method| {
         println!("id: {}, publicKey: {:?}, publicKeyJwk: {:?}", method.id, method.public_key_multibase, method.public_key_jwk)
-    })
+    });
 }
 ```
 
