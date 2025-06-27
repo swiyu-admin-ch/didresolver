@@ -16,7 +16,7 @@ This project contains a DID resolver which allows to resolve the following metho
 - [Overview](#overview)
 - [Using the library](#using-the-library)
 - [Example](#example)
-- [Models](#models)
+- [Internal dependencies](#internal-dependencies)
 - [Known Issues](#known-issues)
 - [Contributions and feedback](#contributions-and-feedback)
 - [License](#license)
@@ -99,9 +99,11 @@ fn main() {
 }
 ```
 
-## Crate's internal dependencies
+## Internal dependencies
 
 ![Dependencies](/images/dependencies.png)
+
+The graph is also available in other layouts: [circo](/images/dependencies-circo.png), [dot](/images/dependencies-dot.png), [fdp](/images/dependencies-dot.fdp), [neato](/images/dependencies-neato.png), [sfdp](/images/dependencies-sfdp.png), [twopi](/images/dependencies-twopi.png)  
 
 ## Known Issues
 
