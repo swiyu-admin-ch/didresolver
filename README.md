@@ -16,6 +16,7 @@ This project contains a DID resolver which allows to resolve the following metho
 - [Overview](#overview)
 - [Using the library](#using-the-library)
 - [Example](#example)
+- [Hierarchical structure](#hierarchical-structure)
 - [Internal dependencies](#internal-dependencies)
 - [Known Issues](#known-issues)
 - [Contributions and feedback](#contributions-and-feedback)
@@ -62,7 +63,7 @@ In the example the following steps are shown:
 1. Convert supplied DID string into the standard did representation, if possible
 2. Fetch a raw DID log, using the url embedded in the did object created previously, if available 
 3. Try resolving the raw DOD log into a DID doc
-4. Get different parts from the DID doc w.r.t. [data model](#models)
+4. Explore different parts of the received DID doc
 ```rust
 use didresolver::did::Did;
 
@@ -97,6 +98,23 @@ fn main() {
         )
     });
 }
+```
+
+## Hierarchical structure
+
+```text
+crate didresolver
+├── mod did: pub
+│   ├── struct Did: pub
+│   │   ├── fn get_url: pub
+│   │   ├── fn new: pub
+│   │   └── fn resolve: pub
+│   ├── enum DidMethod: pub
+│   ├── enum DidResolveError: pub
+│   │   └── fn kind: pub
+│   └── enum DidResolveErrorKind: pub
+└── mod methods: pub
+    └── fn resolve_did_tdw: pub
 ```
 
 ## Internal dependencies
