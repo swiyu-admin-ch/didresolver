@@ -135,15 +135,14 @@ mod tests {
     use rstest::{fixture, rstest};
     use std::fs;
     use std::path::Path;
-    use ureq::get as get_url;
 
     // For testing purposes only.
     struct HttpClient;
     impl HttpClient {
         /// May panic
         fn fetch_url(&self, url: String) -> String {
-            match get_url(&url).call() {
-                Ok(response) => match response.into_string() {
+            match ureq::get(&url).call() {
+                Ok(response) => match response.into_body().read_to_string() {
                     Ok(body) => body,
                     Err(e) => panic!("{e}"),
                 },

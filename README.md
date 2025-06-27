@@ -38,7 +38,8 @@ The library can be used either directly in rust as is or through the different b
 The library can be used directly in rust by adding the following dependency to your `Cargo.toml`:
 ````toml
 [dependencies]
-didresolver = {git="https://github.com/swiyu-admin-ch/didresolver.git", branch="main"}
+# Alternatively, feel free to so use tag=<ANY_EXISTING_VERSION> instead of branch="main"
+didresolver = { git="https://github.com/swiyu-admin-ch/didresolver.git", branch="main" }
 ureq = "3.0.12"
 
 # Optional: For manipulating the json content in the example
@@ -64,7 +65,6 @@ In the example the following steps are shown:
 4. Get different parts from the DID doc w.r.t. [data model](#models)
 ```rust
 use didresolver::did::Did;
-use ureq::get as fetch_url;
 
 fn main() {
     let did = Did::new(String::from("did:tdw:QmRjT8JCbQkEffVBWSbQd8nbMVNfAxiXStLPmqkQUWcsfv:gist.githubusercontent.com:vst-bit:32b64cfac9075b2a3ab7301b772bcdef:raw:4775dd76799b35e99322bf738fafd6c10f421ed7"))
@@ -72,62 +72,36 @@ fn main() {
 
     let url = match did.get_url() {
         Ok(url) => url,
-        Err(reason) => panic!("invalid (unsupported or malformed) DID supplied: {}", reason)
+        Err(reason) => panic!(
+            "invalid (unsupported or malformed) DID supplied: {}",
+            reason
+        ),
     };
 
-    let did_log_raw = fetch_url(&url)
+    let did_log_raw = ureq::get(&url)
         .call()
         .expect("Failed to call did url")
-        .body_mut()
+        .into_body()
         .read_to_string()
         .expect("Failed to read DID to string");
 
     let did_doc = match did.resolve(did_log_raw) {
         Ok(did_doc) => did_doc,
-        Err(reason) => panic!("Error occurred during resolution: {}", reason)
+        Err(reason) => panic!("Error occurred during resolution: {}", reason),
     };
 
     did_doc.get_verification_method().iter().for_each(|method| {
-        println!("id: {}, publicKey: {:?}, publicKeyJwk: {:?}", method.id, method.public_key_multibase, method.public_key_jwk)
+        println!(
+            "id: {}, publicKey: {:?}, publicKeyJwk: {:?}",
+            method.id, method.public_key_multibase, method.public_key_jwk
+        )
     });
 }
 ```
 
-## Models
+## Crate's internal dependencies
 
-```mermaid
----
-title: Available types
----
-classDiagram
-    PublicKey <|-- Diddoc
-
-    class Did {
-        +constructor(String did)
-        +resolve()
-    }
-
-    class PublicKey {
-        +String id
-        +String keyType
-        +String controller
-        +String publicKeyMultibase
-        +String publicKeyJwk
-    }
-
-    class Diddoc {
-        +String[] context
-        +String id
-        +PublicKey[] verificationMethod
-        +PublicKey[] authenticationMethod
-        +PublicKey[] capabilityInvocation
-        +PublicKey[] capabilityDelegation
-        +PublicKey[] assertionMethod
-        +String[] controller
-        +bool deactivated
-
-    }
-```
+![Dependencies](/images/dependencies.png)
 
 ## Known Issues
 

@@ -28,7 +28,7 @@ uniffi = { version = "0.28.3", features = ["build"] }
 
 [dev-dependencies]
 rstest = "0.25.0"
-ureq = "2.12.1"
+ureq = "3.0.12"
 
 [lib]
 crate-type = ["lib", "cdylib", "staticlib"]
