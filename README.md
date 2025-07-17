@@ -18,7 +18,7 @@ This project contains a DID resolver which allows to resolve the following metho
 - [Example](#example)
 - [Hierarchical structure](#hierarchical-structure)
 - [Internal dependencies](#internal-dependencies)
-- [Known Issues](#known-issues)
+- [Missing Features and Known Issues](#missing-features-and-known-issues)
 - [Contributions and feedback](#contributions-and-feedback)
 - [License](#license)
 
@@ -123,9 +123,10 @@ crate didresolver
 
 The graph is also available in other layouts: [circo](/images/dependencies-circo.png), [dot](/images/dependencies-dot.png), [fdp](/images/dependencies-dot.fdp), [neato](/images/dependencies-neato.png), [sfdp](/images/dependencies-sfdp.png), [twopi](/images/dependencies-twopi.png)  
 
-## Known Issues
 
-The swiyu Public Beta Trust Infrastructure was deliberately released at an early stage to enable future ecosystem participants. There may still be minor bugs or security vulnerabilities in the test system. We publish them as [KnownIssues](https://github.com/swiyu-admin-ch/didresolver/issues?q=is%3Aissue%20state%3Aopen%20type%3AKnownIssue) in this repository.
+## Missing Features and Known Issues
+
+The swiyu Public Beta Trust Infrastructure was deliberately released at an early stage to enable future ecosystem participants. The [feature roadmap](https://github.com/orgs/swiyu-admin-ch/projects/1/views/7) shows the current discrepancies between Public Beta and the targeted productive Trust Infrastructure. There may still be minor bugs or security vulnerabilities in the test system. These are marked as [‘KnownIssues’](../../issues) in each repository.
 
 ## Contributions and feedback
 
