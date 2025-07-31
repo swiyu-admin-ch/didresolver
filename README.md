@@ -16,8 +16,9 @@ This project contains a DID resolver which allows to resolve the following metho
 - [Overview](#overview)
 - [Using the library](#using-the-library)
 - [Example](#example)
-- [Models](#models)
-- [Known Issues](#known-issues)
+- [Hierarchical structure](#hierarchical-structure)
+- [Internal dependencies](#internal-dependencies)
+- [Missing Features and Known Issues](#missing-features-and-known-issues)
 - [Contributions and feedback](#contributions-and-feedback)
 - [License](#license)
 
@@ -38,7 +39,9 @@ The library can be used either directly in rust as is or through the different b
 The library can be used directly in rust by adding the following dependency to your `Cargo.toml`:
 ````toml
 [dependencies]
-didresolver = {git="https://github.com/swiyu-admin-ch/didresolver.git", branch="main"}
+# Alternatively, feel free to so use tag=<ANY_EXISTING_VERSION> instead of branch="main"
+didresolver = { git="https://github.com/swiyu-admin-ch/didresolver.git", branch="main" }
+ureq = "3.0.12"
 
 # Optional: For manipulating the json content in the example
 serde_json = "1.0.215"
@@ -60,70 +63,70 @@ In the example the following steps are shown:
 1. Convert supplied DID string into the standard did representation, if possible
 2. Fetch a raw DID log, using the url embedded in the did object created previously, if available 
 3. Try resolving the raw DOD log into a DID doc
-4. Get different parts from the DID doc w.r.t. [data model](#models)
+4. Explore different parts of the received DID doc
 ```rust
 use didresolver::did::Did;
-use ureq::get as fetch_url;
 
 fn main() {
-    let did = Did::new(String::from("did:tdw:QmZ3ZcSA52uEaPahx9SQL4xfjcfJ2e7Y8HqNv2sohG1iK7:gist.githubusercontent.com:vst-bit:8d8247633dbc5836324a81725c1216d8:raw:fde1612e271991f23e814943d7636a4dbac6752b"));
+    let did = Did::new(String::from("did:tdw:QmRjT8JCbQkEffVBWSbQd8nbMVNfAxiXStLPmqkQUWcsfv:gist.githubusercontent.com:vst-bit:32b64cfac9075b2a3ab7301b772bcdef:raw:4775dd76799b35e99322bf738fafd6c10f421ed7"))
+        .expect("invalid DID supplied");
 
     let url = match did.get_url() {
         Ok(url) => url,
-        Err(e) => panic!("invalid (unsupported or malformed) DID supplied")
+        Err(reason) => panic!(
+            "invalid (unsupported or malformed) DID supplied: {}",
+            reason
+        ),
     };
-    let did_log_raw = fetch_url(&url).call().into_string().unwrap();
-    
+
+    let did_log_raw = ureq::get(&url)
+        .call()
+        .expect("Failed to call did url")
+        .into_body()
+        .read_to_string()
+        .expect("Failed to read DID to string");
+
     let did_doc = match did.resolve(did_log_raw) {
         Ok(did_doc) => did_doc,
-        Err(e) => panic!("Error occurred during resolution")
+        Err(reason) => panic!("Error occurred during resolution: {}", reason),
     };
-    
+
     did_doc.get_verification_method().iter().for_each(|method| {
-        println!("id: {}, publicKey: {:?}, publicKeyJwk: {:?}", method.id, method.public_key_multibase, method.public_key_jwk)
-    })
+        println!(
+            "id: {}, publicKey: {:?}, publicKeyJwk: {:?}",
+            method.id, method.public_key_multibase, method.public_key_jwk
+        )
+    });
 }
 ```
 
-## Models
+## Hierarchical structure
 
-```mermaid
----
-title: Available types
----
-classDiagram
-    PublicKey <|-- Diddoc
-
-    class Did {
-        +constructor(String did)
-        +resolve()
-    }
-
-    class PublicKey {
-        +String id
-        +String keyType
-        +String controller
-        +String publicKeyMultibase
-        +String publicKeyJwk
-    }
-
-    class Diddoc {
-        +String[] context
-        +String id
-        +PublicKey[] verificationMethod
-        +PublicKey[] authenticationMethod
-        +PublicKey[] capabilityInvocation
-        +PublicKey[] capabilityDelegation
-        +PublicKey[] assertionMethod
-        +String[] controller
-        +bool deactivated
-
-    }
+```text
+crate didresolver
+├── mod did: pub
+│   ├── struct Did: pub
+│   │   ├── fn get_url: pub
+│   │   ├── fn new: pub
+│   │   └── fn resolve: pub
+│   ├── enum DidMethod: pub
+│   ├── enum DidResolveError: pub
+│   │   └── fn kind: pub
+│   └── enum DidResolveErrorKind: pub
+└── mod methods: pub
+    └── fn resolve_did_tdw: pub
 ```
 
-## Known Issues
+## Internal dependencies
 
-The swiyu Public Beta Trust Infrastructure was deliberately released at an early stage to enable future ecosystem participants. There may still be minor bugs or security vulnerabilities in the test system. We publish them as [KnownIssues](https://github.com/swiyu-admin-ch/didresolver/issues?q=is%3Aissue%20state%3Aopen%20type%3AKnownIssue) in this repository.
+![Dependencies](/images/dependencies.png)
+
+The graph is also available in other layouts: [circo](/images/dependencies-circo.png), [dot](/images/dependencies-dot.png), [fdp](/images/dependencies-dot.fdp), [neato](/images/dependencies-neato.png), [sfdp](/images/dependencies-sfdp.png), [twopi](/images/dependencies-twopi.png)  
+
+
+## Missing Features and Known Issues
+
+The swiyu Public Beta Trust Infrastructure was deliberately released at an early stage to enable future ecosystem participants. The [feature roadmap](https://github.com/orgs/swiyu-admin-ch/projects/1/views/7) shows the current discrepancies between Public Beta and the targeted productive Trust Infrastructure. There may still be minor bugs or security vulnerabilities in the test system. These are marked as [‘KnownIssues’](../../issues) in each repository.
 
 ## Contributions and feedback
 
