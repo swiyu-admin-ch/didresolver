@@ -1,6 +1,6 @@
 [package]
 name = "didresolver"
-version = "2.1.2"
+version = "2.1.3"
 edition = "2021"
 description = "DID resolver for different did:tdw methods"
 authors = ["Jonas Niestroj", "Frithjof Hoppe", "Vladica Stojic"]
@@ -18,8 +18,8 @@ include = [
 thiserror = "2.0.12"
 #openssl = { version = "0.10.68", features = ["vendored"] }
 uniffi = { version = "0.28.3", features = ["cli"] }
-strum = { version = "0.27.1", features = ["derive"] }
-didtoolbox = { git = "https://github.com/swiyu-admin-ch/didtoolbox.git", tag = "2.1.1" }
+strum = { version = "0.27.2", features = ["derive"] }
+didtoolbox = { git = "https://github.com/swiyu-admin-ch/didtoolbox.git", tag = "2.1.2" }
 # When building on a container (podman run -it --rm -v $(pwd):$(pwd):Z -v $HOME/.ssh:/root/.ssh:Z -w $(pwd) rust), the local repo may be used:
 #didtoolbox = { path = "../didtoolbox" }
 
@@ -27,7 +27,7 @@ didtoolbox = { git = "https://github.com/swiyu-admin-ch/didtoolbox.git", tag = "
 uniffi = { version = "0.28.3", features = ["build"] }
 
 [dev-dependencies]
-rstest = "0.25.0"
+rstest = "0.26.1"
 ureq = "3.0.12"
 
 [lib]
