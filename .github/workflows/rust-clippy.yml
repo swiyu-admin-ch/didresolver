@@ -16,7 +16,7 @@ on:
     # The branches below must be a subset of the branches above
     branches: [ "main" ]
   #schedule:
-  #  - cron: '28 5 * * 2'
+  #  - cron: '15 6 * * 1'
 
 jobs:
   rust-clippy-analyze:
@@ -31,7 +31,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af #@v1
+        # https://github.com/marketplace/actions/rust-toolchain
+        uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable

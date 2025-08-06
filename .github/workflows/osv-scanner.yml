@@ -1,0 +1,64 @@
+# A workflow which sets up OSV-Scanner scanning for vulnerabilities.
+name: OSV-Scanner
+
+on:
+  pull_request:
+    branches: [ "main" ]
+  merge_group:
+    branches: [ "main" ]
+  push:
+    branches: [ "main" ]
+
+permissions:
+  # Required to upload SARIF file to CodeQL. See: https://github.com/github/codeql-action/issues/2117
+  actions: read
+  # Require writing security events to upload SARIF file to security tab
+  security-events: write
+  # to fetch code (actions/checkout)
+  contents: read
+
+jobs:
+  sbom:
+    name: Create Software Bill Of Material (SBOM) for Rust
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        # https://github.com/marketplace/actions/rust-toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          components: clippy
+          override: true
+
+      - name: Install required Rust binary (cargo-sbom)
+        run: cargo install cargo-sbom
+
+      # https://crates.io/crates/cargo-sbom
+      - name: Run cargo-sbom
+        run: cargo-sbom > sbom.spdx.json
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: SBOM-file
+          path: sbom.spdx.json
+          retention-days: 1
+
+  osv-scanner:
+    needs: sbom
+    name: OSV (vulnerabilities) scanner
+    # see https://google.github.io/osv-scanner/github-action/
+    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.1.0"
+    with:
+      # Download the artifact uploaded in sbom step
+      download-artifact: SBOM-file
+      # Scan only the file inside the uploaded artifact
+      scan-args: |-
+        --lockfile=sbom.spdx.json
+      #results-file-name: 'results.sarif'
+      #upload-sarif: 'true'
+      fail-on-vuln: false
