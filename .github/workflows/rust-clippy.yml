@@ -11,46 +11,27 @@ name: rust-clippy analyze
 
 on:
   push:
-    branches: [ "main" ]
+    #branches: [ "main" ]
+    # speed up the CI pipeline, since the linting process will not be performed if no source code files were changed.
+    paths:
+      - '**/*.rs'
   pull_request:
     # The branches below must be a subset of the branches above
     branches: [ "main" ]
   #schedule:
   #  - cron: '15 6 * * 1'
+  # REMOVEME
+  workflow_dispatch:
+
+permissions:
+  # Required to upload SARIF file to CodeQL. See: https://github.com/github/codeql-action/issues/2117
+  actions: read
+  # Require writing security events to upload SARIF file to security tab
+  security-events: write
+  # to fetch code (actions/checkout)
+  contents: read
 
 jobs:
-  rust-clippy-analyze:
-    name: Run rust-clippy analyzing
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-      actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Rust toolchain
-        # https://github.com/marketplace/actions/rust-toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          components: clippy
-          override: true
-
-      - name: Install required cargo
-        run: cargo install clippy-sarif sarif-fmt
-
-      - name: Run rust-clippy
-        run:
-          cargo clippy
-          --all-features
-          --message-format=json | clippy-sarif | tee rust-clippy-results.sarif | sarif-fmt
-        continue-on-error: true
-
-      - name: Upload analysis results to GitHub
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: rust-clippy-results.sarif
-          wait-for-processing: true
+  rust-clippy:
+    # just reuse a relevant workflow from the dedicated repo https://github.com/swiyu-admin-ch/github-actions-workflows
+    uses: swiyu-admin-ch/github-actions-workflows/.github/workflows/rust-clippy.yml@main

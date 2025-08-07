@@ -1,0 +1,16 @@
+name: Build and test
+
+on:
+  push:
+
+  # REMOVEME
+  workflow_dispatch:
+
+permissions:
+  # to fetch code (actions/checkout)
+  contents: read
+
+jobs:
+  rust-build-and-test:
+    # just reuse a relevant workflow from the dedicated repo https://github.com/swiyu-admin-ch/github-actions-workflows
+    uses: swiyu-admin-ch/github-actions-workflows/.github/workflows/rust-build-and-test.yml@main
