@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 
 use crate::methods::resolve_did_tdw;
-use didtoolbox::did_tdw::TrustDidWebId;
-use didtoolbox::didtoolbox::DidDoc;
+use did_tdw::did_tdw::TrustDidWebId;
+use did_sidekicks::did_doc::DidDoc;
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use strum::{AsRefStr as EnumAsRefStr, Display as EnumDisplay};
@@ -48,7 +48,7 @@ pub enum DidMethod {
 }
 
 #[derive(Debug, Default, PartialEq)]
-// TODO This struct resembles the ssi::dids::DID, which is a way more advanced, so refactoring would be perhaps a good idea.
+// This struct resembles the ssi::dids::DID, which is a way more advanced
 pub struct Did {
     pub parts: Vec<String>,
     method: DidMethod,
@@ -131,7 +131,7 @@ impl TryFrom<String> for Did {
 mod tests {
     use super::Did;
     use crate::did::DidResolveErrorKind;
-    use didtoolbox::didtoolbox::VerificationType;
+    use did_sidekicks::did_doc::VerificationType;
     use rstest::{fixture, rstest};
     use std::fs;
     use std::path::Path;

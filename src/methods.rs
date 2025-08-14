@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 
 use crate::did::{Did, DidResolveError};
-use didtoolbox::did_tdw::{TrustDidWeb, TrustDidWebId};
-use didtoolbox::didtoolbox::DidDoc;
+use did_tdw::did_tdw::{TrustDidWeb, TrustDidWebId};
+use did_sidekicks::did_doc::DidDoc;
 use std::sync::Arc;
 
 pub fn resolve_did_tdw(did: &Did, did_log_raw: String) -> Result<Arc<DidDoc>, DidResolveError> {

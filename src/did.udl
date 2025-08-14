@@ -3,52 +3,55 @@ namespace did {
 
 };
 
-[ExternalInterface="didtoolbox"]
+[ExternalInterface="did_tdw"]
 typedef extern TrustDidWebIdResolutionError;
 
-[ExternalInterface="didtoolbox"]
+[ExternalInterface="did_tdw"]
 typedef extern TrustDidWebId;
 
-[ExternalInterface="didtoolbox"]
+[ExternalInterface="did_tdw"]
 typedef extern TrustDidWebError;
 
-[ExternalInterface="didtoolbox"]
+[ExternalInterface="did_tdw"]
 typedef extern TrustDidWeb;
 
-[ExternalInterface="didtoolbox"]
+[ExternalInterface="did_sidekicks"]
 typedef extern Ed25519Signature;
 
-[ExternalInterface="didtoolbox"]
+[ExternalInterface="did_sidekicks"]
 typedef extern Ed25519SigningKey;
 
-[ExternalInterface="didtoolbox"]
+[ExternalInterface="did_sidekicks"]
 typedef extern Ed25519VerifyingKey;
 
-[ExternalInterface="didtoolbox"]
+[ExternalInterface="did_sidekicks"]
 typedef extern Ed25519KeyPair;
 
-[ExternalInterface="didtoolbox"]
-typedef extern DidDocumentState;
+// TODO Beware of ambiguity with the did_webvh type. Is it really needed here (to be exported)?
+//[ExternalInterface="did_tdw"]
+//typedef extern DidDocumentState;
 
-[External="didtoolbox"]
+[External="did_sidekicks"]
 typedef extern Jwk;
 
-[External="didtoolbox"]
+[External="did_sidekicks"]
 typedef extern VerificationType;
 
-[External="didtoolbox"]
+[External="did_sidekicks"]
 typedef extern VerificationMethod;
 
-[ExternalInterface="didtoolbox"]
+// Used below in: interface Did
+[ExternalInterface="did_sidekicks"]
 typedef extern DidDoc;
 
-[ExternalInterface="didtoolbox"]
-typedef extern DidLogEntryJsonSchema;
+// TODO Beware of ambiguity with the did_webvh type. Is it really needed here (to be exported)?
+//[ExternalInterface="did_tdw"]
+//typedef extern DidLogEntryJsonSchema;
 
-[ExternalInterface="didtoolbox"]
+[ExternalInterface="did_sidekicks"]
 typedef extern DidLogEntryValidatorError;
 
-[ExternalInterface="didtoolbox"]
+[ExternalInterface="did_sidekicks"]
 typedef extern DidLogEntryValidator;
 
 [Error]
