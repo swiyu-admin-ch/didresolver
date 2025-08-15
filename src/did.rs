@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 
-use crate::methods::resolve_did_tdw;
-use did_tdw::did_tdw::TrustDidWebId;
+use crate::methods::resolve_did_log;
 use did_sidekicks::did_doc::DidDoc;
+use did_tdw::did_tdw::TrustDidWebId;
+use did_webvh::did_webvh::WebVerfiableHistoryId;
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use strum::{AsRefStr as EnumAsRefStr, Display as EnumDisplay};
@@ -43,6 +44,8 @@ pub enum DidResolveErrorKind {
 pub enum DidMethod {
     #[strum(to_string = "tdw", serialize = "tdw")]
     TDW,
+    #[strum(to_string = "webvh", serialize = "webvh")]
+    WEBVH,
     #[default]
     UNKNOWN,
 }
@@ -65,25 +68,25 @@ impl Did {
 
     /// Returns the url part from the supplied DID, if supported and not malformed.
     pub fn get_url(&self) -> Result<String, DidResolveError> {
-        let res = match self.method {
-            DidMethod::TDW => TrustDidWebId::parse_did_tdw(self.to_string()),
+        match self.method {
+            DidMethod::TDW => match TrustDidWebId::parse_did_tdw(self.to_string()) {
+                Ok(doc) => Ok(doc.get_url()),
+                Err(e) => Err(DidResolveError::MalformedDid(e.to_string())),
+            },
+            DidMethod::WEBVH => match WebVerfiableHistoryId::parse_did_webvh(self.to_string()) {
+                Ok(doc) => Ok(doc.get_url()),
+                Err(e) => Err(DidResolveError::MalformedDid(e.to_string())),
+            },
             DidMethod::UNKNOWN => return Err(DidResolveError::DidNotSupported(String::new())),
-        };
-        match res {
-            Ok(x) => Ok(x.get_url()),
-            Err(e) => Err(DidResolveError::MalformedDid(e.to_string())),
         }
     }
 
+    pub fn get_method(&self) -> &DidMethod {
+        &self.method
+    }
+
     pub fn resolve(&self, did_log_raw: String) -> Result<Arc<DidDoc>, DidResolveError> {
-        let res = match self.method {
-            DidMethod::TDW => resolve_did_tdw(self, did_log_raw),
-            DidMethod::UNKNOWN => Err(DidResolveError::DidNotSupported(String::new())),
-        };
-        match res {
-            Ok(doc) => Ok(doc),
-            Err(e) => Err(e),
-        }
+        resolve_did_log(self, did_log_raw)
     }
 }
 
@@ -116,6 +119,19 @@ impl TryFrom<String> for Did {
                         Ok(Did {
                             parts: did_split.into_iter().map(|v| v.to_string()).collect(),
                             method: DidMethod::TDW,
+                            method_id: scid,
+                        })
+                    }
+                    Err(_e) => Err(DidResolveError::MalformedDid(value)),
+                }
+            }
+            WebVerfiableHistoryId::DID_METHOD_NAME => {
+                match WebVerfiableHistoryId::parse_did_webvh(value.to_owned()) {
+                    Ok(buf) => {
+                        let scid = buf.get_scid();
+                        Ok(Did {
+                            parts: did_split.into_iter().map(|v| v.to_string()).collect(),
+                            method: DidMethod::WEBVH,
                             method_id: scid,
                         })
                     }
