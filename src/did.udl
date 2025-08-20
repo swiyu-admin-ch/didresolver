@@ -5,61 +5,66 @@ namespace did {
 
 // did_tdw
 
-[ExternalInterface="did_tdw"]
-typedef extern TrustDidWebIdResolutionError;
+[External="did_tdw"]
+typedef enum TrustDidWebIdResolutionError;
 
-[ExternalInterface="did_tdw"]
-typedef extern TrustDidWebId;
+[External="did_tdw"]
+typedef struct TrustDidWebId;
 
-[ExternalInterface="did_tdw"]
-typedef extern TrustDidWebError;
+[External="did_tdw"]
+typedef enum TrustDidWebError;
 
-[ExternalInterface="did_tdw"]
-typedef extern TrustDidWeb;
+[External="did_tdw"]
+typedef struct TrustDidWeb;
 
 // did_webvh
 
-[ExternalInterface="did_webvh"]
-typedef extern WebVerifiableHistoryIdResolutionError;
+[External="did_webvh"]
+typedef enum WebVerifiableHistoryIdResolutionError;
 
-[ExternalInterface="did_webvh"]
-typedef extern WebVerifiableHistoryId;
+[External="did_webvh"]
+typedef struct WebVerifiableHistoryId;
 
-[ExternalInterface="did_webvh"]
-typedef extern WebVerifiableHistoryError;
+[External="did_webvh"]
+typedef enum WebVerifiableHistoryError;
 
-[ExternalInterface="did_webvh"]
-typedef extern WebVerifiableHistory;
+[External="did_webvh"]
+typedef struct WebVerifiableHistory;
 
 // did_sidekicks
 
 [External="did_sidekicks"]
-typedef extern Jwk;
+typedef struct Jwk;
 
 [External="did_sidekicks"]
-typedef extern VerificationType;
+typedef enum VerificationType;
 
 [External="did_sidekicks"]
-typedef extern VerificationMethod;
+typedef struct VerificationMethod;
 
-// Used below in: interface Did
-[ExternalInterface="did_sidekicks"]
-typedef extern DidDoc;
+// Returned by `Did`'s method resolve
+[External="did_sidekicks"]
+typedef struct DidDoc;
 
-[ExternalInterface="did_sidekicks"]
-typedef extern DidLogEntryJsonSchema;
+[External="did_sidekicks"]
+typedef trait DidLogEntryJsonSchema;
 
-[ExternalInterface="did_sidekicks"]
-typedef extern DidLogEntryValidatorError;
+[External="did_sidekicks"]
+typedef enum DidLogEntryValidatorError;
 
-[ExternalInterface="did_sidekicks"]
-typedef extern DidLogEntryValidator;
+[External="did_sidekicks"]
+typedef struct DidLogEntryValidator;
 
 [Error]
 enum DidResolveError {
+    /// The supplied DID is not supported. Currently supported are: did:tdw, did:webvh
     "DidNotSupported",
+    /// The supplied DID is supported, but is malformed
     "MalformedDid",
-    "InvalidDidLog"
+    /// The supplied DID log is invalid
+    "InvalidDidLog",
+    /// The supplied DID log is valid, but it features invalid DID Doc
+    "InvalidDidDoc"
 };
 
 interface Did {

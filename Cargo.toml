@@ -17,7 +17,7 @@ include = [
 [dependencies]
 thiserror = "2.0.12"
 #openssl = { version = "0.10.68", features = ["vendored"] }
-uniffi = { version = "0.28.3", features = ["cli"] }
+uniffi = { version = "0.29.4", features = ["cli"] }
 strum = { version = "0.27.2", features = ["derive"] }
 # CAUTION Starting with 2.2.0, didtoolbox (as dep) is replaced by: did_tdw, did_sidekicks and did_webvh
 # TODO Before releasing 2.2.0, replace 'branch = "main"' with 'tag = "1.0.0"' (for did_tdw dep)
@@ -31,7 +31,7 @@ did_webvh = { git = "https://github.com/swiyu-admin-ch/did-webvh.git", branch = 
 #did_webvh = { path = "../did-webvh" }
 
 [build-dependencies]
-uniffi = { version = "0.28.3", features = ["build"] }
+uniffi = { version = "0.29.4", features = ["build"] }
 
 [dev-dependencies]
 rstest = "0.26.1"

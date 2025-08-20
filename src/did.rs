@@ -5,18 +5,25 @@ use did_sidekicks::did_doc::DidDoc;
 use did_tdw::did_tdw::TrustDidWebId;
 use did_webvh::did_webvh::WebVerifiableHistoryId;
 use std::fmt::{Display, Formatter};
-use std::sync::Arc;
 use strum::{AsRefStr as EnumAsRefStr, Display as EnumDisplay};
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum DidResolveError {
-    #[error("the provided did is not supported. Only did:tdw are supported: {0}")]
+    /// The supplied DID is not supported (currently supported are: did:tdw, did:webvh)
+    #[error(
+        "The supplied DID is not supported (currently supported are: did:tdw, did:webvh): {0}"
+    )]
     DidNotSupported(String),
-    #[error("the supplied did is supported, but is malformed: {0}")]
+    /// The supplied DID is supported, but is malformed
+    #[error("the supplied DID is supported, but is malformed: {0}")]
     MalformedDid(String),
-    #[error("the supplied did log is invalid: {0}")]
+    /// The supplied DID log is invalid
+    #[error("the supplied DID log is invalid: {0}")]
     InvalidDidLog(String),
+    /// The supplied DID log is valid, but it features invalid DID Doc
+    #[error("the supplied DID log is valid, but it features invalid DID Doc: {0}")]
+    InvalidDidDoc(String),
 }
 
 impl DidResolveError {
@@ -25,6 +32,7 @@ impl DidResolveError {
         match self {
             Self::DidNotSupported(_) => DidResolveErrorKind::DidNotSupported,
             Self::InvalidDidLog(_) => DidResolveErrorKind::InvalidDidLog,
+            Self::InvalidDidDoc(_) => DidResolveErrorKind::InvalidDidDoc,
             Self::MalformedDid(_) => DidResolveErrorKind::MalformedDid,
         }
     }
@@ -38,6 +46,7 @@ pub enum DidResolveErrorKind {
     DidNotSupported,
     MalformedDid,
     InvalidDidLog,
+    InvalidDidDoc,
 }
 
 #[derive(Debug, PartialEq, Default, EnumDisplay, EnumAsRefStr)]
@@ -85,7 +94,7 @@ impl Did {
         &self.method
     }
 
-    pub fn resolve(&self, did_log_raw: String) -> Result<Arc<DidDoc>, DidResolveError> {
+    pub fn resolve(&self, did_log_raw: String) -> Result<DidDoc, DidResolveError> {
         resolve_did_log(self, did_log_raw)
     }
 }
