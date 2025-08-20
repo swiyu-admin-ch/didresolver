@@ -3,6 +3,8 @@ namespace did {
 
 };
 
+// did_tdw
+
 [ExternalInterface="did_tdw"]
 typedef extern TrustDidWebIdResolutionError;
 
@@ -15,21 +17,21 @@ typedef extern TrustDidWebError;
 [ExternalInterface="did_tdw"]
 typedef extern TrustDidWeb;
 
-[ExternalInterface="did_sidekicks"]
-typedef extern Ed25519Signature;
+// did_webvh
 
-[ExternalInterface="did_sidekicks"]
-typedef extern Ed25519SigningKey;
+[ExternalInterface="did_webvh"]
+typedef extern WebVerifiableHistoryIdResolutionError;
 
-[ExternalInterface="did_sidekicks"]
-typedef extern Ed25519VerifyingKey;
+[ExternalInterface="did_webvh"]
+typedef extern WebVerifiableHistoryId;
 
-[ExternalInterface="did_sidekicks"]
-typedef extern Ed25519KeyPair;
+[ExternalInterface="did_webvh"]
+typedef extern WebVerifiableHistoryError;
 
-// TODO Beware of ambiguity with the did_webvh type. Is it really needed here (to be exported)?
-//[ExternalInterface="did_tdw"]
-//typedef extern DidDocumentState;
+[ExternalInterface="did_webvh"]
+typedef extern WebVerifiableHistory;
+
+// did_sidekicks
 
 [External="did_sidekicks"]
 typedef extern Jwk;
@@ -44,9 +46,8 @@ typedef extern VerificationMethod;
 [ExternalInterface="did_sidekicks"]
 typedef extern DidDoc;
 
-// TODO Beware of ambiguity with the did_webvh type. Is it really needed here (to be exported)?
-//[ExternalInterface="did_tdw"]
-//typedef extern DidLogEntryJsonSchema;
+[ExternalInterface="did_sidekicks"]
+typedef extern DidLogEntryJsonSchema;
 
 [ExternalInterface="did_sidekicks"]
 typedef extern DidLogEntryValidatorError;

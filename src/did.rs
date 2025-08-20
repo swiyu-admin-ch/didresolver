@@ -3,7 +3,7 @@
 use crate::methods::resolve_did_log;
 use did_sidekicks::did_doc::DidDoc;
 use did_tdw::did_tdw::TrustDidWebId;
-use did_webvh::did_webvh::WebVerfiableHistoryId;
+use did_webvh::did_webvh::WebVerifiableHistoryId;
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use strum::{AsRefStr as EnumAsRefStr, Display as EnumDisplay};
@@ -73,11 +73,11 @@ impl Did {
                 Ok(doc) => Ok(doc.get_url()),
                 Err(e) => Err(DidResolveError::MalformedDid(e.to_string())),
             },
-            DidMethod::WEBVH => match WebVerfiableHistoryId::parse_did_webvh(self.to_string()) {
+            DidMethod::WEBVH => match WebVerifiableHistoryId::parse_did_webvh(self.to_string()) {
                 Ok(doc) => Ok(doc.get_url()),
                 Err(e) => Err(DidResolveError::MalformedDid(e.to_string())),
             },
-            DidMethod::UNKNOWN => return Err(DidResolveError::DidNotSupported(String::new())),
+            DidMethod::UNKNOWN => Err(DidResolveError::DidNotSupported(String::new())),
         }
     }
 
@@ -125,8 +125,8 @@ impl TryFrom<String> for Did {
                     Err(_e) => Err(DidResolveError::MalformedDid(value)),
                 }
             }
-            WebVerfiableHistoryId::DID_METHOD_NAME => {
-                match WebVerfiableHistoryId::parse_did_webvh(value.to_owned()) {
+            WebVerifiableHistoryId::DID_METHOD_NAME => {
+                match WebVerifiableHistoryId::parse_did_webvh(value.to_owned()) {
                     Ok(buf) => {
                         let scid = buf.get_scid();
                         Ok(Did {
