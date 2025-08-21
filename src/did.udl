@@ -44,7 +44,7 @@ typedef struct VerificationMethod;
 
 // Returned by `Did`'s method resolve
 [External="did_sidekicks"]
-typedef struct DidDoc;
+typedef interface DidDoc;
 
 [External="did_sidekicks"]
 typedef trait DidLogEntryJsonSchema;

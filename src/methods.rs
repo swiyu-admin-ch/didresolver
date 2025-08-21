@@ -4,8 +4,9 @@ use crate::did::{Did, DidMethod, DidResolveError};
 use did_sidekicks::did_doc::DidDoc;
 use did_tdw::did_tdw::{TrustDidWeb, TrustDidWebId};
 use did_webvh::did_webvh::{WebVerifiableHistory, WebVerifiableHistoryId};
+use std::sync::Arc;
 
-pub fn resolve_did_log(did: &Did, did_log_raw: String) -> Result<DidDoc, DidResolveError> {
+pub fn resolve_did_log(did: &Did, did_log_raw: String) -> Result<Arc<DidDoc>, DidResolveError> {
     match did.get_method() {
         DidMethod::TDW => resolve_did_tdw(did, did_log_raw),
         DidMethod::WEBVH => resolve_did_webvh(did, did_log_raw),
@@ -13,7 +14,7 @@ pub fn resolve_did_log(did: &Did, did_log_raw: String) -> Result<DidDoc, DidReso
     }
 }
 
-fn resolve_did_webvh(did: &Did, did_log_raw: String) -> Result<DidDoc, DidResolveError> {
+fn resolve_did_webvh(did: &Did, did_log_raw: String) -> Result<Arc<DidDoc>, DidResolveError> {
     match WebVerifiableHistoryId::parse_did_webvh(did.to_string()) {
         Ok(_) => match WebVerifiableHistory::read(did.to_string(), did_log_raw) {
             Ok(web_vh) => match web_vh.get_did_doc_obj() {
@@ -26,7 +27,7 @@ fn resolve_did_webvh(did: &Did, did_log_raw: String) -> Result<DidDoc, DidResolv
     }
 }
 
-fn resolve_did_tdw(did: &Did, did_log_raw: String) -> Result<DidDoc, DidResolveError> {
+fn resolve_did_tdw(did: &Did, did_log_raw: String) -> Result<Arc<DidDoc>, DidResolveError> {
     match TrustDidWebId::parse_did_tdw(did.to_string()) {
         Ok(_) => match TrustDidWeb::read(did.to_string(), did_log_raw) {
             Ok(tdw) => match tdw.get_did_doc_obj() {

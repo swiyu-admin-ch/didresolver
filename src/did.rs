@@ -5,6 +5,7 @@ use did_sidekicks::did_doc::DidDoc;
 use did_tdw::did_tdw::TrustDidWebId;
 use did_webvh::did_webvh::WebVerifiableHistoryId;
 use std::fmt::{Display, Formatter};
+use std::sync::Arc;
 use strum::{AsRefStr as EnumAsRefStr, Display as EnumDisplay};
 use thiserror::Error;
 
@@ -94,7 +95,7 @@ impl Did {
         &self.method
     }
 
-    pub fn resolve(&self, did_log_raw: String) -> Result<DidDoc, DidResolveError> {
+    pub fn resolve(&self, did_log_raw: String) -> Result<Arc<DidDoc>, DidResolveError> {
         resolve_did_log(self, did_log_raw)
     }
 }
