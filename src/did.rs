@@ -63,7 +63,7 @@ pub enum DidMethod {
 /// that is an enhancement to the `did:web` DID method, providing complementary features
 /// that address `did:web`’s limitations as a long-lasting DID.
 ///
-/// Also, the legacy specification [`did:tdw`](https://identity.foundation/didwebvh/v0.3) is supported as well.
+/// Also, the legacy DID method [`did:tdw`](https://identity.foundation/didwebvh/v0.3) is supported as well.
 #[derive(Debug, PartialEq)]
 // This struct resembles the ssi::dids::DID, which is a way more advanced
 pub struct Did {
@@ -76,22 +76,36 @@ pub struct Did {
 impl Did {
     const DID: &'static str = "did";
 
-    /// The single constructor of [`Did`] expecting either:
-    /// - a [`did:tdw:0.3`   DID](https://identity.foundation/didwebvh/v0.3/#read-resolve) or
-    /// - a [`did:webvh:1.0` DID](https://identity.foundation/didwebvh/v1.0/#read-resolve)
+    /// The single constructor of [`Did`] expecting a
+    /// [DID method-specific identifier](https://identity.foundation/didwebvh/next/#method-specific-identifier) as either:
+    /// - a [`did:tdw:0.3`   DID](https://identity.foundation/didwebvh/v0.3) or
+    /// - a [`did:webvh:1.0` DID](https://identity.foundation/didwebvh/v1.0).
     ///
-    /// In case of error, the available [`DidResolveError`] object features all the detailed
-    /// information required to narrow down the root cause.
+    /// The constructor will attempt to [*transform*](https://identity.foundation/didwebvh/next/#the-did-to-https-transformation)
+    /// the supplied DID method identifier into a valid
+    /// [RFC3986](https://www.rfc-editor.org/rfc/rfc3986)-conform HTTPS URL thus enabling retrival
+    /// of its DID log (via an `HTTP GET`). In case of error, the available [`DidResolveError`]
+    /// object features all the detailed information required to narrow down the root cause.
     ///
     /// A UniFFI-compliant constructor.
     pub fn new(did: String) -> Result<Self, DidResolveError> {
         Self::try_from(did.to_owned())
     }
 
-    /// Returns the url part from the supplied DID, if supported and not malformed.
+    /// Returns the HTTP URL [*transformed*](https://identity.foundation/didwebvh/next/#the-did-to-https-transformation)
+    /// from the DID supplied via constructor.
     ///
     /// A UniFFI-compliant method.
-    pub fn get_url(&self) -> String {
+    #[deprecated(since = "2.2.0", note = "please use `get_http_url` instead")]
+    pub fn get_url(&self) -> Result<String, DidResolveError> {
+        Ok(self.get_https_url())
+    }
+
+    /// Returns the HTTPS URL [*transformed*](https://identity.foundation/didwebvh/next/#the-did-to-https-transformation)
+    /// from the DID supplied via constructor.
+    ///
+    /// A UniFFI-compliant method.
+    pub fn get_https_url(&self) -> String {
         self.url.clone()
     }
 
@@ -111,16 +125,16 @@ impl Did {
     /// information required to narrow down the root cause.
     ///
     /// A UniFFI-compliant method.
-    pub fn resolve(&self, did_log_raw: String) -> Result<Arc<DidDoc>, DidResolveError> {
+    pub fn resolve(&self, did_log: String) -> Result<Arc<DidDoc>, DidResolveError> {
         match self.method {
-            DidMethod::TDW => match TrustDidWeb::read(self.to_string(), did_log_raw) {
+            DidMethod::TDW => match TrustDidWeb::read(self.to_string(), did_log) {
                 Ok(tdw) => match tdw.get_did_doc_obj() {
                     Ok(doc) => Ok(doc),
                     Err(e) => Err(DidResolveError::InvalidDidDoc(e.to_string())),
                 },
                 Err(e) => Err(DidResolveError::InvalidDidLog(e.to_string())),
             },
-            DidMethod::WEBVH => match WebVerifiableHistory::read(self.to_string(), did_log_raw) {
+            DidMethod::WEBVH => match WebVerifiableHistory::read(self.to_string(), did_log) {
                 Ok(web_vh) => match web_vh.get_did_doc_obj() {
                     Ok(doc) => Ok(doc),
                     Err(e) => Err(DidResolveError::InvalidDidDoc(e.to_string())),
@@ -224,7 +238,7 @@ mod tests {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let did_obj = Did::new(did)?; // no error expected here
 
-        let url = did_obj.get_url();
+        let url = did_obj.get_https_url();
         assert!(!url.is_empty());
 
         let did_log_raw = http_client.fetch_url(url);
@@ -467,7 +481,7 @@ mod tests {
         let did_obj = Did::new(did.to_owned()); // no errors expected here
         assert!(did_obj.is_ok());
         let did_obj = did_obj.unwrap(); // panic-safe unwrap call (see the previous line)
-        let url = did_obj.get_url();
+        let url = did_obj.get_https_url();
         assert!(!url.is_empty());
         assert!(url.starts_with("https://"));
         let method = did_obj.get_method();

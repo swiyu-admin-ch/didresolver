@@ -71,16 +71,16 @@ fn main() {
     let did = Did::new(String::from("did:webvh:QmXi8p2LNXA6kbc2brwdpXwGETHCrPoFk15yPbLaAu27Pj:gist.githubusercontent.com:vst-bit:20c3f59d8179e324a6e29aef45240db4:raw:7870280f80dfcfb7459ee1488df4ab33f2bcf709"))
         .expect("invalid DID supplied");
 
-    let url = did.get_url();
+    let url = did.get_https_url();
 
-    let did_log_raw = ureq::get(&url)
+    let did_log = ureq::get(&url)
         .call()
         .expect("Failed to call did url")
         .into_body()
         .read_to_string()
         .expect("Failed to read DID to string");
 
-    let did_doc = match did.resolve(did_log_raw) {
+    let did_doc = match did.resolve(did_log) {
         Ok(did_doc) => did_doc,
         Err(reason) => panic!("Error occurred during resolution: {}", reason),
     };
@@ -100,6 +100,7 @@ fn main() {
 crate didresolver
 └── mod did: pub
     ├── struct Did: pub
+    │   ├── fn get_https_url: pub
     │   ├── fn get_method: pub
     │   ├── fn get_parts: pub
     │   ├── fn get_url: pub
@@ -115,7 +116,7 @@ crate didresolver
 
 ![Dependencies](/images/dependencies.png)
 
-The graph is also available in other layouts: [dot](/images/dependencies-dot.png), [fdp](/images/dependencies-fdp.png), [neato](/images/dependencies-neato.png), [sfdp](/images/dependencies-sfdp.png), [twopi](/images/dependencies-twopi.png)  
+The graph is also available in other layouts: [circo](/images/dependencies-circo.png), [dot](/images/dependencies-dot.png), [fdp](/images/dependencies-fdp.png), [neato](/images/dependencies-neato.png), [sfdp](/images/dependencies-sfdp.png), [twopi](/images/dependencies-twopi.png)  
 
 ## Missing Features and Known Issues
 

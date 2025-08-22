@@ -7,7 +7,7 @@ var didObj: Did? = null
 
 try {
     didObj = Did(did) // may throw DidResolveException
-    val url = didObj?.getUrl() // may throw DidResolveException
+    val url = didObj?.getHttpsUrl()
     assert(url != null)
     assert(url == "https://identifier-reg.trust-infra.swiyu-int.admin.ch/api/v1/did/18fa7c77-9dd1-4e20-a147-fb1bec146085/did.jsonl")
 } catch (e: Exception) {
@@ -32,7 +32,7 @@ did = "did:webvh:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.t
 
 try {
     didObj = Did(did) // may throw DidResolveException
-    val url = didObj?.getUrl() // may throw DidResolveException
+    val url = didObj?.getHttpsUrl()
     assert(url != null)
     assert(url == "https://identifier-reg.trust-infra.swiyu-int.admin.ch/api/v1/did/18fa7c77-9dd1-4e20-a147-fb1bec146085/did.jsonl")
 } catch (e: Exception) {

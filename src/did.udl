@@ -73,24 +73,34 @@ enum DidResolveError {
 /// that is an enhancement to the `did:web` DID method, providing complementary features, as specified by
 /// https://identity.foundation/didwebvh.
 ///
-/// Also, the legacy specification (`did:tdw`) is supported as well.
+/// Also, the legacy DID method `did:tdw` is supported as well.
 interface Did {
-    /// The single constructor of `Did` expecting either:
-    /// - a `did:tdw:0.3`   DID (https://identity.foundation/didwebvh/v0.3/#read-resolve) or
-    /// - a `did:webvh:1.0` DID (https://identity.foundation/didwebvh/v1.0/#read-resolve)
+    /// The single constructor of `Did` expecting a
+    /// DID method-specific identifier (defined as https://identity.foundation/didwebvh/next/#method-specific-identifier) as either a
+    /// `did:tdw:0.3` DID (w.r.t. https://identity.foundation/didwebvh/v0.3) or a
+    /// `did:webvh:1.0` DID (w.r.t. https://identity.foundation/didwebvh/v1.0).
     ///
-    /// In case of error, the available `DidResolveError` object features all the detailed
-    /// information required to narrow down the root cause.
+    /// The constructor will attempt to *transform* (w.r.t. https://identity.foundation/didwebvh/next/#the-did-to-https-transformation)
+    /// the supplied DID method identifier into a valid RFC3986-conform HTTPS URL thus enabling retrival
+    /// of its DID log (via an `HTTP GET`). In case of error, the available `DidResolveError`
+    /// object features all the detailed information required to narrow down the root cause.
     [Throws=DidResolveError]
     constructor(string did);
-    /// Returns the URL part from the supplied DID, if supported and not malformed.
+    /// Returns the HTTPS URL "transformed" (w.r.t. https://identity.foundation/didwebvh/next/#the-did-to-https-transformation)
+    /// from the DID supplied via constructor.
+    ///
+    /// @deprecated as of 2.2.0 replaced by `get_https_url`
+    [Throws=DidResolveError]
     string get_url();
-    /// The essential method of `Did` implementing the "Read (Resolve)" DID method operation for:
-    /// - a `did:tdw:0.3`   DID (https://identity.foundation/didwebvh/v0.3/#read-resolve) as well as for
-    /// - a `did:webvh:1.0` DID (https://identity.foundation/didwebvh/v1.0/#read-resolve)
+    /// Returns the HTTPS URL "transformed" (w.r.t. https://identity.foundation/didwebvh/next/#the-did-to-https-transformation)
+    /// from the DID supplied via constructor.
+    string get_https_url();
+    /// The essential method of `Did` implementing the "Read (Resolve)" DID method operation for either a
+    /// `did:tdw:0.3` (w.r.t. https://identity.foundation/didwebvh/v0.3/#read-resolve) or a
+    /// `did:webvh:1.0` DID (w.r.t. https://identity.foundation/didwebvh/v1.0/#read-resolve).
     ///
     /// In case of error, the available `DidResolveError` object features all the detailed
     /// information required to narrow down the root cause.
     [Throws=DidResolveError]
-    DidDoc resolve(string did_tdw_log);
+    DidDoc resolve(string did_log);
 };
