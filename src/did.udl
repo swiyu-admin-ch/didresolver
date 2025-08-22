@@ -55,6 +55,8 @@ typedef enum DidLogEntryValidatorError;
 [External="did_sidekicks"]
 typedef struct DidLogEntryValidator;
 
+/// The error accompanying `Did`.
+/// It might occur while calling some of the `Did` constructors/methods.
 [Error]
 enum DidResolveError {
     /// The supplied DID is not supported. Currently supported are: did:tdw, did:webvh
@@ -67,12 +69,28 @@ enum DidResolveError {
     "InvalidDidDoc"
 };
 
+/// Represents a Decentralized Identifier (DID) in terms of DID Web + Verifiable History (`did:webvh`)
+/// that is an enhancement to the `did:web` DID method, providing complementary features, as specified by
+/// https://identity.foundation/didwebvh.
+///
+/// Also, the legacy specification (`did:tdw`) is supported as well.
 interface Did {
+    /// The single constructor of `Did` expecting either:
+    /// - a `did:tdw:0.3`   DID (https://identity.foundation/didwebvh/v0.3/#read-resolve) or
+    /// - a `did:webvh:1.0` DID (https://identity.foundation/didwebvh/v1.0/#read-resolve)
+    ///
+    /// In case of error, the available `DidResolveError` object features all the detailed
+    /// information required to narrow down the root cause.
     [Throws=DidResolveError]
-    constructor(string did_tdw);
-    /// Returns the url part from the supplied DID, if supported and not malformed.
-    [Throws=DidResolveError]
+    constructor(string did);
+    /// Returns the URL part from the supplied DID, if supported and not malformed.
     string get_url();
+    /// The essential method of `Did` implementing the "Read (Resolve)" DID method operation for:
+    /// - a `did:tdw:0.3`   DID (https://identity.foundation/didwebvh/v0.3/#read-resolve) as well as for
+    /// - a `did:webvh:1.0` DID (https://identity.foundation/didwebvh/v1.0/#read-resolve)
+    ///
+    /// In case of error, the available `DidResolveError` object features all the detailed
+    /// information required to narrow down the root cause.
     [Throws=DidResolveError]
     DidDoc resolve(string did_tdw_log);
 };

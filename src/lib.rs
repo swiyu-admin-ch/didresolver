@@ -6,6 +6,5 @@ use crate::did::*;
 use did_sidekicks::did_doc::DidDoc;
 
 pub mod did;
-pub mod methods;
 
 uniffi::include_scaffolding!("did");
