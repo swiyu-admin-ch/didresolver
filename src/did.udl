@@ -17,6 +17,9 @@ typedef enum TrustDidWebError;
 [External="did_tdw"]
 typedef struct TrustDidWeb;
 
+[External="did_tdw"]
+typedef enum TrustDidWebDidLogEntryJsonSchema;
+
 // did_webvh
 
 [External="did_webvh"]
@@ -30,6 +33,9 @@ typedef enum WebVerifiableHistoryError;
 
 [External="did_webvh"]
 typedef struct WebVerifiableHistory;
+
+[External="did_webvh"]
+typedef enum WebVerifiableHistoryDidLogEntryJsonSchema;
 
 // did_sidekicks
 
@@ -69,6 +75,13 @@ enum DidResolveError {
     "InvalidDidDoc"
 };
 
+// The DID methods supported by `Did`
+enum DidMethod {
+    "TDW",
+    "WEBVH",
+    "UNKNOWN",
+};
+
 /// Represents a Decentralized Identifier (DID) in terms of DID Web + Verifiable History (`did:webvh`)
 /// that is an enhancement to the `did:web` DID method, providing complementary features, as specified by
 /// https://identity.foundation/didwebvh.
@@ -95,6 +108,10 @@ interface Did {
     /// Returns the HTTPS URL "transformed" (w.r.t. https://identity.foundation/didwebvh/next/#the-did-to-https-transformation)
     /// from the DID supplied via constructor.
     string get_https_url();
+    /// The DID method matching the DID supplied via constructor, if supported. Otherwise, `DidMethod::UNKNOWN`
+    DidMethod get_method();
+    /// The self-certifying identifier (SCID) for the DID supplied via constructor.
+    string get_scid();
     /// The essential method of `Did` implementing the "Read (Resolve)" DID method operation for either a
     /// `did:tdw:0.3` (w.r.t. https://identity.foundation/didwebvh/v0.3/#read-resolve) or a
     /// `did:webvh:1.0` DID (w.r.t. https://identity.foundation/didwebvh/v1.0/#read-resolve).

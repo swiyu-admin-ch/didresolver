@@ -49,6 +49,7 @@ pub enum DidResolveErrorKind {
     InvalidDidDoc,
 }
 
+/// The DID methods supported by [`Did`]
 #[derive(Debug, Clone, PartialEq, Default, EnumDisplay, EnumAsRefStr)]
 pub enum DidMethod {
     #[strum(to_string = "tdw", serialize = "tdw")]
@@ -69,8 +70,8 @@ pub enum DidMethod {
 pub struct Did {
     parts: Vec<String>,
     method: DidMethod,
-    method_id: String,
-    url: String,
+    scid: String,
+    https_url: String,
 }
 
 impl Did {
@@ -106,15 +107,25 @@ impl Did {
     ///
     /// A UniFFI-compliant method.
     pub fn get_https_url(&self) -> String {
-        self.url.clone()
+        self.https_url.clone()
     }
 
     pub fn get_parts(&self) -> Vec<String> {
         self.parts.clone()
     }
 
+    /// The DID method matching the DID supplied via constructor, if supported. Otherwise, [`DidMethod::UNKNOWN`]
+    ///
+    /// A UniFFI-compliant method.
     pub fn get_method(&self) -> DidMethod {
         self.method.clone()
+    }
+
+    /// The self-certifying identifier (SCID) for the DID supplied via constructor.
+    ///
+    /// A UniFFI-compliant method.
+    pub fn get_scid(&self) -> String {
+        self.scid.clone()
     }
 
     /// The essential method of [`Did`] implementing *Read (Resolve)* DID method operation for:
@@ -173,8 +184,8 @@ impl TryFrom<String> for Did {
                     Ok(buf) => Ok(Did {
                         parts: did_split.into_iter().map(|v| v.to_string()).collect(),
                         method: DidMethod::TDW,
-                        method_id: buf.get_scid(),
-                        url: buf.get_url(),
+                        scid: buf.get_scid(),
+                        https_url: buf.get_url(),
                     }),
                     Err(_e) => Err(DidResolveError::MalformedDid(value)),
                 }
@@ -184,8 +195,8 @@ impl TryFrom<String> for Did {
                     Ok(buf) => Ok(Did {
                         parts: did_split.into_iter().map(|v| v.to_string()).collect(),
                         method: DidMethod::WEBVH,
-                        method_id: buf.get_scid(),
-                        url: buf.get_url(),
+                        scid: buf.get_scid(),
+                        https_url: buf.get_url(),
                     }),
                     Err(_e) => Err(DidResolveError::MalformedDid(value)),
                 }
