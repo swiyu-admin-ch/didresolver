@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-use did_sidekicks::did_doc::DidDoc;
+use did_sidekicks::did_doc::{DidDoc, DidDocExtended};
+use did_sidekicks::did_method_parameters::DidMethodParameter;
 use did_tdw::did_tdw::{TrustDidWeb, TrustDidWebId};
 use did_webvh::did_webvh::{WebVerifiableHistory, WebVerifiableHistoryId};
+use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use strum::{AsRefStr as EnumAsRefStr, Display as EnumDisplay};
@@ -136,23 +138,68 @@ impl Did {
     /// information required to narrow down the root cause.
     ///
     /// A UniFFI-compliant method.
+    #[deprecated(since = "2.2.0", note = "please use more potent `resolve_all` instead")]
     pub fn resolve(&self, did_log: String) -> Result<Arc<DidDoc>, DidResolveError> {
+        match self.resolve_all(did_log) {
+            Ok(resolve_all) => Ok(Arc::new(resolve_all.get_did_doc_obj())),
+            Err(err) => Err(err),
+        }
+    }
+
+    /// The essential method of [`Did`] implementing *Read (Resolve)* DID method operation for:
+    /// - [a `did:tdw` DID](https://identity.foundation/didwebvh/v0.3/#read-resolve) as well as for
+    /// - [a `did:webvh` DID](https://identity.foundation/didwebvh/v1.0/#read-resolve)
+    ///
+    /// In case of error, the available [`DidResolveError`] object features all the detailed
+    /// information required to narrow down the root cause.
+    ///
+    /// Compared to [`Did::resolve`] method, it delivers some additional information
+    /// (the DID processing parameters) used by the `DID Controller`
+    /// when publishing the current and subsequent `DID log entries`. [`DidDocExtended::get_did_method_parameters`]
+    ///
+    /// A UniFFI-compliant method.
+    pub fn resolve_all(&self, did_log: String) -> Result<Arc<DidDocExtended>, DidResolveError> {
         match self.method {
             DidMethod::TDW => match TrustDidWeb::read(self.to_string(), did_log) {
-                Ok(tdw) => match tdw.get_did_doc_obj() {
-                    Ok(doc) => Ok(doc),
-                    Err(e) => Err(DidResolveError::InvalidDidDoc(e.to_string())),
-                },
+                Ok(read_obj) => {
+                    // CAUTION The try_into() method call is possible here as
+                    //         TrustDidWeb type implements the required trait
+                    let did_method_parameters: HashMap<String, Arc<DidMethodParameter>> =
+                        match read_obj.get_did_method_parameters_obj().try_into() {
+                            Ok(did_method_parameters) => did_method_parameters,
+                            Err(err) => {
+                                return Err(DidResolveError::InvalidDidLog(format!("{err}")));
+                            }
+                        };
+
+                    Ok(Arc::new(DidDocExtended::new(
+                        read_obj.get_did_doc_obj(),
+                        did_method_parameters,
+                    )))
+                }
                 Err(e) => Err(DidResolveError::InvalidDidLog(e.to_string())),
             },
             DidMethod::WEBVH => match WebVerifiableHistory::read(self.to_string(), did_log) {
-                Ok(web_vh) => match web_vh.get_did_doc_obj() {
-                    Ok(doc) => Ok(doc),
-                    Err(e) => Err(DidResolveError::InvalidDidDoc(e.to_string())),
-                },
+                Ok(read_obj) => {
+                    // CAUTION The into() method call is possible here as
+                    //         WebVerifiableHistoryDidMethodParameters type implements the required trait
+                    let did_method_parameters: HashMap<String, Arc<DidMethodParameter>> =
+                        match read_obj.get_did_method_parameters_obj().try_into() {
+                            Ok(did_method_parameters) => did_method_parameters,
+                            Err(err) => {
+                                return Err(DidResolveError::InvalidDidLog(format!("{err}")));
+                            }
+                        };
+
+                    Ok(Arc::new(DidDocExtended::new(
+                        read_obj.get_did_doc_obj(),
+                        did_method_parameters,
+                    )))
+                }
                 Err(e) => Err(DidResolveError::InvalidDidLog(e.to_string())),
             },
-            DidMethod::UNKNOWN => Err(DidResolveError::DidNotSupported(String::new())),
+            //DidMethod::UNKNOWN => Err(DidResolveError::DidNotSupported(String::new())),
+            _ => Err(DidResolveError::DidNotSupported(String::new())),
         }
     }
 }
@@ -304,6 +351,7 @@ mod tests {
         let did_log_raw = did_log_raw.unwrap();
 
         let res = did_obj.resolve(did_log_raw);
+
         assert!(res.is_ok(), "ERROR: {:?}", res.err().unwrap());
         let did_doc = res.unwrap();
         assert_eq!(did_doc.id, did);
@@ -326,16 +374,7 @@ mod tests {
         r#"{ "versionId": "1-QmQNjSbRroDtnctDN57Fjvd4e5jYHWVTgMZpzJiTbPfQ5K", "versionTime": "2025-08-06T08:55:01Z", "parameters": { "method": "did:webvh:1.0", "scid": "QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX", "updateKeys": [ "z6MkkkjG6shmZk6D2ghgDbpJQHD4xvpZhzYiWSLKDeznibiJ" ], "portable": false }, "state": { "@context": [ "https://www.w3.org/ns/did/v1", "https://w3id.org/security/jwk/v1" ], "id": "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com", "authentication": [ "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#auth-key-01" ], "assertionMethod": [ "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#assert-key-01" ], "verificationMethod": [ { "id": "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#auth-key-01", "type": "JsonWebKey2020", "publicKeyJwk": { "kty": "EC", "crv": "P-256", "x": "5d-hJaS_UKIU1c05hEBhZa8Xkj_AqBDmqico_PSrRfU", "y": "TK5YKD_osEaVrDBnah-jUDXI27yqFVIo6ZYTfWp-NbY", "kid": "auth-key-01" } }, { "id": "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#assert-key-01", "type": "JsonWebKey2020", "publicKeyJwk": { "kty": "EC", "crv": "P-256", "x": "7jWgolr5tQIUIGp9sDaB0clAiXcFwVYXUhEiXXLkmKg", "y": "NYGIxi2VGEv2OL_WqzVOd_VKjOQbl1kaERYbpAjWo58", "kid": "assert-key-01" } } ] }, "proof": [ { "type": "DataIntegrityProof", "cryptosuite": "eddsa-jcs-2022", "created": "2025-08-13T05:43:17Z", "verificationMethod": "did:key:z6MkkkjG6shmZk6D2ghgDbpJQHD4xvpZhzYiWSLKDeznibiJ#z6MkkkjG6shmZk6D2ghgDbpJQHD4xvpZhzYiWSLKDeznibiJ", "proofPurpose": "assertionMethod", "proofValue": "z3L7j2siRiZ4zziQQmRqLY5qH2RfVz6VTC5gbDE6vntw1De5Ej5DNR3wDU6m9KRiUYPm9o8P89yMzNk5EhWVTo4Tn" } ] }
 { "versionId": "2-QmYkDQ83oPnBqyUEjdUdZZCc8VjQY7aE5BikRaa8cZAxVS", "versionTime": "2025-08-13T08:46:50Z", "parameters": {}, "state": { "@context": [ "https://www.w3.org/ns/did/v1", "https://w3id.org/security/jwk/v1" ], "id": "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com", "authentication": [ "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#auth-key-01" ], "assertionMethod": [ "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#assert-key-01" ], "verificationMethod": [ { "id": "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#auth-key-01", "type": "JsonWebKey2020", "publicKeyJwk": { "kty": "EC", "crv": "P-256", "kid": "auth-key-01", "x": "Ow_aAo2hbAYgEhKAOeu3TYO8bbKOxgJ2gndk46AaXF0", "y": "hdVPThXbmadBl3L5HaYjiz8ewIAve4VHqOgs98MdV5M" } }, { "id": "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#assert-key-01", "type": "JsonWebKey2020", "publicKeyJwk": { "kty": "EC", "crv": "P-256", "kid": "assert-key-02", "x": "oZq9zqDbbYfRV9gdXbLJaaKWF9G27P4CQfTEyC1aT0I", "y": "QS-uHvmj1mVLB5zJtnwTyWYRZIML4RzvCf4qOrsqfWQ" } } ] }, "proof": [ { "type": "DataIntegrityProof", "cryptosuite": "eddsa-jcs-2022", "created": "2025-08-13T09:02:55Z", "verificationMethod": "did:key:z6MkkkjG6shmZk6D2ghgDbpJQHD4xvpZhzYiWSLKDeznibiJ#z6MkkkjG6shmZk6D2ghgDbpJQHD4xvpZhzYiWSLKDeznibiJ", "proofPurpose": "assertionMethod", "proofValue": "z2tZe9tFzyTKWRX7NEpf3ARRs7yZqu5Kq8jzr5qzzffeN9FeJPzmKs6Jb1TMNfpn8Nar6WEfifvMT5SVWozJruTwD" } ] }
 "#)]
-    fn test_resolve_did_log(#[case] did: String, #[case] did_log_raw: String) {
-        let did_obj = Did::new(did.clone()).unwrap();
-
-        let did_doc = did_obj.resolve(did_log_raw);
-        assert!(did_doc.is_ok());
-        let did_doc = did_doc.unwrap();
-        assert_eq!(did_doc.get_id(), did)
-    }
-
-    #[rstest]
+    // affinidi-tdk-rs test vector(s)
     // https://raw.githubusercontent.com/affinidi/affinidi-tdk-rs/refs/tags/did-webvh-v0.1.7/crates/affinidi-did-resolver/affinidi-did-resolver-methods/did-webvh/tests/test_vectors/first_log_entry_good.jsonl
     #[case("did:webvh:QmQHjAiCq1N2dbTPKBkH7xpd93FQCgEPxmR2zTXqt4fndY:localhost%3A8000",
         r#"{"versionId":"1-QmWZWcvritBzgX3JiMz9dSjkTL2Pbw4HmBo4zC3eiNqLy8","versionTime":"2025-07-07T01:52:23Z","parameters":{"method":"did:webvh:1.0","scid":"QmQHjAiCq1N2dbTPKBkH7xpd93FQCgEPxmR2zTXqt4fndY","updateKeys":["z6MkqjRELM1dN43aw6QdkjG46k1fUTjdQJqx7g338djC3Bre"],"portable":true,"nextKeyHashes":["zQmTaTNScJGPSEiHWTxaEpdVExMYqn7DF2DFZ3VqoF9cawN"]},"state":{"@context":["https://www.w3.org/ns/did/v1","https://www.w3.org/ns/cid/v1"],"assertionMethod":["did:webvh:QmQHjAiCq1N2dbTPKBkH7xpd93FQCgEPxmR2zTXqt4fndY:localhost%3A8000#key-0"],"authentication":["did:webvh:QmQHjAiCq1N2dbTPKBkH7xpd93FQCgEPxmR2zTXqt4fndY:localhost%3A8000#key-0"],"capabilityDelegation":[],"capabilityInvocation":[],"id":"did:webvh:QmQHjAiCq1N2dbTPKBkH7xpd93FQCgEPxmR2zTXqt4fndY:localhost%3A8000","keyAgreement":["did:webvh:QmQHjAiCq1N2dbTPKBkH7xpd93FQCgEPxmR2zTXqt4fndY:localhost%3A8000#key-0"],"service":[],"verificationMethod":[{"controller":"did:webvh:QmQHjAiCq1N2dbTPKBkH7xpd93FQCgEPxmR2zTXqt4fndY:localhost%3A8000","id":"did:webvh:QmQHjAiCq1N2dbTPKBkH7xpd93FQCgEPxmR2zTXqt4fndY:localhost%3A8000#key-0","publicKeyMultibase":"z6Mkp6U8WcpWKFi6TFfUpzrtNN99a1aXpWARJEeXh8uFEn7H","type":"Multikey"}]},"proof":[{"type":"DataIntegrityProof","cryptosuite":"eddsa-jcs-2022","created":"2025-07-07T01:52:23Z","verificationMethod":"did:key:z6MkqjRELM1dN43aw6QdkjG46k1fUTjdQJqx7g338djC3Bre#z6MkqjRELM1dN43aw6QdkjG46k1fUTjdQJqx7g338djC3Bre","proofPurpose":"assertionMethod","proofValue":"z5VnQYT8GkJ2PQArqaqcFuNjpd8CcueLVT4JriXDYPfUBtS9LJBSMYpLQUAA1oUQQYhLuqemYE8H8Yv1J3i1DYbQj"}]}
@@ -348,13 +387,52 @@ mod tests {
     #[case("did:webvh:QmRcxocrbu6F6nDAiWeFBJXHjqgif3NPnuZyHDzxtEpvjx:example.example",
         r#"{"versionId":"1-QmbN9L4sb5s2brWSomReR9BpH5L3HnbjvC9Wshf1LpeK19","versionTime":"2025-07-19T11:55:46Z","parameters":{"method":"did:webvh:1.0","scid":"QmRcxocrbu6F6nDAiWeFBJXHjqgif3NPnuZyHDzxtEpvjx","updateKeys":["z6MkjV2QDQf7skfEiQ6hN7dPUgyvf8NAXefPFqm5jaczXaoL"],"nextKeyHashes":["QmPyrGjbkwKPbDE33StNmA6v9uwNWB9NWgmxMiQ7tV1uJx"],"watchers":["https://watcher1.example/"]},"state":{"@context":["https://www.w3.org/ns/did/v1","https://www.w3.org/ns/cid/v1"],"assertionMethod":["did:webvh:QmRcxocrbu6F6nDAiWeFBJXHjqgif3NPnuZyHDzxtEpvjx:example.example#key-0"],"authentication":["did:webvh:QmRcxocrbu6F6nDAiWeFBJXHjqgif3NPnuZyHDzxtEpvjx:example.example#key-0"],"capabilityDelegation":[],"capabilityInvocation":[],"id":"did:webvh:QmRcxocrbu6F6nDAiWeFBJXHjqgif3NPnuZyHDzxtEpvjx:example.example","keyAgreement":["did:webvh:QmRcxocrbu6F6nDAiWeFBJXHjqgif3NPnuZyHDzxtEpvjx:example.example#key-0"],"service":[],"verificationMethod":[{"controller":"did:webvh:QmRcxocrbu6F6nDAiWeFBJXHjqgif3NPnuZyHDzxtEpvjx:example.example","id":"did:webvh:QmRcxocrbu6F6nDAiWeFBJXHjqgif3NPnuZyHDzxtEpvjx:example.example#key-0","publicKeyMultibase":"z6MkoStXcsJvsZ8quDUZyRj9xiGRyhBVB4f8Qme1vze8DWLc","type":"Multikey"}]},"proof":[{"type":"DataIntegrityProof","cryptosuite":"eddsa-jcs-2022","created":"2025-07-19T11:55:46Z","verificationMethod":"did:key:z6MkjV2QDQf7skfEiQ6hN7dPUgyvf8NAXefPFqm5jaczXaoL#z6MkjV2QDQf7skfEiQ6hN7dPUgyvf8NAXefPFqm5jaczXaoL","proofPurpose":"assertionMethod","proofValue":"z3vfSXEm2fpoahV6Z7dhsWimkn1WfW17AnBrbe1gHmgoccwJ6LQghm9ydf9zbWr295mw6CNRtFU4BzWghasUW2gpK"}]}
 "#)]
-    fn test_resolve_affinidi_test_vectors(#[case] did: String, #[case] did_log_raw: String) {
+    fn test_resolve_all_ok(#[case] did: String, #[case] did_log_raw: String) {
         let did_obj = Did::new(did.clone()).unwrap();
 
-        let did_doc = did_obj.resolve(did_log_raw);
-        assert!(did_doc.is_ok());
-        let did_doc = did_doc.unwrap();
-        assert_eq!(did_doc.get_id(), did)
+        let resolve_all = did_obj.resolve_all(did_log_raw);
+        assert!(resolve_all.is_ok());
+        let did_doc = resolve_all.unwrap();
+        assert_eq!(did_doc.get_did_doc().get_id(), did);
+
+        let params = did_doc.get_did_method_parameters();
+        assert!(!params.is_empty());
+        assert!(params.contains_key("method"));
+        assert!(params.get_key_value("method").is_some_and(|t| {
+            t.1.get_name() == "method"
+                && t.1.is_string()
+                && t.1
+                    .get_string_value()
+                    .unwrap()
+                    .starts_with(format!("{}:", Did::DID).as_str())
+        }));
+        assert!(params.contains_key("scid"));
+        assert!(params.get_key_value("scid").is_some_and(|t| {
+            t.1.get_name() == "scid"
+                && t.1.is_string()
+                && !t.1.get_string_value().unwrap().is_empty()
+                && !t.1.get_string_value().unwrap().len() > 32
+        }));
+        assert!(params.contains_key("update_keys"));
+        assert!(params.get_key_value("update_keys").is_some_and(|t| {
+            t.1.get_name() == "update_keys"
+                && t.1.is_array()
+                && t.1.is_string_array()
+                && !t.1.is_empty_array()
+                && t.1.get_string_array_value().is_some()
+                && !t.1.get_string_array_value().unwrap().is_empty()
+                && t.1.get_string_array_value().unwrap().len() == 1
+                && t.1
+                    .get_string_array_value()
+                    .unwrap()
+                    .iter()
+                    .all(|v| v.len() > 32)
+                && t.1
+                    .get_string_array_value()
+                    .unwrap()
+                    .iter()
+                    .all(|v| v.starts_with("z"))
+        }));
     }
 
     #[rstest]

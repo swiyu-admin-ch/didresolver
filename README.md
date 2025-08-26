@@ -103,9 +103,11 @@ crate didresolver
     │   ├── fn get_https_url: pub
     │   ├── fn get_method: pub
     │   ├── fn get_parts: pub
+    │   ├── fn get_scid: pub
     │   ├── fn get_url: pub
     │   ├── fn new: pub
-    │   └── fn resolve: pub
+    │   ├── fn resolve: pub
+    │   └── fn resolve_all: pub
     ├── enum DidMethod: pub
     ├── enum DidResolveError: pub
     │   └── fn kind: pub

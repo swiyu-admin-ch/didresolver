@@ -33,6 +33,11 @@ try {
 
     assert(didDoc?.getId() == "did:webvh:QmXi8p2LNXA6kbc2brwdpXwGETHCrPoFk15yPbLaAu27Pj:gist.githubusercontent.com:vst-bit:8d8247633dbc5836324a81725c1216d8:raw:fde1612e271991f23e814943d7636a4dbac6752b")
 
+    var didDocWithParams = didObj?.resolveAll(didLog)
+    assertDidDoc(didDocWithParams?.getDidDoc())
+    var params = didDocWithParams?.getDidMethodParameters()
+    assertDidMethodParameters(params)
+
     // ----------------------------- TDW --------------------------------------
 
     did = "did:tdw:QmRjT8JCbQkEffVBWSbQd8nbMVNfAxiXStLPmqkQUWcsfv:gist.githubusercontent.com:vst-bit:32b64cfac9075b2a3ab7301b772bcdef:raw:8b4bd2b715101d5b69b3395f5c560c37e1ae9992"
@@ -48,10 +53,10 @@ try {
     didLog = fetchDidLog(httpsUrl) // may throw IOException, URISyntaxException
     assert(didLog != null)
 
-    didDoc = didObj?.resolve(didLog)
-    assertDidDoc(didDoc)
-
-    assert(didDoc?.getId() == "did:tdw:QmRjT8JCbQkEffVBWSbQd8nbMVNfAxiXStLPmqkQUWcsfv:gist.githubusercontent.com:vst-bit:8d8247633dbc5836324a81725c1216d8:raw:fde1612e271991f23e814943d7636a4dbac6752b")
+    didDocWithParams = didObj?.resolveAll(didLog)
+    assertDidDoc(didDocWithParams?.getDidDoc())
+    params = didDocWithParams?.getDidMethodParameters()
+    assertDidMethodParameters(params)
 
 } catch (e: Exception) {
     assert(e !is DidResolveException)
@@ -88,6 +93,28 @@ private fun assertDidDoc(didDoc: DidDoc?) {
     assert(verificationMethod0?.publicKeyJwk != null)
     assert(verificationMethod0?.id == didDocId + "#" + verificationMethod0?.publicKeyJwk?.kid)
     assert(verificationMethod0?.verificationType == VerificationType.JSON_WEB_KEY2020)
+}
+
+private fun assertDidMethodParameters(params: Map<String, DidMethodParameter>?) {
+    assert(params != null)
+    assert(params?.size != 0)
+    assert(params?.contains("method") == true)
+    assert(params?.get("method")?.isString() == true)
+    assert(params?.get("method")?.getStringValue()?.isEmpty() == false)
+    assert(params?.contains("scid") == true)
+    assert(params?.get("scid")?.isString() == true)
+    assert(params?.get("scid")?.getStringValue()?.isEmpty() == false)
+    // TODO assert(params?.get("scid")?.getStringValue()?.length() > 32)
+    assert(params?.contains("update_keys") == true)
+    assert(params?.get("update_keys")?.isArray() == true)
+    assert(params?.get("update_keys")?.isStringArray() == true)
+    assert(params?.get("update_keys")?.isEmptyArray() == false)
+    assert(params?.get("update_keys")?.getStringArrayValue()?.isEmpty() == false)
+    assert(params?.get("update_keys")?.getStringArrayValue()?.get(0)?.startsWith("z") == true)
+    //println(params?.get("update_keys")?.getJsonText())
+    assert(params?.contains("deactivated") == true)
+    assert(params?.get("deactivated")?.isBool() == true)
+    assert(params?.get("deactivated")?.getBoolValue() == false)
 }
 
 did = "did:tdwx:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"

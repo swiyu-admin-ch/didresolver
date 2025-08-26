@@ -20,6 +20,9 @@ typedef struct TrustDidWeb;
 [External="did_tdw"]
 typedef enum TrustDidWebDidLogEntryJsonSchema;
 
+[External="did_tdw"]
+typedef struct TrustDidWebDidMethodParameters;
+
 // did_webvh
 
 [External="did_webvh"]
@@ -37,6 +40,9 @@ typedef struct WebVerifiableHistory;
 [External="did_webvh"]
 typedef enum WebVerifiableHistoryDidLogEntryJsonSchema;
 
+[External="did_webvh"]
+typedef struct WebVerifiableHistoryDidMethodParameters;
+
 // did_sidekicks
 
 [External="did_sidekicks"]
@@ -48,9 +54,17 @@ typedef enum VerificationType;
 [External="did_sidekicks"]
 typedef struct VerificationMethod;
 
-// Returned by `Did`'s method resolve
+// Required by `DidDocExtended` (returned by its getter `get_did_method_parameters`)
+[External="did_sidekicks"]
+typedef interface DidMethodParameter;
+
+// Required by `Did` (returned by its method `resolve`) as well as by `DidDocExtended` (returned by its getter `get_did_doc`)
 [External="did_sidekicks"]
 typedef interface DidDoc;
+
+// Required by `Did` (returned by its method `resolve_all`)
+[External="did_sidekicks"]
+typedef interface DidDocExtended;
 
 [External="did_sidekicks"]
 typedef trait DidLogEntryJsonSchema;
@@ -75,7 +89,7 @@ enum DidResolveError {
     "InvalidDidDoc"
 };
 
-// The DID methods supported by `Did`
+// The DID methods supported by `Did` type
 enum DidMethod {
     "TDW",
     "WEBVH",
@@ -118,6 +132,20 @@ interface Did {
     ///
     /// In case of error, the available `DidResolveError` object features all the detailed
     /// information required to narrow down the root cause.
+    ///
+    /// @deprecated as of 2.2.0 replaced by more potnent `resolve_all`
     [Throws=DidResolveError]
     DidDoc resolve(string did_log);
+    /// The essential method of `Did` implementing the "Read (Resolve)" DID method operation for either a
+    /// `did:tdw:0.3` (w.r.t. https://identity.foundation/didwebvh/v0.3/#read-resolve) or a
+    /// `did:webvh:1.0` DID (w.r.t. https://identity.foundation/didwebvh/v1.0/#read-resolve).
+    ///
+    /// In case of error, the available `DidResolveError` object features all the detailed
+    /// information required to narrow down the root cause.
+    ///
+    /// Compared to `resolve` method, it delivers some additional information
+    /// (the DID processing parameters) used by the `DID Controller`
+    /// when publishing the current and subsequent `DID log entries`.
+    [Throws=DidResolveError]
+    DidDocExtended resolve_all(string did_log);
 };
