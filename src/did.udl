@@ -90,10 +90,11 @@ enum DidResolveError {
 };
 
 // The DID methods supported by `Did` type
-enum DidMethod {
-    "TDW",
-    "WEBVH",
-    "UNKNOWN",
+[Enum]
+interface DidMethod {
+    TDW(string scid, string url);
+    WEBVH(string scid, string url);
+    UNKNOWN();
 };
 
 /// Represents a Decentralized Identifier (DID) in terms of DID Web + Verifiable History (`did:webvh`)
