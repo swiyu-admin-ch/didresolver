@@ -59,9 +59,9 @@ pub enum DidResolveErrorKind {
 #[derive(Debug, Clone, PartialEq, Default, EnumDisplay, EnumAsRefStr)]
 pub enum DidMethod {
     #[strum(to_string = "tdw", serialize = "tdw")]
-    TDW { scid: String, url: String },
+    TDW { scid: String, https_url: String },
     #[strum(to_string = "webvh", serialize = "webvh")]
-    WEBVH { scid: String, url: String },
+    WEBVH { scid: String, https_url: String },
     #[default]
     UNKNOWN,
 }
@@ -69,36 +69,48 @@ pub enum DidMethod {
 impl DidMethod {
     pub fn get_scid(&self) -> String {
         match self {
-            TDW { scid, url: _ } => scid.to_string(),
-            WEBVH { scid, url: _ } => scid.to_string(),
+            TDW { scid, https_url: _ } => scid.to_string(),
+            WEBVH { scid, https_url: _ } => scid.to_string(),
             _ => panic!("DID method is unknown"),
         }
     }
 
-    pub fn get_url(&self) -> String {
+    pub fn get_https_url(&self) -> String {
         match self {
-            TDW { scid: _, url } => url.to_string(),
-            WEBVH { scid: _, url } => url.to_string(),
+            TDW {
+                scid: _,
+                https_url: url,
+            } => url.to_string(),
+            WEBVH {
+                scid: _,
+                https_url: url,
+            } => url.to_string(),
             _ => panic!("DID method is unknown"),
         }
     }
 }
 
 impl DidMethod {
-    fn resolve_all(
+    pub fn resolve_all(
         &self,
         did_str: String,
         did_log: String,
     ) -> Result<Arc<DidDocExtended>, DidResolveError> {
         match self {
-            TDW { scid: _, url: _ } => {
+            TDW {
+                scid: _,
+                https_url: _,
+            } => {
                 let did_resolver = Self::new_did_resolver_impl_tdw(did_str, did_log)?;
                 Ok(Arc::new(DidDocExtended::new(
                     did_resolver.get_did_doc_obj(),
                     Self::new_did_method_parameters_map(&did_resolver)?,
                 )))
             }
-            WEBVH { scid: _, url: _ } => {
+            WEBVH {
+                scid: _,
+                https_url: _,
+            } => {
                 let did_resolver = Self::new_did_resolver_impl_webvh(did_str, did_log)?;
                 Ok(Arc::new(DidDocExtended::new(
                     did_resolver.get_did_doc_obj(),
@@ -151,9 +163,9 @@ impl TryFrom<String> for DidMethod {
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         match TrustDidWebId::try_from(value.clone()) {
-            Ok(buf) => Ok(TDW {
-                scid: buf.get_scid(),
-                url: buf.get_url(),
+            Ok(did_id) => Ok(TDW {
+                scid: did_id.get_scid(),
+                https_url: did_id.get_url(),
             }),
             Err(err) => match err.kind() {
                 TrustDidWebIdResolutionErrorKind::InvalidMethodSpecificId => {
@@ -161,9 +173,9 @@ impl TryFrom<String> for DidMethod {
                 }
                 TrustDidWebIdResolutionErrorKind::MethodNotSupported => {
                     match WebVerifiableHistoryId::try_from(value.clone()) {
-                        Ok(buf) => Ok(WEBVH {
-                            scid: buf.get_scid(),
-                            url: buf.get_url(),
+                        Ok(did_id) => Ok(WEBVH {
+                            scid: did_id.get_scid(),
+                            https_url: did_id.get_url(),
                         }),
                         Err(err) => match err.kind() {
                             WebVerifiableHistoryIdResolutionErrorKind::InvalidMethodSpecificId => {
@@ -310,7 +322,7 @@ impl TryFrom<String> for Did {
             parts: did_split.into_iter().map(|v| v.to_string()).collect(),
             did_method: did_method.clone(),
             scid: did_method.get_scid(),
-            https_url: did_method.get_url(),
+            https_url: did_method.get_https_url(),
         })
     }
 }
@@ -626,37 +638,37 @@ mod tests {
     #[case("did:tdw:QMySCID:domain",
         DidMethod::TDW{
             scid: String::from("QMySCID"),
-            url: String::from("https://domain/.well-known/did.jsonl")
+            https_url: String::from("https://domain/.well-known/did.jsonl")
             }
     )]
     #[case("did:tdw:QMySCID:domain:path",
         DidMethod::TDW{
             scid: String::from("QMySCID"), 
-            url: String::from("https://domain/path/did.jsonl")
+            https_url: String::from("https://domain/path/did.jsonl")
             }
     )]
     #[case("did:tdw:Q24hsDDvpZHmUyNwXWgy36jhB6SFMLT2Aq7HWmZSk6XyZaM7qJNPNYthtRwtz84GHX3Bui3ZSVCcrG8KvGracfbhC:127.0.0.1%3A52788:123456789",
         DidMethod::TDW{
             scid: String::from("Q24hsDDvpZHmUyNwXWgy36jhB6SFMLT2Aq7HWmZSk6XyZaM7qJNPNYthtRwtz84GHX3Bui3ZSVCcrG8KvGracfbhC"), 
-            url: String::from("https://127.0.0.1:52788/123456789/did.jsonl")
+            https_url: String::from("https://127.0.0.1:52788/123456789/did.jsonl")
             }
     )]
     #[case("did:webvh:QMySCID:domain",
         DidMethod::WEBVH{
             scid: String::from("QMySCID"), 
-            url: String::from("https://domain/.well-known/did.jsonl")
+            https_url: String::from("https://domain/.well-known/did.jsonl")
             }
     )]
     #[case("did:webvh:QMySCID:domain:path",
         DidMethod::WEBVH{
             scid: String::from("QMySCID"), 
-            url: String::from( "https://domain/path/did.jsonl")
+            https_url: String::from( "https://domain/path/did.jsonl")
             }
     )]
     #[case("did:webvh:QmSPEpPcSwb3fegq8YE8zotcPEgzHrSFyTJJDAzPo2CYBp:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
         DidMethod::WEBVH{
             scid: String::from("QmSPEpPcSwb3fegq8YE8zotcPEgzHrSFyTJJDAzPo2CYBp"), 
-            url: String::from( "https://identifier-reg.trust-infra.swiyu-int.admin.ch/api/v1/did/18fa7c77-9dd1-4e20-a147-fb1bec146085/did.jsonl")
+            https_url: String::from( "https://identifier-reg.trust-infra.swiyu-int.admin.ch/api/v1/did/18fa7c77-9dd1-4e20-a147-fb1bec146085/did.jsonl")
             }
     )]
     fn test_did_ok(#[case] did: String, #[case] expected_method: DidMethod) {

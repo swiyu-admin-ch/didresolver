@@ -92,8 +92,8 @@ enum DidResolveError {
 // The DID methods supported by `Did` type
 [Enum]
 interface DidMethod {
-    TDW(string scid, string url);
-    WEBVH(string scid, string url);
+    TDW(string scid, string https_url);
+    WEBVH(string scid, string https_url);
     UNKNOWN();
 };
 
