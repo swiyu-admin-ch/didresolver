@@ -34,7 +34,7 @@ try {
 
     assert(didDoc?.getId() == "did:webvh:QmXi8p2LNXA6kbc2brwdpXwGETHCrPoFk15yPbLaAu27Pj:gist.githubusercontent.com:vst-bit:8d8247633dbc5836324a81725c1216d8:raw:fde1612e271991f23e814943d7636a4dbac6752b")
 
-    var didDocWithParams = didObj?.resolveAll(didLog)
+    var didDocWithParams = didObj?.resolveAll(didLog) // may throw DidResolverException
     assertDidDoc(didDocWithParams?.getDidDoc())
     var params = didDocWithParams?.getDidMethodParameters()
     assertDidMethodParameters(params)
@@ -62,6 +62,7 @@ try {
 
 } catch (e: Exception) {
     assert(e !is DidResolveException)
+    assert(e !is DidResolverException)
     assert(e !is IOException)
     assert(e !is URISyntaxException)
     assert(e !is DidResolveException)

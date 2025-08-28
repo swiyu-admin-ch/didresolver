@@ -111,10 +111,7 @@ crate didresolver
     ├── enum DidMethod: pub
     │   ├── fn get_https_url: pub
     │   ├── fn get_scid: pub
-    │   ├── fn new_did_method_parameters_map: pub(self)
-    │   ├── fn new_did_resolver_impl_tdw: pub(self)
-    │   ├── fn new_did_resolver_impl_webvh: pub(self)
-    │   └── fn resolve_all: pub
+    │   └── fn new_did_resolver_impl: pub(self)
     ├── enum DidResolveError: pub
     │   └── fn kind: pub
     └── enum DidResolveErrorKind: pub

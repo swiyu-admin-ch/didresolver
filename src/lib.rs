@@ -4,6 +4,7 @@
 use crate::did::*;
 use did_sidekicks::did_doc::DidDoc;
 use did_sidekicks::did_doc::DidDocExtended;
+use did_sidekicks::errors::DidResolverError;
 
 pub mod did;
 

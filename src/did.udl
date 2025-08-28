@@ -58,6 +58,10 @@ typedef struct VerificationMethod;
 [External="did_sidekicks"]
 typedef interface DidMethodParameter;
 
+// May be thrown by `Did`'s method `resolve_all`
+[External="did_sidekicks"]
+typedef enum DidResolverError;
+
 // Required by `Did` (returned by its method `resolve`) as well as by `DidDocExtended` (returned by its getter `get_did_doc`)
 [External="did_sidekicks"]
 typedef interface DidDoc;
@@ -85,8 +89,20 @@ enum DidResolveError {
     "MalformedDid",
     /// The supplied DID log is invalid
     "InvalidDidLog",
-    /// The supplied DID log is valid, but it features invalid DID Doc
-    "InvalidDidDoc"
+    /// The supplied DID log is valid, but it features invalid DID Doc. Alias for `InvalidDidDocument`
+    "InvalidDidDoc",
+    /// Invalid method-specific identifier
+    "InvalidMethodSpecificId",
+    /// Failed to serialize DID document (to JSON)
+    "SerializationFailed",
+    /// The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation
+    "DeserializationFailed",
+    /// Invalid DID method parameter
+    "InvalidDidParameter",
+    /// The supplied DID log is valid, but it features invalid DID document. Alias for `InvalidDidDoc`
+    "InvalidDidDocument",
+    /// Invalid DID log integration proof
+    "InvalidDataIntegrityProof"
 };
 
 // The DID methods supported by `Did` type
@@ -134,7 +150,7 @@ interface Did {
     /// In case of error, the available `DidResolveError` object features all the detailed
     /// information required to narrow down the root cause.
     ///
-    /// @deprecated as of 2.2.0 replaced by more potnent `resolve_all`
+    /// @deprecated as of 2.2.0 replaced by more potent `resolve_all`
     [Throws=DidResolveError]
     DidDoc resolve(string did_log);
     /// The essential method of `Did` implementing the "Read (Resolve)" DID method operation for either a

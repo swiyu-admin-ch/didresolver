@@ -2,13 +2,12 @@
 
 use crate::did::DidMethod::{TDW, WEBVH};
 use did_sidekicks::did_doc::{DidDoc, DidDocExtended};
-use did_sidekicks::did_method_parameters::DidMethodParameter;
 use did_sidekicks::did_resolver::DidResolver;
+use did_sidekicks::errors::{DidResolverError, DidResolverErrorKind};
 use did_tdw::did_tdw::{TrustDidWeb, TrustDidWebId};
 use did_tdw::errors::TrustDidWebIdResolutionErrorKind;
 use did_webvh::did_webvh::{WebVerifiableHistory, WebVerifiableHistoryId};
 use did_webvh::errors::WebVerifiableHistoryIdResolutionErrorKind;
-use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use strum::{AsRefStr as EnumAsRefStr, Display as EnumDisplay};
@@ -30,6 +29,25 @@ pub enum DidResolveError {
     /// The supplied DID log is valid, but it features invalid DID Doc
     #[error("the supplied DID log is valid, but it features invalid DID Doc: {0}")]
     InvalidDidDoc(String),
+    /// Invalid method-specific identifier
+    #[error("invalid method specific identifier: {0}")]
+    InvalidMethodSpecificId(String),
+    /// Failed to serialize DID document (to JSON)
+    #[error("failed to serialize DID document (to JSON): {0}")]
+    SerializationFailed(String),
+    /// The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation
+    #[error("The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation: {0}"
+    )]
+    DeserializationFailed(String),
+    /// Invalid DID method parameter
+    #[error("invalid DID method parameter: {0}")]
+    InvalidDidParameter(String),
+    /// Alias for [`DidResolveError::InvalidDidDoc`]
+    #[error("invalid DID document: {0}")]
+    InvalidDidDocument(String),
+    /// Invalid DID log integration proof
+    #[error("invalid DID log integration proof: {0}")]
+    InvalidDataIntegrityProof(String),
 }
 
 impl DidResolveError {
@@ -40,6 +58,37 @@ impl DidResolveError {
             Self::InvalidDidLog(_) => DidResolveErrorKind::InvalidDidLog,
             Self::InvalidDidDoc(_) => DidResolveErrorKind::InvalidDidDoc,
             Self::MalformedDid(_) => DidResolveErrorKind::MalformedDid,
+            Self::InvalidMethodSpecificId(_) => DidResolveErrorKind::InvalidMethodSpecificId,
+            Self::SerializationFailed(_) => DidResolveErrorKind::SerializationFailed,
+            Self::DeserializationFailed(_) => DidResolveErrorKind::DeserializationFailed,
+            Self::InvalidDidParameter(_) => DidResolveErrorKind::InvalidDidParameter,
+            Self::InvalidDidDocument(_) => DidResolveErrorKind::InvalidDidDocument,
+            Self::InvalidDataIntegrityProof(_) => DidResolveErrorKind::InvalidDataIntegrityProof,
+        }
+    }
+}
+
+impl From<DidResolverError> for DidResolveError {
+    fn from(value: DidResolverError) -> Self {
+        match value.kind() {
+            DidResolverErrorKind::InvalidMethodSpecificId => {
+                DidResolveError::InvalidMethodSpecificId(format!("{value}"))
+            }
+            DidResolverErrorKind::SerializationFailed => {
+                DidResolveError::SerializationFailed(format!("{value}"))
+            }
+            DidResolverErrorKind::DeserializationFailed => {
+                DidResolveError::DeserializationFailed(format!("{value}"))
+            }
+            DidResolverErrorKind::InvalidDidParameter => {
+                DidResolveError::InvalidDidParameter(format!("{value}"))
+            }
+            DidResolverErrorKind::InvalidDidDocument => {
+                DidResolveError::InvalidDidDocument(format!("{value}"))
+            }
+            DidResolverErrorKind::InvalidIntegrityProof => {
+                DidResolveError::InvalidDataIntegrityProof(format!("{value}"))
+            }
         }
     }
 }
@@ -53,6 +102,12 @@ pub enum DidResolveErrorKind {
     MalformedDid,
     InvalidDidLog,
     InvalidDidDoc,
+    InvalidMethodSpecificId,
+    SerializationFailed,
+    DeserializationFailed,
+    InvalidDidParameter,
+    InvalidDidDocument,
+    InvalidDataIntegrityProof,
 }
 
 /// The DID methods supported by [`Did`]
@@ -91,69 +146,35 @@ impl DidMethod {
 }
 
 impl DidMethod {
-    pub fn resolve_all(
+    /// Delivers a proper `DID` resolver implementation (if any) object w.r.t. to `DID` method.
+    ///
+    /// A returned value is [`Box`]-ed for the sake of dynamic dispatching.
+    /// Namely, pointer types like [`Box`], [`Rc`] and [`Arc`] are able to hold a wide pointer.
+    fn new_did_resolver_impl(
         &self,
         did_str: String,
         did_log: String,
-    ) -> Result<Arc<DidDocExtended>, DidResolveError> {
+    ) -> Result<Box<dyn DidResolver>, DidResolverError> {
         match self {
             TDW {
                 scid: _,
                 https_url: _,
-            } => {
-                let did_resolver = Self::new_did_resolver_impl_tdw(did_str, did_log)?;
-                Ok(Arc::new(DidDocExtended::new(
-                    did_resolver.get_did_doc_obj(),
-                    Self::new_did_method_parameters_map(&did_resolver)?,
-                )))
-            }
+            } => match TrustDidWeb::resolve(did_str.clone(), did_log.clone()) {
+                // [`TrustDidWeb`] implements [`DidResolver`] trait
+                Ok(v) => Ok(Box::new(v)),
+                Err(err) => Err(err),
+            },
             WEBVH {
                 scid: _,
                 https_url: _,
-            } => {
-                let did_resolver = Self::new_did_resolver_impl_webvh(did_str, did_log)?;
-                Ok(Arc::new(DidDocExtended::new(
-                    did_resolver.get_did_doc_obj(),
-                    Self::new_did_method_parameters_map(&did_resolver)?,
-                )))
-            }
-            _ => Err(DidResolveError::DidNotSupported(format!(
+            } => match WebVerifiableHistory::resolve(did_str.clone(), did_log.clone()) {
+                // [`WebVerifiableHistory`] implements [`DidResolver`] trait
+                Ok(v) => Ok(Box::new(v)),
+                Err(err) => Err(err),
+            },
+            _ => Err(DidResolverError::InvalidMethodSpecificId(format!(
                 "Unsupported DID method denoted by DID: {did_str}"
             ))),
-        }
-    }
-
-    #[inline(always)]
-    fn new_did_resolver_impl_tdw(
-        did_str: String,
-        did_log: String,
-    ) -> Result<impl DidResolver, DidResolveError> {
-        match TrustDidWeb::resolve(did_str, did_log) {
-            Ok(did_resolver) => Ok(did_resolver),
-            Err(err) => Err(DidResolveError::InvalidDidLog(format!("{err}"))),
-        }
-    }
-
-    #[inline(always)]
-    fn new_did_resolver_impl_webvh(
-        did_str: String,
-        did_log: String,
-    ) -> Result<impl DidResolver, DidResolveError> {
-        match WebVerifiableHistory::resolve(did_str, did_log) {
-            Ok(did_resolver) => Ok(did_resolver),
-            Err(err) => Err(DidResolveError::InvalidDidLog(format!("{err}"))),
-        }
-    }
-
-    #[inline(always)]
-    fn new_did_method_parameters_map(
-        did_resolver: &impl DidResolver,
-    ) -> Result<HashMap<String, Arc<DidMethodParameter>>, DidResolveError> {
-        match did_resolver.get_did_method_parameters_map().try_into() {
-            Ok(map) => Ok(map),
-            Err(_) => Err(DidResolveError::InvalidDidLog(
-                "Failed to get DID method parameters".to_string(),
-            )),
         }
     }
 }
@@ -272,8 +293,11 @@ impl Did {
     /// A UniFFI-compliant method.
     #[deprecated(since = "2.2.0", note = "please use more potent `resolve_all` instead")]
     pub fn resolve(&self, did_log: String) -> Result<Arc<DidDoc>, DidResolveError> {
+        // may throw did_sidekicks::error::DidResolver
         match self.resolve_all(did_log) {
             Ok(resolve_all) => Ok(Arc::new(resolve_all.get_did_doc_obj())),
+            // CAUTION Calling `DidResolveError::from(err)` would be useless here since
+            //         DidResolveError already implements From<did_sidekicks::error::DidResolver> trait
             Err(err) => Err(err),
         }
     }
@@ -291,7 +315,16 @@ impl Did {
     ///
     /// A UniFFI-compliant method.
     pub fn resolve_all(&self, did_log: String) -> Result<Arc<DidDocExtended>, DidResolveError> {
-        self.did_method.resolve_all(self.to_string(), did_log)
+        // CAUTION Using the Rust ? operator at various places in code below is only possible because os
+        //         DidResolveError's implementation of From<did_sidekicks::error::DidResolver> trait
+        Ok(Arc::new(DidDocExtended::new(
+            self.did_method
+                .new_did_resolver_impl(self.to_string(), did_log.clone())? // may throw did_sidekicks::error::DidResolver
+                .get_did_doc_obj(),
+            self.did_method
+                .new_did_resolver_impl(self.to_string(), did_log)? // may throw did_sidekicks::error::DidResolver
+                .collect_did_method_parameters_map()?, // may throw DidResolverError
+        )))
     }
 }
 
@@ -529,30 +562,34 @@ mod tests {
     ) {
         let did_obj = Did::new(did.clone()).unwrap();
 
-        let did_doc = did_obj.resolve(did_log_raw);
+        let did_doc = did_obj.resolve_all(did_log_raw);
         assert!(did_doc.is_err());
         let err = did_doc.err().unwrap();
-        assert_eq!(DidResolveErrorKind::InvalidDidLog, err.kind());
-        assert!(err.to_string().contains(&error_message_contains));
+        assert_eq!(DidResolveErrorKind::InvalidDataIntegrityProof, err.kind(), "ERROR: {:?}", err);
+        assert!(
+            err.to_string().contains(&error_message_contains),
+            "ERROR: {:?}",
+            err
+        );
     }
 
     #[rstest]
     #[case("did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
         r#"["Invalid Log"]"#,
-        "the supplied DID log is invalid")]
+        "the supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation")]
     #[case(
         "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com",
         r#"{}"#,
-        "the supplied DID log is invalid"
+        "the supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation"
     )]
     #[case("did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
         r#"{ "versionId": "1-QmQNjSbRroDtnctDN57Fjvd4e5jYHWVTgMZpzJiTbPfQ5K", "versionTime": "2025-08-06T08:55:01Z", "parameters": { "method": "did:webvh:1.0", "scid": "QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX", "updateKeys": [ "z6MkkkjG6shmZk6D2ghgDbpJQHD4xvpZhzYiWSLKDeznibiJ" ], "portable": false }, "state": { "@context": [ "https://www.w3.org/ns/did/v1", "https://w3id.org/security/jwk/v1" ], "id": "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com", "authentication": [ "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#auth-key-01" ], "assertionMethod": [ "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#assert-key-01" ], "verificationMethod": [ { "id": "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#auth-key-01", "type": "JsonWebKey2020", "publicKeyJwk": { "kty": "EC", "crv": "P-256", "x": "5d-hJaS_UKIU1c05hEBhZa8Xkj_AqBDmqico_PSrRfU", "y": "TK5YKD_osEaVrDBnah-jUDXI27yqFVIo6ZYTfWp-NbY", "kid": "auth-key-01" } }, { "id": "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#assert-key-01", "type": "JsonWebKey2020", "publicKeyJwk": { "kty": "EC", "crv": "P-256", "x": "7jWgolr5tQIUIGp9sDaB0clAiXcFwVYXUhEiXXLkmKg", "y": "NYGIxi2VGEv2OL_WqzVOd_VKjOQbl1kaERYbpAjWo58", "kid": "assert-key-01" } } ] }, "proof": [ { "type": "DataIntegrityProof", "cryptosuite": "eddsa-jcs-2022", "created": "2025-08-13T05:43:17Z", "verificationMethod": "did:key:z6MkkkjG6shmZk6D2ghgDbpJQHD4xvpZhzYiWSLKDeznibiJ#z6MkkkjG6shmZk6D2ghgDbpJQHD4xvpZhzYiWSLKDeznibiJ", "proofPurpose": "assertionMethod", "proofValue": "z3L7j2siRiZ4zziQQmRqLY5qH2RfVz6VTC5gbDE6vntw1De5Ej5DNR3wDU6m9KRiUYPm9o8P89yMzNk5EhWVTo4Tn" } ] }
 { "versionId": "2-QmYkDQ83oPnBqyUEjdUdZZCc8VjQY7aE5BikRaa8cZAxVS", "versionTime": "2025-08-13T08:46:50Z", "parameters": {}, "state": { "@context": [ "https://www.w3.org/ns/did/v1", "https://w3id.org/security/jwk/v1" ], "id": "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com", "authentication": [ "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#auth-key-01" ], "assertionMethod": [ "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#assert-key-01" ], "verificationMethod": [ { "id": "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#auth-key-01", "type": "JsonWebKey2020", "publicKeyJwk": { "kty": "EC", "crv": "P-256", "kid": "auth-key-01", "x": "Ow_aAo2hbAYgEhKAOeu3TYO8bbKOxgJ2gndk46AaXF0", "y": "hdVPThXbmadBl3L5HaYjiz8ewIAve4VHqOgs98MdV5M" } }, { "id": "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#assert-key-01", "type": "JsonWebKey2020", "publicKeyJwk": { "kty": "EC", "crv": "P-256", "kid": "assert-key-02", "x": "oZq9zqDbbYfRV9gdXbLJaaKWF9G27P4CQfTEyC1aT0I", "y": "QS-uHvmj1mVLB5zJtnwTyWYRZIML4RzvCf4qOrsqfWQ" } } ] }, "proof": [ { "type": "DataIntegrityProof", "cryptosuite": "eddsa-jcs-2022", "created": "2025-08-13T09:02:55Z", "verificationMethod": "did:key:z6MkkkjG6shmZk6D2ghgDbpJQHD4xvpZhzYiWSLKDeznibiJ#z6MkkkjG6shmZk6D2ghgDbpJQHD4xvpZhzYiWSLKDeznibiJ", "proofPurpose": "assertionMethod", "proofValue": "z2tZe9tFzyTKWRX7NEpf3ARRs7yZqu5Kq8jzr5qzzffeN9FeJPzmKs6Jb1TMNfpn8Nar6WEfifvMT5SVWozJruTwD" } ] }
-"#, "the supplied DID log is invalid")]
+"#, "the supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation")]
     #[case("did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com",
         r#"["1-QmdFXCA7RgH2NszV3WgnbemHqLxpXeE66FswLjpTC2hcvV","2025-05-31T14:36:53Z",{"method":"did:tdw:0.3","scid":"QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7","updateKeys":["z6Mkvk4RpEvivSnpEp6zyVW7x3WpLVLs38iAYGFdXvbUJSz8"],"portable":false},{"value":{"@context":["https://www.w3.org/ns/did/v1","https://w3id.org/security/jwk/v1"],"id":"did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085","authentication":["did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01"],"assertionMethod":["did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#assert-key-01"],"verificationMethod":[{"id":"did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01","controller":"did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085","type":"JsonWebKey2020","publicKeyJwk":{"kty":"EC","crv":"P-256","x":"cMuIogOIny4VcE92-KK4Y9AuwSmCX3Ot8MY80aRz__4","y":"ln1g0wrq0IKT3D_GjnBmZhA_tbqlG5p7-7OCk-xMC1g","kid":"auth-key-01"}},{"id":"did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#assert-key-01","controller":"did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085","type":"JsonWebKey2020","publicKeyJwk":{"kty":"EC","crv":"P-256","x":"IXXoOILwuY2Z-e3md2vazPghS3cGJEJt8DY7Xcc28NY","y":"vyyaOaGu6ck1uEYjFChLu-cHCoxJ71L8UCQn3mM8xn4","kid":"assert-key-01"}}]}},[{"type":"DataIntegrityProof","cryptosuite":"eddsa-jcs-2022","created":"2025-05-31T14:36:53Z","verificationMethod":"did:key:z6Mkvk4RpEvivSnpEp6zyVW7x3WpLVLs38iAYGFdXvbUJSz8#z6Mkvk4RpEvivSnpEp6zyVW7x3WpLVLs38iAYGFdXvbUJSz8","proofPurpose":"authentication","challenge":"1-QmdFXCA7RgH2NszV3WgnbemHqLxpXeE66FswLjpTC2hcvV","proofValue":"z2JthfEzDiUejxU5ug2MLGJNykDUWPzYGAHDHCUgp25n4cyq3kJwXdJV4QoviFUJwxfT3dbbWY7GPpANz9uq2KTRL"}]]
 ["2-QmVA5UuLakpdb7yW32Ay1WW1PC1WPRtFNsn86vf1de9djE","2025-05-31T14:36:53Z",{},{"value":{"@context":["https://www.w3.org/ns/did/v1","https://w3id.org/security/jwk/v1"],"id":"did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085","authentication":["did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#my-auth-key-01"],"assertionMethod":["did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#my-assert-key-01"],"verificationMethod":[{"id":"did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#my-auth-key-01","controller":"did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085","type":"JsonWebKey2020","publicKeyJwk":{"kty":"EC","crv":"P-256","kid":"my-auth-key-01","x":"cMuIogOIny4VcE92-KK4Y9AuwSmCX3Ot8MY80aRz__4","y":"ln1g0wrq0IKT3D_GjnBmZhA_tbqlG5p7-7OCk-xMC1g"}},{"id":"did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#my-assert-key-01","controller":"did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085","type":"JsonWebKey2020","publicKeyJwk":{"kty":"EC","crv":"P-256","kid":"my-assert-key-01","x":"IXXoOILwuY2Z-e3md2vazPghS3cGJEJt8DY7Xcc28NY","y":"vyyaOaGu6ck1uEYjFChLu-cHCoxJ71L8UCQn3mM8xn4"}}]}},[{"type":"DataIntegrityProof","cryptosuite":"eddsa-jcs-2022","created":"2025-05-31T14:36:53Z","verificationMethod":"did:key:z6Mkvk4RpEvivSnpEp6zyVW7x3WpLVLs38iAYGFdXvbUJSz8#z6Mkvk4RpEvivSnpEp6zyVW7x3WpLVLs38iAYGFdXvbUJSz8","proofPurpose":"authentication","challenge":"2-QmVA5UuLakpdb7yW32Ay1WW1PC1WPRtFNsn86vf1de9djE","proofValue":"zVjuRUjoWM2aFiFDqqQqtQ6J4Zg4AL3qvoa1oJSFh22TMGUVErtE4XJKNPa8Xr1XXs5nPiqWPYsNC4dzSvdvPd5G"}]]
-"#, "the supplied DID log is invalid")]
+"#, "the supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation")]
     fn test_resolve_invalid_did_log(
         #[case] did: String,
         #[case] did_log_raw: String,
@@ -560,10 +597,10 @@ mod tests {
     ) {
         let did_obj = Did::new(did.clone()).unwrap();
 
-        let did_doc = did_obj.resolve(did_log_raw);
+        let did_doc = did_obj.resolve_all(did_log_raw);
         assert!(did_doc.is_err());
         let err = did_doc.err().unwrap();
-        assert!(err.to_string().contains(&error_message));
+        assert!(err.to_string().contains(&error_message), "ERROR: {:?}", err);
     }
 
     #[rstest]
@@ -574,9 +611,9 @@ mod tests {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let did_obj = Did::new(did.to_string())?; // no error expected here
 
-        let res = did_obj.resolve(String::new()); // empty string
+        let res = did_obj.resolve_all(String::new()); // empty string
         assert!(res.is_err(), "ERROR: {:?}", res.err().unwrap());
-        assert_eq!(res.unwrap_err().kind(), DidResolveErrorKind::InvalidDidLog); // panic-safe unwrap call (see the previous line)
+        assert_eq!(res.unwrap_err().kind(), DidResolveErrorKind::DeserializationFailed); // panic-safe unwrap call (see the previous line)
 
         Ok(())
     }
@@ -609,10 +646,10 @@ mod tests {
         assert!(did_log_raw.is_ok());
         let did_log_raw = did_log_raw.unwrap();
 
-        let res = did_obj.resolve(did_log_raw); // panic-safe unwrap call (see above)
+        let res = did_obj.resolve_all(did_log_raw); // panic-safe unwrap call (see above)
         assert!(res.is_err());
         let err = res.unwrap_err(); // panic-safe unwrap call (see the previous line)
-        assert_eq!(err.kind(), DidResolveErrorKind::InvalidDidLog);
+        assert_eq!(err.kind(), DidResolveErrorKind::DeserializationFailed);
         assert!(err
                     .to_string()
                     .contains("Version numbers (`versionId`) must be in a sequence of positive consecutive integers"),
