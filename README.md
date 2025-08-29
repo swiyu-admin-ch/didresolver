@@ -80,12 +80,12 @@ fn main() {
         .read_to_string()
         .expect("Failed to read DID to string");
 
-    let did_doc = match did.resolve(did_log) {
-        Ok(did_doc) => did_doc,
+    let did_doc_extended = match did.resolve_all(did_log) {
+        Ok(v) => v,
         Err(reason) => panic!("Error occurred during resolution: {}", reason),
     };
 
-    did_doc.get_verification_method().iter().for_each(|method| {
+    did_doc_extended.get_did_doc().get_verification_method().iter().for_each(|method| {
         println!(
             "id: {}, publicKey: {:?}, publicKeyJwk: {:?}",
             method.id, method.public_key_multibase, method.public_key_jwk

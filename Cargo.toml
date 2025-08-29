@@ -3,7 +3,7 @@ name = "didresolver"
 version = "2.1.3"
 edition = "2021"
 description = "DID resolver for various did:tdw and did:webvh methods"
-authors = ["Jonas Niestroj", "Frithjof Hoppe", "Vladica Stojic"]
+authors = ["Vladica Stojic", "Marcel Pfeuti", "Frithjof Hoppe", "Jonas Niestroj"]
 homepage = "https://github.com/swiyu-admin-ch"
 readme = "README.md"
 include = [
@@ -15,19 +15,15 @@ include = [
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-thiserror = "2.0.12"
-#openssl = { version = "0.10.68", features = ["vendored"] }
+thiserror = "2.0.16"
 uniffi = { version = "0.29.4", features = ["cli"] }
 strum = { version = "0.27.2", features = ["derive"] }
 # CAUTION Starting with 2.2.0, didtoolbox (as dep) is replaced by: did_tdw, did_sidekicks and did_webvh
-# TODO Before releasing 2.2.0, replace 'branch = "main"' with 'tag = "1.0.0"' (for did_tdw dep)
-did_tdw = { git = "https://github.com/swiyu-admin-ch/did-tdw.git", branch = "feat/EIDOMNI-126" }
+did_tdw = { git = "https://github.com/swiyu-admin-ch/did-tdw.git", tag = "1.0.0" }
 #did_tdw = { path = "../did-tdw" }
-# TODO Before releasing 2.2.0, replace 'branch = "main"' with 'tag = "1.0.0"' (for did_sidekicks dep)
-did_sidekicks = { git = "https://github.com/swiyu-admin-ch/did-sidekicks.git", branch = "feat/EIDOMNI-126" }
+did_sidekicks = { git = "https://github.com/swiyu-admin-ch/did-sidekicks.git", tag = "1.0.0" }
 #did_sidekicks = { path = "../did-sidekicks" }
-# TODO Before releasing 2.2.0, replace 'branch = "main"' with 'tag = "1.0.0"' (for did_webvh dep)
-did_webvh = { git = "https://github.com/swiyu-admin-ch/did-webvh.git", branch = "feat/EIDOMNI-126" }
+did_webvh = { git = "https://github.com/swiyu-admin-ch/did-webvh.git", tag = "1.0.0" }
 #did_webvh = { path = "../did-webvh" }
 
 [build-dependencies]
