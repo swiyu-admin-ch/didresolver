@@ -3,56 +3,7 @@ namespace did {
 
 };
 
-// did_tdw
-
-[External="did_tdw"]
-typedef enum TrustDidWebIdResolutionError;
-
-[External="did_tdw"]
-typedef struct TrustDidWebId;
-
-[External="did_tdw"]
-typedef enum TrustDidWebError;
-
-[External="did_tdw"]
-typedef struct TrustDidWeb;
-
-[External="did_tdw"]
-typedef enum TrustDidWebDidLogEntryJsonSchema;
-
-[External="did_tdw"]
-typedef struct TrustDidWebDidMethodParameters;
-
-// did_webvh
-
-[External="did_webvh"]
-typedef enum WebVerifiableHistoryIdResolutionError;
-
-[External="did_webvh"]
-typedef struct WebVerifiableHistoryId;
-
-[External="did_webvh"]
-typedef enum WebVerifiableHistoryError;
-
-[External="did_webvh"]
-typedef struct WebVerifiableHistory;
-
-[External="did_webvh"]
-typedef enum WebVerifiableHistoryDidLogEntryJsonSchema;
-
-[External="did_webvh"]
-typedef struct WebVerifiableHistoryDidMethodParameters;
-
 // did_sidekicks
-
-[External="did_sidekicks"]
-typedef struct Jwk;
-
-[External="did_sidekicks"]
-typedef enum VerificationType;
-
-[External="did_sidekicks"]
-typedef struct VerificationMethod;
 
 // Required by `DidDocExtended` (returned by its getter `get_did_method_parameters`)
 [External="did_sidekicks"]
@@ -69,15 +20,6 @@ typedef interface DidDoc;
 // Required by `Did` (returned by its method `resolve_all`)
 [External="did_sidekicks"]
 typedef interface DidDocExtended;
-
-[External="did_sidekicks"]
-typedef trait DidLogEntryJsonSchema;
-
-[External="did_sidekicks"]
-typedef enum DidLogEntryValidatorError;
-
-[External="did_sidekicks"]
-typedef struct DidLogEntryValidator;
 
 /// The error accompanying `Did`.
 /// It might occur while calling some of the `Did` constructors/methods.
