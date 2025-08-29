@@ -3,67 +3,108 @@ namespace did {
 
 };
 
-[ExternalInterface="didtoolbox"]
-typedef extern TrustDidWebIdResolutionError;
+// did_sidekicks
 
-[ExternalInterface="didtoolbox"]
-typedef extern TrustDidWebId;
+// Required by `DidDocExtended` (returned by its getter `get_did_method_parameters`)
+[External="did_sidekicks"]
+typedef interface DidMethodParameter;
 
-[ExternalInterface="didtoolbox"]
-typedef extern TrustDidWebError;
+// May be thrown by `Did`'s method `resolve_all`
+[External="did_sidekicks"]
+typedef enum DidResolverError;
 
-[ExternalInterface="didtoolbox"]
-typedef extern TrustDidWeb;
+// Required by `Did` (returned by its method `resolve`) as well as by `DidDocExtended` (returned by its getter `get_did_doc`)
+[External="did_sidekicks"]
+typedef interface DidDoc;
 
-[ExternalInterface="didtoolbox"]
-typedef extern Ed25519Signature;
+// Required by `Did` (returned by its method `resolve_all`)
+[External="did_sidekicks"]
+typedef interface DidDocExtended;
 
-[ExternalInterface="didtoolbox"]
-typedef extern Ed25519SigningKey;
-
-[ExternalInterface="didtoolbox"]
-typedef extern Ed25519VerifyingKey;
-
-[ExternalInterface="didtoolbox"]
-typedef extern Ed25519KeyPair;
-
-[ExternalInterface="didtoolbox"]
-typedef extern DidDocumentState;
-
-[External="didtoolbox"]
-typedef extern Jwk;
-
-[External="didtoolbox"]
-typedef extern VerificationType;
-
-[External="didtoolbox"]
-typedef extern VerificationMethod;
-
-[ExternalInterface="didtoolbox"]
-typedef extern DidDoc;
-
-[ExternalInterface="didtoolbox"]
-typedef extern DidLogEntryJsonSchema;
-
-[ExternalInterface="didtoolbox"]
-typedef extern DidLogEntryValidatorError;
-
-[ExternalInterface="didtoolbox"]
-typedef extern DidLogEntryValidator;
-
+/// The error accompanying `Did`.
+/// It might occur while calling some of the `Did` constructors/methods.
 [Error]
 enum DidResolveError {
+    /// The supplied DID is not supported. Currently supported are: did:tdw, did:webvh
     "DidNotSupported",
+    /// The supplied DID is supported, but is malformed
     "MalformedDid",
-    "InvalidDidLog"
+    /// The supplied DID log is invalid
+    "InvalidDidLog",
+    /// The supplied DID log is valid, but it features invalid DID Doc. Alias for `InvalidDidDocument`
+    "InvalidDidDoc",
+    /// Invalid method-specific identifier
+    "InvalidMethodSpecificId",
+    /// Failed to serialize DID document (to JSON)
+    "SerializationFailed",
+    /// The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation
+    "DeserializationFailed",
+    /// Invalid DID method parameter
+    "InvalidDidParameter",
+    /// The supplied DID log is valid, but it features invalid DID document. Alias for `InvalidDidDoc`
+    "InvalidDidDocument",
+    /// Invalid DID log integration proof
+    "InvalidDataIntegrityProof"
 };
 
+// The DID methods supported by `Did` type
+[Enum]
+interface DidMethod {
+    TDW(string scid, string https_url);
+    WEBVH(string scid, string https_url);
+    UNKNOWN();
+};
+
+/// Represents a Decentralized Identifier (DID) in terms of DID Web + Verifiable History (`did:webvh`)
+/// that is an enhancement to the `did:web` DID method, providing complementary features, as specified by
+/// https://identity.foundation/didwebvh.
+///
+/// Also, the legacy DID method `did:tdw` is supported as well.
 interface Did {
+    /// The single constructor of `Did` expecting a
+    /// DID method-specific identifier (defined as https://identity.foundation/didwebvh/next/#method-specific-identifier) as either a
+    /// `did:tdw:0.3` DID (w.r.t. https://identity.foundation/didwebvh/v0.3) or a
+    /// `did:webvh:1.0` DID (w.r.t. https://identity.foundation/didwebvh/v1.0).
+    ///
+    /// The constructor will attempt to *transform* (w.r.t. https://identity.foundation/didwebvh/next/#the-did-to-https-transformation)
+    /// the supplied DID method identifier into a valid RFC3986-conform HTTPS URL thus enabling retrival
+    /// of its DID log (via an `HTTP GET`). In case of error, the available `DidResolveError`
+    /// object features all the detailed information required to narrow down the root cause.
     [Throws=DidResolveError]
-    constructor(string did_tdw);
-    /// Returns the url part from the supplied DID, if supported and not malformed.
+    constructor(string did);
+    /// Returns the HTTPS URL "transformed" (w.r.t. https://identity.foundation/didwebvh/next/#the-did-to-https-transformation)
+    /// from the DID supplied via constructor.
+    ///
+    /// @deprecated as of 2.2.0 replaced by `get_https_url`
     [Throws=DidResolveError]
     string get_url();
+    /// Returns the HTTPS URL "transformed" (w.r.t. https://identity.foundation/didwebvh/next/#the-did-to-https-transformation)
+    /// from the DID supplied via constructor.
+    string get_https_url();
+    /// The DID method matching the DID supplied via constructor, if supported. Otherwise, `DidMethod::UNKNOWN`
+    DidMethod get_method();
+    /// The self-certifying identifier (SCID) for the DID supplied via constructor.
+    string get_scid();
+    /// The essential method of `Did` implementing the "Read (Resolve)" DID method operation for either a
+    /// `did:tdw:0.3` (w.r.t. https://identity.foundation/didwebvh/v0.3/#read-resolve) or a
+    /// `did:webvh:1.0` DID (w.r.t. https://identity.foundation/didwebvh/v1.0/#read-resolve).
+    ///
+    /// In case of error, the available `DidResolveError` object features all the detailed
+    /// information required to narrow down the root cause.
+    ///
+    /// @deprecated as of 2.2.0 replaced by more potent `resolve_all`
     [Throws=DidResolveError]
-    DidDoc resolve(string did_tdw_log);
+    DidDoc resolve(string did_log);
+    /// The essential method of `Did` implementing the "Read (Resolve)" DID method operation for either a
+    /// `did:tdw:0.3` (w.r.t. https://identity.foundation/didwebvh/v0.3/#read-resolve) or a
+    /// `did:webvh:1.0` DID (w.r.t. https://identity.foundation/didwebvh/v1.0/#read-resolve).
+    ///
+    /// In case of error, the available `DidResolveError` object features all the detailed
+    /// information required to narrow down the root cause.
+    ///
+    /// Compared to `resolve` method, it delivers some additional information
+    /// (the DID processing parameters) used by the `DID Controller`
+    /// when publishing the current and subsequent `DID log entries`.
+    [Throws=DidResolveError]
+    DidDocExtended resolve_all(string did_log);
 };
