@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: MIT
+
+// IGNORE the 'Unused import' warning - it is required by the UniFFI compiler!
 use crate::did::*;
-use didtoolbox::didtoolbox::DidDoc;
+use did_sidekicks::did_doc::DidDoc;
+use did_sidekicks::did_doc::DidDocExtended;
+//use did_sidekicks::errors::DidResolverError;
 
 pub mod did;
-pub mod methods;
 
 uniffi::include_scaffolding!("did");

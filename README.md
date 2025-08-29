@@ -7,9 +7,9 @@
 An official Swiss Government project made by the [Federal Office of Information Technology, Systems and Telecommunication FOITT](https://www.bit.admin.ch/)
 as part of the electronic identity (e-ID) project.
 
-This project contains a DID resolver which allows to resolve the following methods:
-- [did:web](https://w3c-ccg.github.io/did-method-web/)
-- [did:tdw/did:webvh](https://bcgov.github.io/trustdidweb/#create-register)
+This project contains a DID resolver which allows to resolve the following DID methods:
+- [did:tdw](https://identity.foundation/didwebvh/v0.3/#create-register)
+- [did:webvh](https://identity.foundation/didwebvh/v1.0/#create-register)
 
 ## Table of contents
 
@@ -68,30 +68,24 @@ In the example the following steps are shown:
 use didresolver::did::Did;
 
 fn main() {
-    let did = Did::new(String::from("did:tdw:QmRjT8JCbQkEffVBWSbQd8nbMVNfAxiXStLPmqkQUWcsfv:gist.githubusercontent.com:vst-bit:32b64cfac9075b2a3ab7301b772bcdef:raw:4775dd76799b35e99322bf738fafd6c10f421ed7"))
+    let did = Did::new(String::from("did:webvh:QmXi8p2LNXA6kbc2brwdpXwGETHCrPoFk15yPbLaAu27Pj:gist.githubusercontent.com:vst-bit:20c3f59d8179e324a6e29aef45240db4:raw:7870280f80dfcfb7459ee1488df4ab33f2bcf709"))
         .expect("invalid DID supplied");
 
-    let url = match did.get_url() {
-        Ok(url) => url,
-        Err(reason) => panic!(
-            "invalid (unsupported or malformed) DID supplied: {}",
-            reason
-        ),
-    };
+    let url = did.get_https_url();
 
-    let did_log_raw = ureq::get(&url)
+    let did_log = ureq::get(&url)
         .call()
         .expect("Failed to call did url")
         .into_body()
         .read_to_string()
         .expect("Failed to read DID to string");
 
-    let did_doc = match did.resolve(did_log_raw) {
-        Ok(did_doc) => did_doc,
+    let did_doc_extended = match did.resolve_all(did_log) {
+        Ok(v) => v,
         Err(reason) => panic!("Error occurred during resolution: {}", reason),
     };
 
-    did_doc.get_verification_method().iter().for_each(|method| {
+    did_doc_extended.get_did_doc().get_verification_method().iter().for_each(|method| {
         println!(
             "id: {}, publicKey: {:?}, publicKeyJwk: {:?}",
             method.id, method.public_key_multibase, method.public_key_jwk
@@ -104,25 +98,30 @@ fn main() {
 
 ```text
 crate didresolver
-├── mod did: pub
-│   ├── struct Did: pub
-│   │   ├── fn get_url: pub
-│   │   ├── fn new: pub
-│   │   └── fn resolve: pub
-│   ├── enum DidMethod: pub
-│   ├── enum DidResolveError: pub
-│   │   └── fn kind: pub
-│   └── enum DidResolveErrorKind: pub
-└── mod methods: pub
-    └── fn resolve_did_tdw: pub
+└── mod did: pub
+    ├── struct Did: pub
+    │   ├── fn get_https_url: pub
+    │   ├── fn get_method: pub
+    │   ├── fn get_parts: pub
+    │   ├── fn get_scid: pub
+    │   ├── fn get_url: pub
+    │   ├── fn new: pub
+    │   ├── fn resolve: pub
+    │   └── fn resolve_all: pub
+    ├── enum DidMethod: pub
+    │   ├── fn get_https_url: pub
+    │   ├── fn get_scid: pub
+    │   └── fn new_did_resolver_impl: pub(self)
+    ├── enum DidResolveError: pub
+    │   └── fn kind: pub
+    └── enum DidResolveErrorKind: pub
 ```
 
 ## Internal dependencies
 
 ![Dependencies](/images/dependencies.png)
 
-The graph is also available in other layouts: [circo](/images/dependencies-circo.png), [dot](/images/dependencies-dot.png), [fdp](/images/dependencies-dot.fdp), [neato](/images/dependencies-neato.png), [sfdp](/images/dependencies-sfdp.png), [twopi](/images/dependencies-twopi.png)  
-
+The graph is also available in other layouts: [circo](/images/dependencies-circo.png), [dot](/images/dependencies-dot.png), [fdp](/images/dependencies-fdp.png), [neato](/images/dependencies-neato.png), [sfdp](/images/dependencies-sfdp.png), [twopi](/images/dependencies-twopi.png)  
 
 ## Missing Features and Known Issues
 

@@ -1,0 +1,29 @@
+# A workflow which sets up OSV-Scanner scanning for vulnerabilities.
+name: OSV-Scanner
+
+on:
+  pull_request:
+    branches: [ "main" ]
+  merge_group:
+    branches: [ "main" ]
+  push:
+    #branches: [ "main" ]
+    # speed up the CI pipeline, since the audit process will not be performed if no dependencies were changed.
+    paths:
+      - '**/Cargo.toml'
+      #- '**/Cargo.lock'
+  # REMOVEME
+  workflow_dispatch:
+
+permissions:
+  # Required to upload SARIF file to CodeQL. See: https://github.com/github/codeql-action/issues/2117
+  actions: read
+  # Require writing security events to upload SARIF file to security tab
+  security-events: write
+  # to fetch code (actions/checkout)
+  contents: read
+
+jobs:
+  rust-osv-scanner:
+    # just reuse a relevant workflow from the dedicated repo https://github.com/swiyu-admin-ch/github-actions-workflows
+    uses: swiyu-admin-ch/github-actions-workflows/.github/workflows/rust-osv-scanner.yml@main

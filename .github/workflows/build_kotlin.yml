@@ -50,8 +50,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: main
+        #with:
+        #  ref: ${{ github.ref_name }}
       - name: Rust toolchain (stable)
         # For more Rust extensions, please visit: https://github.com/marketplace?query=rust&type=actions
         uses: actions-rs/toolchain@v1
