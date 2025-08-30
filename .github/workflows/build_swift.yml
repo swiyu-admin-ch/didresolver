@@ -9,7 +9,9 @@ on:
 jobs:
   build:
     name: Build swift bindings
-    runs-on: macos-latest
+    # If using 'runs-on: macos-latest', beware of https://github.com/actions/runner-images/issues/12520
+    # Furthermore, the 'macos-<VER>' version used here should match the one in build script (e.g. 'platforms: [.iOS(.v15)]')
+    runs-on: macos-15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
