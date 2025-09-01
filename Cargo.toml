@@ -42,5 +42,9 @@ name = "didresolver"
 name = "uniffi-bindgen"
 path = "uniffi-bindgen.rs"
 
+[[bin]]
+name = "uniffi-bindgen-swift"
+path = "uniffi-bindgen-swift.rs"
+
 [features]
 ffi-trace = ["uniffi/ffi-trace"]
