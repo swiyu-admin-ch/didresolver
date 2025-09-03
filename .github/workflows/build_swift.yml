@@ -10,8 +10,8 @@ jobs:
   build:
     name: Build swift bindings
     # If using 'runs-on: macos-latest', beware of https://github.com/actions/runner-images/issues/12520
-    # Furthermore, the 'macos-<VER>' version used here should match the one in build script (e.g. 'platforms: [.iOS(.v15)]')
-    runs-on: macos-15
+    # Furthermore, the 'macos-<VER>' version used here should match the one in build script (e.g. 'platforms: [.iOS(.v14)]')
+    runs-on: macos-14
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,10 +20,16 @@ jobs:
       - name: Install rust
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          #echo ">>"; echo ">> Setting default toolchain to:"; echo ">>"
+          #rustup default 1.xy
+          echo ">>"; echo ">> Rust Compiler version:"; echo ">>"
+          rustc --version --verbose
+          echo ">>"; echo ">> Available iOS-related targets:"; echo ">>"
+          rustc --print=target-list | grep apple-ios
       #- uses: de-vri-es/setup-git-credentials@v2
       #  with:
       #    credentials: ${{ secrets.WORFKLOW_TOKEN_LIBRARIES }}
-      - name: Cache rust modules
+      - name: Cache Rust modules
         id: cache-rust
         uses: actions/cache@v3
         env:
@@ -37,21 +43,21 @@ jobs:
             ${{ runner.os }}-build-
             ${{ runner.os }}-
 
-      - name: Install ios target
+      - name: Install iOS targets
         # Only Tier: 2 (without Host Tools) targets (according to https://doc.rust-lang.org/rustc/platform-support/apple-ios.html)
         run: |
           rustup target add aarch64-apple-ios-sim
           rustup target add aarch64-apple-ios
           rustup target add x86_64-apple-ios
 
-      - name: Install xcode build tools
+      - name: Install XCode build tools
         run: |
-          echo "Checking Xcode CLI tools"
+          echo ">>"; echo ">> Checking Xcode CLI tools..."; echo ">>"
           # Only run if the tools are not installed yet
           # To check that try to print the SDK path
           xcode-select -p &> /dev/null
           if [ $? -ne 0 ]; then
-            echo "Xcode CLI tools not found. Installing them..."
+            echo ">>"; echo ">> Xcode CLI tools not found. Installing them..."; echo ">>"
             touch /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress;
             PROD=$(softwareupdate -l |
               grep "\*.*Command Line" |
@@ -60,14 +66,16 @@ jobs:
               tr -d '\n')
             softwareupdate -i "$PROD" -v;
           else
-            echo "Xcode CLI tools OK"
+            echo ">>"; echo ">> Xcode CLI tools OK"; echo ">>"
           fi
+          /usr/bin/xcodebuild -version
+          /usr/bin/gcc --version
 
-      - name: Build bindings and swift package
+      - name: Build UniFFI bindings and Swift packages
         run: |
           bash swift-build.sh
 
-      - name: Save swift package
+      - name: Save Swift package
         uses: actions/upload-artifact@v4
         with:
           name: swift-bindings
