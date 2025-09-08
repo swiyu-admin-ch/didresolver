@@ -1,0 +1,39 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: CodeQL Analysis
+
+on:
+  push:
+    #branches: [ "main" ]
+    # speed up the CI pipeline, since the linting process will not be performed if no source code files were changed.
+    paths:
+      - '**/*.rs'
+  pull_request:
+    branches: [ "main" ]
+  merge_group:
+    branches: [ "main" ]
+  # REMOVEME
+  workflow_dispatch:
+
+permissions:
+  # to fetch code (actions/checkout)
+  contents: read
+  # https://github.com/marketplace/actions/publish-test-results#permissions
+  # https://github.com/marketplace/actions/junit-report-action
+  checks: write
+  pull-requests: write # only required if `comment: true` was enabled
+  # Required to upload SARIF file to CodeQL. See: https://github.com/github/codeql-action/issues/2117
+  actions: read
+  # Require writing security events to upload SARIF file to security tab
+  # As described at https://github.com/github/codeql-action?tab=readme-ov-file#workflow-permissions
+  security-events: write
+
+jobs:
+  rust-codeql-analyze:
+    name: Analyze code (CodeQL)
+    # just reuse a relevant workflow from the dedicated repo https://github.com/swiyu-admin-ch/github-actions-workflows
+    uses: swiyu-admin-ch/github-actions-workflows/.github/workflows/rust-codeql-analyze.yml@main
+    #uses: swiyu-admin-ch/github-actions-workflows/.github/workflows/rust-codeql-analyze.yml@feat/EIDOMNI-262-rust-pull-request-check
