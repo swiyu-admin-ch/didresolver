@@ -3,11 +3,22 @@ cargo clean
 echo ">>"; echo ">> Build release"; echo ">>"
 cargo build --release
 
-lib_name=didresolver
+# Check for arguments
+if [ $# -eq 0 ]; then
+    echo "No arguments provided."
+    echo "   First  argument has to be a (semantic) version, e.g. '1.2.3'"
+    echo "   Second argument has to be a Swift package name, e.g. 'DidResolver'"
+    echo "   Third  argument has to be a XCFramework name,   e.g. 'didresolver'"
+    exit 1
+fi
 
-echo ">>"; echo ">> Generating UniFFI bindings for Swift..."; echo ">>"
+version=$1
+swift_package_name=$2
+xcframework_name=$3
+
+echo ">>"; echo ">> Generating UniFFI bindings for Swift package '${swift_package_name}' ver. ${version} ..."; echo ">>"
 cargo run --bin uniffi-bindgen generate \
-          --library target/release/lib${lib_name}.dylib \
+          --library target/release/lib${xcframework_name}.dylib \
           --language swift \
           --out-dir bindings/swift/files
 
@@ -23,75 +34,77 @@ echo ">>"; echo ">> Building for Apple iOS Simulator on 64-bit x86..."; echo ">>
 IPHONEOS_DEPLOYMENT_TARGET=15.0 cargo build --release --target x86_64-apple-ios
 
 # CAUTION In case of iOS Simulator, all the simulator-relevant libs must be combined into one single "fat" static library
-echo ">>"; echo ">> Building a single 'fat' static library..."; echo ">>"
-lipo -create -output target/lib${lib_name}.a \
-  target/aarch64-apple-ios-sim/release/lib${lib_name}.a \
-  target/x86_64-apple-ios/release/lib${lib_name}.a
+echo ">>"; echo ">> Building a single 'fat' static library 'lib${xcframework_name}'..."; echo ">>"
+lipo -create -output target/lib${xcframework_name}.a \
+  target/aarch64-apple-ios-sim/release/lib${xcframework_name}.a \
+  target/x86_64-apple-ios/release/lib${xcframework_name}.a
 
 cat bindings/swift/files/did_sidekicksFFI.modulemap \
     bindings/swift/files/did_tdwFFI.modulemap       \
     bindings/swift/files/did_webvhFFI.modulemap     \
     bindings/swift/files/didFFI.modulemap           >> bindings/swift/files/module.modulemap
 
-rm -r bindings/swift/${lib_name}.xcframework &>/dev/null
+rm -r bindings/swift/${xcframework_name}.xcframework &>/dev/null
 
-echo ">>"; echo ">> Building the XFC framework..."; echo ">>"
+echo ">>"; echo ">> Building the XFC framework '${xcframework_name}'..."; echo ">>"
 xcodebuild -create-xcframework \
-  -library ./target/lib${lib_name}.a \
+  -library ./target/lib${xcframework_name}.a \
   -headers ./bindings/swift/files \
-  -library ./target/aarch64-apple-ios/release/lib${lib_name}.a \
+  -library ./target/aarch64-apple-ios/release/lib${xcframework_name}.a \
   -headers ./bindings/swift/files \
-  -output "./bindings/swift/${lib_name}.xcframework"
+  -output "./bindings/swift/${xcframework_name}.xcframework"
 
 rm bindings/swift/files/module.modulemap
 
 # Preventing multiple modulemap build error (inspired by https://github.com/jessegrosjean/module-map-error and https://github.com/jessegrosjean/swift-cargo-problem)
 echo ">>"; echo ">> Preventing 'multiple modulemap build error'..."; echo ">>"
-cd bindings/swift/${lib_name}.xcframework
-mkdir ios-arm64/Headers/${lib_name} \
-      ios-arm64_x86_64-simulator/Headers/${lib_name}
-mv ios-arm64/Headers/*.*                  ios-arm64/Headers/${lib_name}/
-mv ios-arm64_x86_64-simulator/Headers/*.* ios-arm64_x86_64-simulator/Headers/${lib_name}/
-cd - &>/dev/null
+cd bindings/swift/${xcframework_name}.xcframework
+mkdir ios-arm64/Headers/${xcframework_name} \
+      ios-arm64_x86_64-simulator/Headers/${xcframework_name}
+mv ios-arm64/Headers/*.*                  ios-arm64/Headers/${xcframework_name}/
+mv ios-arm64_x86_64-simulator/Headers/*.* ios-arm64_x86_64-simulator/Headers/${xcframework_name}/
+# ZIP the XCFramework directory to create an release asset
+cd ..
+zip_file_name=${xcframework_name}-${version}.xcframework.zip
+zip -r ${zip_file_name} ${xcframework_name}.xcframework
+ls -l ${zip_file_name}
+# The checksum of the ZIP archive that contains the XCFramework, as required for any 'binaryTarget'
+# See https://developer.apple.com/documentation/xcode/distributing-binary-frameworks-as-swift-packages
+checksum=$(swift package compute-checksum ${zip_file_name})
+echo ">>"; echo ">> Checksum of the ZIP archive containing the XCFramework: ${checksum}"; echo ">>"
+cd ../..
 
 echo ">>"; echo ">> Generating the Swift package structure..."; echo ">>"
-mkdir output
-mkdir output/DidResolverWrapper
-mkdir output/DidResolverWrapper/include
-touch output/DidResolverWrapper/include/dummy.h
-touch output/DidResolverWrapper/dummy.m
-cp -r bindings/swift/${lib_name}.xcframework output/
-mkdir output/swift-sources
-cp -r bindings/swift/${lib_name}.xcframework/ios-arm64/Headers/${lib_name}/*.swift output/swift-sources
+mkdir -p output/Sources/${swift_package_name}
+cp -r bindings/swift/${zip_file_name} output/
+cp -r bindings/swift/${xcframework_name}.xcframework/ios-arm64/Headers/${xcframework_name}/*.swift output/Sources/${swift_package_name}
+
 cat <<-EOF > output/Package.swift
 // swift-tools-version:5.3
 import PackageDescription
 
+let version = "${version}"
+let checksum = "${checksum}"
+
 let package = Package(
-    name: "DidResolver",
+    name: "${swift_package_name}",
     platforms: [.iOS(.v14)],
     products: [
         // Products define the executables and libraries a package produces, and make them visible to other packages.
-        .library(name: "DidResolver",targets:["DidResolverSources"]),
+        .library(
+            name: "${swift_package_name}",
+            targets: ["${swift_package_name}", "${swift_package_name}RemoteBinaryPackage"]),
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
         // Targets can depend on other targets in this package, and on products in packages this package depends on.
         .target(
-            name: "DidResolverWrapper",
-            dependencies:[
-                .target(name:"DidResolver", condition: .when(platforms: [.iOS]))
-            ],
-            path: "DidResolverWrapper"
+            name: "${swift_package_name}"
         ),
         .binaryTarget(
-            name: "DidResolver",
-            path: "./didresolver.xcframework"
-        ),
-        .target(
-            name: "DidResolverSources",
-            dependencies: ["DidResolverWrapper"],
-            path: "swift-sources"
+            name: "${swift_package_name}RemoteBinaryPackage",
+            url: "https://github.com/swiyu-admin-ch/didresolver-swift/releases/download/\(version)/${xcframework_name}-\(version).xcframework.zip",
+            checksum: "\(checksum)"
         )
     ]
 )

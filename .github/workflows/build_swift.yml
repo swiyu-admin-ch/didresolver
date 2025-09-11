@@ -1,10 +1,23 @@
-name: Build library (swift)
+name: Build library (Swift)
 
 permissions:
   contents: read
 
 on:
   workflow_dispatch:
+    inputs:
+      newVersion:
+        description: 'New Version'
+        default: '0.0.0'
+        required: true
+      swiftPackageName:
+        description: 'Swift Package Name'
+        default: 'DidResolver'
+        required: true
+      xcFrameworkName:
+        description: 'XCFramework Name'
+        default: 'didresolver'
+        required: true
 
 jobs:
   build:
@@ -69,11 +82,15 @@ jobs:
             echo ">>"; echo ">> Xcode CLI tools OK"; echo ">>"
           fi
           /usr/bin/xcodebuild -version
+          echo ">>"
           /usr/bin/gcc --version
+          echo ">>"
+          /usr/bin/swift --version
 
       - name: Build UniFFI bindings and Swift packages
         run: |
-          bash swift-build.sh
+          echo ">>"; echo ">> Generating UniFFI bindings for Swift package '${{ github.event.inputs.swiftPackageName }}' ver. ${{ github.event.inputs.newVersion }} ..."; echo ">>"
+          bash swift-build.sh ${{ github.event.inputs.newVersion }} ${{ github.event.inputs.swiftPackageName }} ${{ github.event.inputs.xcFrameworkName }}
 
       - name: Save Swift package
         uses: actions/upload-artifact@v4
