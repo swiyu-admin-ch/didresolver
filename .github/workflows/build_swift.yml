@@ -82,7 +82,9 @@ jobs:
             echo ">>"; echo ">> Xcode CLI tools OK"; echo ">>"
           fi
           /usr/bin/xcodebuild -version
+          echo
           /usr/bin/gcc --version
+          echo
           /usr/bin/swift --version
 
       - name: Build UniFFI bindings and Swift packages

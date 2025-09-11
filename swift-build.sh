@@ -16,7 +16,7 @@ version=$1
 swift_package_name=$2
 xcframework_name=$3
 
-echo ">>"; echo ">> Generating UniFFI bindings for Swift..."; echo ">>"
+echo ">>"; echo ">> Generating UniFFI bindings for Swift package '${swift_package_name}' v${version}..."; echo ">>"
 cargo run --bin uniffi-bindgen generate \
           --library target/release/lib${xcframework_name}.dylib \
           --language swift \
@@ -34,7 +34,7 @@ echo ">>"; echo ">> Building for Apple iOS Simulator on 64-bit x86..."; echo ">>
 IPHONEOS_DEPLOYMENT_TARGET=15.0 cargo build --release --target x86_64-apple-ios
 
 # CAUTION In case of iOS Simulator, all the simulator-relevant libs must be combined into one single "fat" static library
-echo ">>"; echo ">> Building a single 'fat' static library..."; echo ">>"
+echo ">>"; echo ">> Building a single 'fat' static library 'lib${xcframework_name}'..."; echo ">>"
 lipo -create -output target/lib${xcframework_name}.a \
   target/aarch64-apple-ios-sim/release/lib${xcframework_name}.a \
   target/x86_64-apple-ios/release/lib${xcframework_name}.a
@@ -46,7 +46,7 @@ cat bindings/swift/files/did_sidekicksFFI.modulemap \
 
 rm -r bindings/swift/${xcframework_name}.xcframework &>/dev/null
 
-echo ">>"; echo ">> Building the XFC framework..."; echo ">>"
+echo ">>"; echo ">> Building the XFC framework '${xcframework_name}'..."; echo ">>"
 xcodebuild -create-xcframework \
   -library ./target/lib${xcframework_name}.a \
   -headers ./bindings/swift/files \
@@ -69,6 +69,7 @@ zip -r ${xcframework_name}.xcframework.zip ${xcframework_name}.xcframework
 # The checksum of the ZIP archive that contains the XCFramework, as required for any 'binaryTarget'
 # See https://developer.apple.com/documentation/xcode/distributing-binary-frameworks-as-swift-packages
 checksum=$(swift package compute-checksum ${xcframework_name}.xcframework.zip)
+echo ">>"; echo ">> Checksum of the ZIP archive containing the XCFramework: ${checksum}"; echo ">>"
 cd - &>/dev/null
 
 echo ">>"; echo ">> Generating the Swift package structure..."; echo ">>"
