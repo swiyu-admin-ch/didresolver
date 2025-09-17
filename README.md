@@ -2,6 +2,11 @@
 
 # DID resolver
 
+[![Build and Test](https://github.com/swiyu-admin-ch/didresolver/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/swiyu-admin-ch/didresolver/actions/workflows/build-and-test.yml)
+[![CodeQL Analysis](https://github.com/swiyu-admin-ch/didresolver/actions/workflows/codeql-analyze.yml/badge.svg)](https://github.com/swiyu-admin-ch/didresolver/actions/workflows/codeql-analyze.yml)
+[![OSV-Scanner](https://github.com/swiyu-admin-ch/didresolver/actions/workflows/osv-scanner.yml/badge.svg)](https://github.com/swiyu-admin-ch/didresolver/actions/workflows/osv-scanner.yml)
+[![Clippy Analysis](https://github.com/swiyu-admin-ch/didresolver/actions/workflows/clippy.yml/badge.svg)](https://github.com/swiyu-admin-ch/didresolver/actions/workflows/clippy.yml)
+
 > Latest version of the DID methods might not be supported yet
 
 An official Swiss Government project made by the [Federal Office of Information Technology, Systems and Telecommunication FOITT](https://www.bit.admin.ch/)
