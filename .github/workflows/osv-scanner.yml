@@ -12,6 +12,17 @@ on:
     paths:
       - '**/Cargo.toml'
       #- '**/Cargo.lock'
+    # Sequence of patterns matched against refs/tags
+    tags:
+      - "*" # triggers only if push new tag version, like `0.8.4` or else
+  schedule:
+    # Use https://crontab.guru/examples.html
+    # monthly
+    #- cron: '0 0 1 * *'
+    # weekly
+    - cron: '0 0 * * 0'
+    # daily/nightly
+    #- cron: '0 0 * * *'
   # REMOVEME
   workflow_dispatch:
 
