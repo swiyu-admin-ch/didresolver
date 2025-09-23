@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    name: Build kotlin bindings for android
+    name: Build Kotlin bindings for Android
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -26,15 +26,20 @@ jobs:
       - name: Install targets
         run: |
           cargo install cargo-ndk
+          cargo ndk --version
+          
           rustup target add arm-linux-androideabi
           rustup target add aarch64-linux-android
           rustup target add armv7-linux-androideabi
           rustup target add i686-linux-android
           rustup target add x86_64-linux-android
           rustup target add x86_64-unknown-linux-gnu
-      - name: Cache rust modules
+          
+          #cargo ndk-env --target x86_64-linux-android
+
+      - name: Cache Rust modules
         id: cache-rust
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         env:
           cache-name: cache-rust-modules
         with:
@@ -46,11 +51,51 @@ jobs:
             ${{ runner.os }}-build-
             ${{ runner.os }}-
 
-      - name: Build kotlin bindings
+      - name: Build JNI libraries for Kotlin Android (incl. UniFFI bindings)
         run: |
-          bash kotlin-android-build.sh
+          cargo clean
+          echo ">>"; echo ">> Release build"; echo ">>" 
+          cargo build --release
+          
+          jni_libs=bindings/kotlin/jniLibs; rust_lib=libdidresolver.so
+          echo ">>"; echo ">> Build Java Native Interface (JNI) libraries for Android"; echo ">>" 
+          cargo ndk -o ${jni_libs} --manifest-path ./Cargo.toml -t armeabi-v7a -t arm64-v8a -t x86 -t x86_64 build --release
+          cargo run --bin uniffi-bindgen generate --library target/release/${rust_lib} --language kotlin --out-dir bindings/kotlin
+          
+          # ELF alignment (of shared libraries) check
+          # (inspired by https://cs.android.com/android/platform/superproject/main/+/main:system/extras/tools/check_elf_alignment.sh)
+          echo ">>"; echo ">> ELF alignment check"
+          echo ">>"; echo ">> Shared libraries are reported ALIGNED when their ELF regions are 16 KB or 64 KB aligned."
+          echo ">> Otherwise they are reported as UNALIGNED."; echo ">>"
+          
+          # On "ubuntu-latest" runner image, several ANDROID_NDK_* envvars are available
+          # (see https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md#environment-variables-2)
+          objdump_cmd=$($ANDROID_NDK_LATEST_HOME/ndk-which objdump)
+          #objdump_cmd=$($ANDROID_NDK_HOME/ndk-which objdump)
+          
+          RED="\e[1;31m"; GREEN="\e[1;32m"; PURPLE="\e[1;35m"; COLORS_OFF="\e[0m"; IFS=$'\n'
+          unaligned_libs=(); unaligned_64_bit_libs=()
+          for lib in $(find ${jni_libs} -name ${rust_lib}); do
+            [[ $(file "${lib}") == *"ELF"* ]] || continue
+            load="$($objdump_cmd -p ${lib} | grep LOAD | awk '{ print $NF }' | head -1)"
+            if [[ ${load} =~ 2\*\*(1[4-9]|[2-9][0-9]|[1-9][0-9]{2,}) ]]; then
+              echo -e ">> ${lib}: ${GREEN}ALIGNED${COLORS_OFF} (${load})"
+            else
+              echo -e ">> ${lib}: ${RED}UNALIGNED${COLORS_OFF} (${load})"
+              unaligned_libs+=("${so}")
+              [[ $(file "${lib}") == *"ELF 64"* ]] && unaligned_64_bit_libs+=("${lib}")
+            fi
+          done
+          if [ ${#unaligned_libs[@]} -gt 0 ]; then
+            echo -e "${PURPLE}>> Total ${#unaligned_libs[@]} UNALIGNED libs detected, although only 64-bit (arm64-v8a/x86_64) JNI libs need to be aligned.${COLORS_OFF}"
+          fi
+          if [ ${#unaligned_64_bit_libs[@]} -gt 0 ]; then
+            echo -e "${RED}>> Total ${#unaligned_64_bit_libs[@]} UNALIGNED 64-bit JNI libs detected: ${unaligned_64_bit_libs}${COLORS_OFF}"
+            exit 1
+          fi
+          echo -e "${GREEN}>> No UNALIGNED 64-bit JNI libs detected.${COLORS_OFF}"
 
-      - name: Save kotlin artifact
+      - name: Save Kotlin artifact
         uses: actions/upload-artifact@v4
         with:
           name: kotlin-bindings-android
