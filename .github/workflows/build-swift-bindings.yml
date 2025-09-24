@@ -1,0 +1,32 @@
+name: Build Swift language bindings
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      newVersion:
+        description: 'New Version'
+        type: string
+        default: '0.0.0'
+        required: true
+      swiftPackageName:
+        description: 'Swift Package Name'
+        type: string
+        default: 'DidResolver'
+        required: true
+      xcFrameworkName:
+        description: 'XCFramework Name'
+        type: string
+        default: 'didresolver'
+        required: true
+
+jobs:
+  rust-build-swift-bindings:
+    # just reuse a relevant workflow from the dedicated repo https://github.com/swiyu-admin-ch/github-actions-workflows
+    uses: swiyu-admin-ch/github-actions-workflows/.github/workflows/rust-build-swift-bindings.yml@feat/EIDOMNI-295-build-swift-bindings
+    with:
+      newVersion: ${{ github.event.inputs.newVersion }}
+      swiftPackageName: ${{ github.event.inputs.swiftPackageName }}
+      xcFrameworkName: ${{ github.event.inputs.xcFrameworkName }}
