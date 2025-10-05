@@ -245,7 +245,7 @@ impl Did {
     ///
     /// A UniFFI-compliant constructor.
     pub fn new(did: String) -> Result<Self, DidResolveError> {
-        Self::try_from(did.to_owned())
+        Self::try_from(did)
     }
 
     /// Returns the HTTP URL [*transformed*](https://identity.foundation/didwebvh/next/#the-did-to-https-transformation)
