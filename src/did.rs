@@ -159,7 +159,7 @@ impl DidMethod {
             TDW {
                 scid: _,
                 https_url: _,
-            } => match TrustDidWeb::resolve(did_str.clone(), did_log.clone()) {
+            } => match TrustDidWeb::resolve(did_str, did_log) {
                 // [`TrustDidWeb`] implements [`DidResolver`] trait
                 Ok(v) => Ok(Box::new(v)),
                 Err(err) => Err(err),
@@ -167,7 +167,7 @@ impl DidMethod {
             WEBVH {
                 scid: _,
                 https_url: _,
-            } => match WebVerifiableHistory::resolve(did_str.clone(), did_log.clone()) {
+            } => match WebVerifiableHistory::resolve(did_str, did_log) {
                 // [`WebVerifiableHistory`] implements [`DidResolver`] trait
                 Ok(v) => Ok(Box::new(v)),
                 Err(err) => Err(err),
