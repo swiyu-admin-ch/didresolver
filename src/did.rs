@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
-use crate::did::DidMethod::{TDW, WEBVH};
+use crate::did::DidMethod::{TDW, UNKNOWN, WEBVH};
+use core::fmt::{Display, Formatter};
 use did_sidekicks::did_doc::{DidDoc, DidDocExtended};
 use did_sidekicks::did_resolver::DidResolver;
 use did_sidekicks::errors::{DidResolverError, DidResolverErrorKind};
@@ -8,12 +9,12 @@ use did_tdw::did_tdw::{TrustDidWeb, TrustDidWebId};
 use did_tdw::errors::TrustDidWebIdResolutionErrorKind;
 use did_webvh::did_webvh::{WebVerifiableHistory, WebVerifiableHistoryId};
 use did_webvh::errors::WebVerifiableHistoryIdResolutionErrorKind;
-use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use strum::{AsRefStr as EnumAsRefStr, Display as EnumDisplay};
 use thiserror::Error;
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum DidResolveError {
     /// The supplied DID is not supported (currently supported are: did:tdw, did:webvh)
     #[error(
@@ -52,8 +53,9 @@ pub enum DidResolveError {
 
 impl DidResolveError {
     /// Returns the error kind.
-    pub fn kind(&self) -> DidResolveErrorKind {
-        match self {
+    #[inline]
+    pub const fn kind(&self) -> DidResolveErrorKind {
+        match *self {
             Self::DidNotSupported(_) => DidResolveErrorKind::DidNotSupported,
             Self::InvalidDidLog(_) => DidResolveErrorKind::InvalidDidLog,
             Self::InvalidDidDoc(_) => DidResolveErrorKind::InvalidDidDoc,
@@ -69,34 +71,36 @@ impl DidResolveError {
 }
 
 impl From<DidResolverError> for DidResolveError {
+    #[inline]
     fn from(value: DidResolverError) -> Self {
         match value.kind() {
             DidResolverErrorKind::InvalidMethodSpecificId => {
-                DidResolveError::InvalidMethodSpecificId(format!("{value}"))
+                Self::InvalidMethodSpecificId(format!("{value}"))
             }
             DidResolverErrorKind::SerializationFailed => {
-                DidResolveError::SerializationFailed(format!("{value}"))
+                Self::SerializationFailed(format!("{value}"))
             }
             DidResolverErrorKind::DeserializationFailed => {
-                DidResolveError::DeserializationFailed(format!("{value}"))
+                Self::DeserializationFailed(format!("{value}"))
             }
             DidResolverErrorKind::InvalidDidParameter => {
-                DidResolveError::InvalidDidParameter(format!("{value}"))
+                Self::InvalidDidParameter(format!("{value}"))
             }
             DidResolverErrorKind::InvalidDidDocument => {
-                DidResolveError::InvalidDidDocument(format!("{value}"))
+                Self::InvalidDidDocument(format!("{value}"))
             }
             DidResolverErrorKind::InvalidIntegrityProof => {
-                DidResolveError::InvalidDataIntegrityProof(format!("{value}"))
+                Self::InvalidDataIntegrityProof(format!("{value}"))
             }
         }
     }
 }
 
-/// DidResolveError kind.
+/// [`DidResolveError`] kind.
 ///
 /// Each [`DidResolveError`] variant has a kind provided by the [`DidResolveErrorKind::kind`] method.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
 pub enum DidResolveErrorKind {
     DidNotSupported,
     MalformedDid,
@@ -111,7 +115,8 @@ pub enum DidResolveErrorKind {
 }
 
 /// The DID methods supported by [`Did`]
-#[derive(Debug, Clone, PartialEq, Default, EnumDisplay, EnumAsRefStr)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, EnumDisplay, EnumAsRefStr)]
+#[non_exhaustive]
 pub enum DidMethod {
     #[strum(to_string = "tdw", serialize = "tdw")]
     TDW { scid: String, https_url: String },
@@ -122,30 +127,28 @@ pub enum DidMethod {
 }
 
 impl DidMethod {
+    /// # Panics
+    /// In case of [`UNKNOWN`]
+    #[inline]
+    #[expect(clippy::panic, reason = "..")]
     pub fn get_scid(&self) -> String {
-        match self {
-            TDW { scid, https_url: _ } => scid.to_string(),
-            WEBVH { scid, https_url: _ } => scid.to_string(),
-            _ => panic!("DID method is unknown"),
+        match self.to_owned() {
+            TDW { scid, .. } | WEBVH { scid, .. } => scid,
+            UNKNOWN => panic!("DID method is unknown"),
         }
     }
 
+    /// # Panics
+    /// In case of [`UNKNOWN`]
+    #[inline]
+    #[expect(clippy::panic, reason = "..")]
     pub fn get_https_url(&self) -> String {
-        match self {
-            TDW {
-                scid: _,
-                https_url: url,
-            } => url.to_string(),
-            WEBVH {
-                scid: _,
-                https_url: url,
-            } => url.to_string(),
-            _ => panic!("DID method is unknown"),
+        match self.to_owned() {
+            TDW { https_url: url, .. } | WEBVH { https_url: url, .. } => url,
+            UNKNOWN => panic!("DID method is unknown"),
         }
     }
-}
 
-impl DidMethod {
     /// Delivers a proper `DID` resolver implementation (if any) object w.r.t. to `DID` method.
     ///
     /// A returned value is [`Box`]-ed for the sake of dynamic dispatching.
@@ -155,24 +158,18 @@ impl DidMethod {
         did_str: String,
         did_log: String,
     ) -> Result<Box<dyn DidResolver>, DidResolverError> {
-        match self {
-            TDW {
-                scid: _,
-                https_url: _,
-            } => match TrustDidWeb::resolve(did_str, did_log) {
+        match *self {
+            TDW { .. } => match TrustDidWeb::resolve(did_str, did_log) {
                 // [`TrustDidWeb`] implements [`DidResolver`] trait
                 Ok(v) => Ok(Box::new(v)),
                 Err(err) => Err(err),
             },
-            WEBVH {
-                scid: _,
-                https_url: _,
-            } => match WebVerifiableHistory::resolve(did_str, did_log) {
+            WEBVH { .. } => match WebVerifiableHistory::resolve(did_str, did_log) {
                 // [`WebVerifiableHistory`] implements [`DidResolver`] trait
                 Ok(v) => Ok(Box::new(v)),
                 Err(err) => Err(err),
             },
-            _ => Err(DidResolverError::InvalidMethodSpecificId(format!(
+            UNKNOWN => Err(DidResolverError::InvalidMethodSpecificId(format!(
                 "Unsupported DID method denoted by DID: {did_str}"
             ))),
         }
@@ -182,6 +179,7 @@ impl DidMethod {
 impl TryFrom<String> for DidMethod {
     type Error = DidResolveError;
 
+    #[inline]
     fn try_from(value: String) -> Result<Self, Self::Error> {
         match TrustDidWebId::try_from(value.clone()) {
             Ok(did_id) => Ok(TDW {
@@ -198,9 +196,9 @@ impl TryFrom<String> for DidMethod {
                             scid: did_id.get_scid(),
                             https_url: did_id.get_url(),
                         }),
-                        Err(err) => match err.kind() {
+                        Err(webvh_err) => match webvh_err.kind() {
                             WebVerifiableHistoryIdResolutionErrorKind::InvalidMethodSpecificId => {
-                                Err(DidResolveError::MalformedDid(format!("{err}")))
+                                Err(DidResolveError::MalformedDid(format!("{webvh_err}")))
                             }
                             WebVerifiableHistoryIdResolutionErrorKind::MethodNotSupported => {
                                 Err(DidResolveError::DidNotSupported(format!(
@@ -220,7 +218,8 @@ impl TryFrom<String> for DidMethod {
 /// that address `did:web`’s limitations as a long-lasting DID.
 ///
 /// Also, the legacy DID method [`did:tdw`](https://identity.foundation/didwebvh/v0.3) is supported as well.
-#[derive(Debug, PartialEq)]
+#[expect(clippy::too_long_first_doc_paragraph, reason = "..")]
+#[derive(Debug, PartialEq, Eq)]
 // This struct resembles the ssi::dids::DID, which is a way more advanced
 pub struct Did {
     parts: Vec<String>,
@@ -244,6 +243,7 @@ impl Did {
     /// object features all the detailed information required to narrow down the root cause.
     ///
     /// A UniFFI-compliant constructor.
+    #[inline]
     pub fn new(did: String) -> Result<Self, DidResolveError> {
         Self::try_from(did)
     }
@@ -253,6 +253,7 @@ impl Did {
     ///
     /// A UniFFI-compliant method.
     #[deprecated(since = "2.2.0", note = "please use `get_http_url` instead")]
+    #[inline]
     pub fn get_url(&self) -> Result<String, DidResolveError> {
         Ok(self.get_https_url())
     }
@@ -261,10 +262,12 @@ impl Did {
     /// from the DID supplied via constructor.
     ///
     /// A UniFFI-compliant method.
+    #[inline]
     pub fn get_https_url(&self) -> String {
         self.https_url.clone()
     }
 
+    #[inline]
     pub fn get_parts(&self) -> Vec<String> {
         self.parts.clone()
     }
@@ -272,6 +275,7 @@ impl Did {
     /// The DID method matching the DID supplied via constructor, if supported. Otherwise, [`DidMethod::UNKNOWN`]
     ///
     /// A UniFFI-compliant method.
+    #[inline]
     pub fn get_method(&self) -> DidMethod {
         self.did_method.clone()
     }
@@ -279,6 +283,7 @@ impl Did {
     /// The self-certifying identifier (SCID) for the DID supplied via constructor.
     ///
     /// A UniFFI-compliant method.
+    #[inline]
     pub fn get_scid(&self) -> String {
         self.scid.clone()
     }
@@ -292,6 +297,7 @@ impl Did {
     ///
     /// A UniFFI-compliant method.
     #[deprecated(since = "2.2.0", note = "please use more potent `resolve_all` instead")]
+    #[inline]
     pub fn resolve(&self, did_log: String) -> Result<Arc<DidDoc>, DidResolveError> {
         // may throw did_sidekicks::error::DidResolver
         match self.resolve_all(did_log) {
@@ -314,6 +320,7 @@ impl Did {
     /// when publishing the current and subsequent `DID log entries`. [`DidDocExtended::get_did_method_parameters`]
     ///
     /// A UniFFI-compliant method.
+    #[inline]
     pub fn resolve_all(&self, did_log: String) -> Result<Arc<DidDocExtended>, DidResolveError> {
         // CAUTION Using the Rust ? operator at various places in code below is only possible because os
         //         DidResolveError's implementation of From<did_sidekicks::error::DidResolver> trait
@@ -329,7 +336,8 @@ impl Did {
 
 /// This implementation reconstructs the original (textual) DID, regardless of its validity.
 impl Display for Did {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    #[inline]
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", self.parts.join(":"))
     }
 }
@@ -338,20 +346,23 @@ impl Display for Did {
 impl TryFrom<String> for Did {
     type Error = DidResolveError;
 
+    #[inline]
+    #[expect(clippy::indexing_slicing, reason = "panic-safe indexing ensured")]
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        let did_split: Vec<&str> = value.splitn(4, ":").collect();
+        let did_split: Vec<String> = value.splitn(4, ':').map(|x| x.to_owned()).collect();
         if did_split.len() < 4 {
             return Err(DidResolveError::MalformedDid(value));
-        };
+        }
 
+        // CAUTION At this point, using indexing is panic-safe (thanks to the previous check above)
         if did_split[0] != Self::DID {
             return Err(DidResolveError::DidNotSupported(value));
         }
 
-        let did_method = DidMethod::try_from(value.clone())?;
+        let did_method = DidMethod::try_from(value)?;
 
-        Ok(Did {
-            parts: did_split.into_iter().map(|v| v.to_string()).collect(),
+        Ok(Self {
+            parts: did_split,
             did_method: did_method.clone(),
             scid: did_method.get_scid(),
             https_url: did_method.get_https_url(),
@@ -602,7 +613,7 @@ mod tests {
         #[case] did_log_raw: String,
         #[case] error_message: String,
     ) {
-        let did_obj = Did::new(did.clone()).unwrap();
+        let did_obj = Did::new(did).unwrap();
 
         let did_doc = did_obj.resolve_all(did_log_raw);
         assert!(did_doc.is_err());
@@ -673,7 +684,7 @@ mod tests {
     #[case("did:web:did_method_not_yet_supported:my_domain")]
     #[case("did:XYZ:did_method_does_not_exist_at_all:my_domain")]
     fn test_did_not_supported(#[case] did: String) {
-        let did_obj = Did::new(did.to_owned());
+        let did_obj = Did::new(did);
         assert!(did_obj.is_err());
         assert_eq!(
             did_obj.unwrap_err().kind(), // panic-safe unwrap call (see the previous line)
@@ -719,7 +730,7 @@ mod tests {
             }
     )]
     fn test_did_ok(#[case] did: String, #[case] expected_method: DidMethod) {
-        let did_obj = Did::new(did.to_owned()); // no errors expected here
+        let did_obj = Did::new(did); // no errors expected here
         assert!(did_obj.is_ok());
         let did_obj = did_obj.unwrap(); // panic-safe unwrap call (see the previous line)
         let url = did_obj.get_https_url();
@@ -738,7 +749,7 @@ mod tests {
     #[case("did:webvh:malformed")]
     #[case("did:webvh:identifier#key01")]
     fn test_did_malformed(#[case] did: String) {
-        let did_obj = Did::new(did.to_owned()); // error is EXPECTED here
+        let did_obj = Did::new(did); // error is EXPECTED here
 
         assert!(did_obj.is_err());
         assert_eq!(
