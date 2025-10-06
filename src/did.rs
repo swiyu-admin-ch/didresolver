@@ -16,39 +16,38 @@ use thiserror::Error;
 #[derive(Error, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum DidResolveError {
+    /// The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation
+    #[error("The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation: {0}")]
+    DeserializationFailed(String),
     /// The supplied DID is not supported (currently supported are: did:tdw, did:webvh)
     #[error(
         "The supplied DID is not supported (currently supported are: did:tdw, did:webvh): {0}"
     )]
     DidNotSupported(String),
-    /// The supplied DID is supported, but is malformed
-    #[error("the supplied DID is supported, but is malformed: {0}")]
-    MalformedDid(String),
-    /// The supplied DID log is invalid
-    #[error("the supplied DID log is invalid: {0}")]
-    InvalidDidLog(String),
-    /// The supplied DID log is valid, but it features invalid DID Doc
-    #[error("the supplied DID log is valid, but it features invalid DID Doc: {0}")]
-    InvalidDidDoc(String),
-    /// Invalid method-specific identifier
-    #[error("invalid method specific identifier: {0}")]
-    InvalidMethodSpecificId(String),
-    /// Failed to serialize DID document (to JSON)
-    #[error("failed to serialize DID document (to JSON): {0}")]
-    SerializationFailed(String),
-    /// The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation
-    #[error("The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation: {0}"
-    )]
-    DeserializationFailed(String),
-    /// Invalid DID method parameter
-    #[error("invalid DID method parameter: {0}")]
-    InvalidDidParameter(String),
-    /// Alias for [`DidResolveError::InvalidDidDoc`]
-    #[error("invalid DID document: {0}")]
-    InvalidDidDocument(String),
     /// Invalid DID log integration proof
     #[error("invalid DID log integration proof: {0}")]
     InvalidDataIntegrityProof(String),
+    /// The supplied DID log is valid, but it features invalid DID Doc
+    #[error("the supplied DID log is valid, but it features invalid DID Doc: {0}")]
+    InvalidDidDoc(String),
+    /// Alias for [`DidResolveError::InvalidDidDoc`]
+    #[error("invalid DID document: {0}")]
+    InvalidDidDocument(String),
+    /// The supplied DID log is invalid
+    #[error("the supplied DID log is invalid: {0}")]
+    InvalidDidLog(String),
+    /// Invalid DID method parameter
+    #[error("invalid DID method parameter: {0}")]
+    InvalidDidParameter(String),
+    /// Invalid method-specific identifier
+    #[error("invalid method specific identifier: {0}")]
+    InvalidMethodSpecificId(String),
+    /// The supplied DID is supported, but is malformed
+    #[error("the supplied DID is supported, but is malformed: {0}")]
+    MalformedDid(String),
+    /// Failed to serialize DID document (to JSON)
+    #[error("failed to serialize DID document (to JSON): {0}")]
+    SerializationFailed(String),
 }
 
 impl DidResolveError {
@@ -102,16 +101,16 @@ impl From<DidResolverError> for DidResolveError {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
 pub enum DidResolveErrorKind {
-    DidNotSupported,
-    MalformedDid,
-    InvalidDidLog,
-    InvalidDidDoc,
-    InvalidMethodSpecificId,
-    SerializationFailed,
     DeserializationFailed,
-    InvalidDidParameter,
-    InvalidDidDocument,
+    DidNotSupported,
     InvalidDataIntegrityProof,
+    InvalidDidDoc,
+    InvalidDidDocument,
+    InvalidDidLog,
+    InvalidDidParameter,
+    InvalidMethodSpecificId,
+    MalformedDid,
+    SerializationFailed,
 }
 
 /// The DID methods supported by [`Did`]
@@ -120,10 +119,10 @@ pub enum DidResolveErrorKind {
 pub enum DidMethod {
     #[strum(to_string = "tdw", serialize = "tdw")]
     TDW { scid: String, https_url: String },
-    #[strum(to_string = "webvh", serialize = "webvh")]
-    WEBVH { scid: String, https_url: String },
     #[default]
     UNKNOWN,
+    #[strum(to_string = "webvh", serialize = "webvh")]
+    WEBVH { scid: String, https_url: String },
 }
 
 impl DidMethod {
@@ -131,9 +130,9 @@ impl DidMethod {
     /// In case of [`UNKNOWN`]
     #[inline]
     #[expect(clippy::panic, reason = "..")]
-    pub fn get_scid(&self) -> String {
+    pub fn get_https_url(&self) -> String {
         match self.to_owned() {
-            TDW { scid, .. } | WEBVH { scid, .. } => scid,
+            TDW { https_url: url, .. } | WEBVH { https_url: url, .. } => url,
             UNKNOWN => panic!("DID method is unknown"),
         }
     }
@@ -142,9 +141,9 @@ impl DidMethod {
     /// In case of [`UNKNOWN`]
     #[inline]
     #[expect(clippy::panic, reason = "..")]
-    pub fn get_https_url(&self) -> String {
+    pub fn get_scid(&self) -> String {
         match self.to_owned() {
-            TDW { https_url: url, .. } | WEBVH { https_url: url, .. } => url,
+            TDW { scid, .. } | WEBVH { scid, .. } => scid,
             UNKNOWN => panic!("DID method is unknown"),
         }
     }
@@ -161,12 +160,12 @@ impl DidMethod {
         match *self {
             TDW { .. } => match TrustDidWeb::resolve(did_str, did_log) {
                 // [`TrustDidWeb`] implements [`DidResolver`] trait
-                Ok(v) => Ok(Box::new(v)),
+                Ok(tdw) => Ok(Box::new(tdw)),
                 Err(err) => Err(err),
             },
             WEBVH { .. } => match WebVerifiableHistory::resolve(did_str, did_log) {
                 // [`WebVerifiableHistory`] implements [`DidResolver`] trait
-                Ok(v) => Ok(Box::new(v)),
+                Ok(webvh) => Ok(Box::new(webvh)),
                 Err(err) => Err(err),
             },
             UNKNOWN => Err(DidResolverError::InvalidMethodSpecificId(format!(
@@ -213,23 +212,62 @@ impl TryFrom<String> for DidMethod {
     }
 }
 
-/// Represents a Decentralized Identifier (DID) in terms of DID Web + Verifiable History ([`did:webvh`](https://identity.foundation/didwebvh/v1.0))
-/// that is an enhancement to the `did:web` DID method, providing complementary features
+/// Represents a Decentralized Identifier (DID) in terms of DID Web + Verifiable History ([`did:webvh`](https://identity.foundation/didwebvh/v1.0)).
+///
+/// [`did:webvh`](https://identity.foundation/didwebvh/v1.0) is an enhancement to the `did:web` DID method, providing complementary features
 /// that address `did:web`’s limitations as a long-lasting DID.
 ///
 /// Also, the legacy DID method [`did:tdw`](https://identity.foundation/didwebvh/v0.3) is supported as well.
-#[expect(clippy::too_long_first_doc_paragraph, reason = "..")]
 #[derive(Debug, PartialEq, Eq)]
-// This struct resembles the ssi::dids::DID, which is a way more advanced
 pub struct Did {
-    parts: Vec<String>,
     did_method: DidMethod,
-    scid: String,
     https_url: String,
+    parts: Vec<String>,
+    scid: String,
 }
 
 impl Did {
     const DID: &'static str = "did";
+
+    /// Returns the HTTPS URL [*transformed*](https://identity.foundation/didwebvh/next/#the-did-to-https-transformation)
+    /// from the DID supplied via constructor.
+    ///
+    /// A UniFFI-compliant method.
+    #[inline]
+    pub fn get_https_url(&self) -> String {
+        self.https_url.clone()
+    }
+
+    /// The DID method matching the DID supplied via constructor, if supported. Otherwise, [`UNKNOWN`]
+    ///
+    /// A UniFFI-compliant method.
+    #[inline]
+    pub fn get_method(&self) -> DidMethod {
+        self.did_method.clone()
+    }
+
+    #[inline]
+    pub fn get_parts(&self) -> Vec<String> {
+        self.parts.clone()
+    }
+
+    /// The self-certifying identifier (SCID) for the DID supplied via constructor.
+    ///
+    /// A UniFFI-compliant method.
+    #[inline]
+    pub fn get_scid(&self) -> String {
+        self.scid.clone()
+    }
+
+    /// Returns the HTTP URL [*transformed*](https://identity.foundation/didwebvh/next/#the-did-to-https-transformation)
+    /// from the DID supplied via constructor.
+    ///
+    /// A UniFFI-compliant method.
+    #[deprecated(since = "2.2.0", note = "please use `get_http_url` instead")]
+    #[inline]
+    pub fn get_url(&self) -> Result<String, DidResolveError> {
+        Ok(self.get_https_url())
+    }
 
     /// The single constructor of [`Did`] expecting a
     /// [DID method-specific identifier](https://identity.foundation/didwebvh/next/#method-specific-identifier) as either:
@@ -246,46 +284,6 @@ impl Did {
     #[inline]
     pub fn new(did: String) -> Result<Self, DidResolveError> {
         Self::try_from(did)
-    }
-
-    /// Returns the HTTP URL [*transformed*](https://identity.foundation/didwebvh/next/#the-did-to-https-transformation)
-    /// from the DID supplied via constructor.
-    ///
-    /// A UniFFI-compliant method.
-    #[deprecated(since = "2.2.0", note = "please use `get_http_url` instead")]
-    #[inline]
-    pub fn get_url(&self) -> Result<String, DidResolveError> {
-        Ok(self.get_https_url())
-    }
-
-    /// Returns the HTTPS URL [*transformed*](https://identity.foundation/didwebvh/next/#the-did-to-https-transformation)
-    /// from the DID supplied via constructor.
-    ///
-    /// A UniFFI-compliant method.
-    #[inline]
-    pub fn get_https_url(&self) -> String {
-        self.https_url.clone()
-    }
-
-    #[inline]
-    pub fn get_parts(&self) -> Vec<String> {
-        self.parts.clone()
-    }
-
-    /// The DID method matching the DID supplied via constructor, if supported. Otherwise, [`DidMethod::UNKNOWN`]
-    ///
-    /// A UniFFI-compliant method.
-    #[inline]
-    pub fn get_method(&self) -> DidMethod {
-        self.did_method.clone()
-    }
-
-    /// The self-certifying identifier (SCID) for the DID supplied via constructor.
-    ///
-    /// A UniFFI-compliant method.
-    #[inline]
-    pub fn get_scid(&self) -> String {
-        self.scid.clone()
     }
 
     /// The essential method of [`Did`] implementing *Read (Resolve)* DID method operation for:
@@ -315,7 +313,7 @@ impl Did {
     /// In case of error, the available [`DidResolveError`] object features all the detailed
     /// information required to narrow down the root cause.
     ///
-    /// Compared to [`Did::resolve`] method, it delivers some additional information
+    /// Compared to `Did::resolve` method, it delivers some additional information
     /// (the DID processing parameters) used by the `DID Controller`
     /// when publishing the current and subsequent `DID log entries`. [`DidDocExtended::get_did_method_parameters`]
     ///
@@ -337,6 +335,7 @@ impl Did {
 /// This implementation reconstructs the original (textual) DID, regardless of its validity.
 impl Display for Did {
     #[inline]
+    #[expect(clippy::min_ident_chars, reason = "..")]
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", self.parts.join(":"))
     }
@@ -371,6 +370,8 @@ impl TryFrom<String> for Did {
 }
 
 #[cfg(test)]
+#[expect(clippy::unwrap_used, reason = "..")]
+#[expect(clippy::panic, reason = "..")]
 mod tests {
     use super::DidResolveErrorKind;
     use super::{Did, DidMethod};
@@ -387,9 +388,9 @@ mod tests {
             match ureq::get(&url).call() {
                 Ok(response) => match response.into_body().read_to_string() {
                     Ok(body) => body,
-                    Err(e) => panic!("{e}"),
+                    Err(err) => panic!("{err}"),
                 },
-                Err(e) => panic!("{e}"),
+                Err(err) => panic!("{err}"),
             }
         }
     }
@@ -410,8 +411,8 @@ mod tests {
     fn test_resolve(
         #[case] did: String,
         http_client: &HttpClient, // fixture
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let did_obj = Did::new(did)?; // no error expected here
+    ) {
+        let did_obj = Did::new(did).unwrap(); // panic-safe unwrap call (as long as #case setup is correct)
 
         let url = did_obj.get_https_url();
         assert!(!url.is_empty());
@@ -419,9 +420,9 @@ mod tests {
         let did_log_raw = http_client.fetch_url(url);
         assert!(!did_log_raw.is_empty());
 
-        let res = did_obj.resolve(did_log_raw);
+        let res = did_obj.resolve_all(did_log_raw);
         assert!(res.is_ok(), "ERROR: {:?}", res.err().unwrap());
-        let did_doc = res.unwrap();
+        let did_doc = res.unwrap().get_did_doc_obj(); // panic-safe unwrap call (see the previous line)
 
         // CAUTION Such assertions are not really possible when using GitHub gists as input
         //         assert_eq!(did_doc.get_id(), did.to_string()); // assuming the Display trait is implemented accordingly for DID struct
@@ -435,8 +436,6 @@ mod tests {
         });
         assert!(!did_doc.get_authentication().is_empty());
         assert!(!did_doc.get_assertion_method().is_empty());
-
-        Ok(())
     }
 
     #[rstest]
@@ -457,20 +456,17 @@ mod tests {
         "test_data/webvh/did_without_controller.jsonl",
         "did:webvh:QmT4kPBFsHpJKvvvxgFUYxnSGPMeaQy1HWwyXMHj8NjLuy:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
     )]
-    fn test_resolve_did_log_from_file(
-        #[case] did_log_raw_filepath: String,
-        #[case] did: String,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let did_obj = Did::new(did.to_string())?; // no error expected here
+    fn test_resolve_did_log_from_file(#[case] did_log_raw_filepath: String, #[case] did: String) {
+        let did_obj = Did::new(did.to_owned()).unwrap(); // panic-safe unwrap call (as long as #case setup is correct)
 
-        let did_log_raw = fs::read_to_string(Path::new(&did_log_raw_filepath));
-        assert!(did_log_raw.is_ok());
-        let did_log_raw = did_log_raw.unwrap();
+        let did_log_raw_res = fs::read_to_string(Path::new(&did_log_raw_filepath));
+        assert!(did_log_raw_res.is_ok());
+        let did_log_raw = did_log_raw_res.unwrap();
 
-        let res = did_obj.resolve(did_log_raw);
+        let res = did_obj.resolve_all(did_log_raw);
 
         assert!(res.is_ok(), "ERROR: {:?}", res.err().unwrap());
-        let did_doc = res.unwrap();
+        let did_doc = res.unwrap().get_did_doc_obj(); // panic-safe unwrap call (see the previous line)
         assert_eq!(did_doc.id, did);
 
         //assert_eq!(did_doc.get_id(), did.to_string()); // assuming the Display trait is implemented accordingly for DID struct
@@ -478,8 +474,6 @@ mod tests {
         assert!(!did_doc.get_context().is_empty());
         assert!(!did_doc.get_verification_method().is_empty());
         assert!(!did_doc.get_authentication().is_empty());
-
-        Ok(())
     }
 
     #[rstest]
@@ -505,7 +499,8 @@ mod tests {
         r#"{"versionId":"1-QmbN9L4sb5s2brWSomReR9BpH5L3HnbjvC9Wshf1LpeK19","versionTime":"2025-07-19T11:55:46Z","parameters":{"method":"did:webvh:1.0","scid":"QmRcxocrbu6F6nDAiWeFBJXHjqgif3NPnuZyHDzxtEpvjx","updateKeys":["z6MkjV2QDQf7skfEiQ6hN7dPUgyvf8NAXefPFqm5jaczXaoL"],"nextKeyHashes":["QmPyrGjbkwKPbDE33StNmA6v9uwNWB9NWgmxMiQ7tV1uJx"],"watchers":["https://watcher1.example/"]},"state":{"@context":["https://www.w3.org/ns/did/v1","https://www.w3.org/ns/cid/v1"],"assertionMethod":["did:webvh:QmRcxocrbu6F6nDAiWeFBJXHjqgif3NPnuZyHDzxtEpvjx:example.example#key-0"],"authentication":["did:webvh:QmRcxocrbu6F6nDAiWeFBJXHjqgif3NPnuZyHDzxtEpvjx:example.example#key-0"],"capabilityDelegation":[],"capabilityInvocation":[],"id":"did:webvh:QmRcxocrbu6F6nDAiWeFBJXHjqgif3NPnuZyHDzxtEpvjx:example.example","keyAgreement":["did:webvh:QmRcxocrbu6F6nDAiWeFBJXHjqgif3NPnuZyHDzxtEpvjx:example.example#key-0"],"service":[],"verificationMethod":[{"controller":"did:webvh:QmRcxocrbu6F6nDAiWeFBJXHjqgif3NPnuZyHDzxtEpvjx:example.example","id":"did:webvh:QmRcxocrbu6F6nDAiWeFBJXHjqgif3NPnuZyHDzxtEpvjx:example.example#key-0","publicKeyMultibase":"z6MkoStXcsJvsZ8quDUZyRj9xiGRyhBVB4f8Qme1vze8DWLc","type":"Multikey"}]},"proof":[{"type":"DataIntegrityProof","cryptosuite":"eddsa-jcs-2022","created":"2025-07-19T11:55:46Z","verificationMethod":"did:key:z6MkjV2QDQf7skfEiQ6hN7dPUgyvf8NAXefPFqm5jaczXaoL#z6MkjV2QDQf7skfEiQ6hN7dPUgyvf8NAXefPFqm5jaczXaoL","proofPurpose":"assertionMethod","proofValue":"z3vfSXEm2fpoahV6Z7dhsWimkn1WfW17AnBrbe1gHmgoccwJ6LQghm9ydf9zbWr295mw6CNRtFU4BzWghasUW2gpK"}]}
 "#)]
     fn test_resolve_all_ok(#[case] did: String, #[case] did_log_raw: String) {
-        let did_obj = Did::new(did.clone()).unwrap();
+        let did_obj = Did::new(did.to_owned()).unwrap(); // panic-safe unwrap call (as long as #case setup is correct)
+
         // TODO assert_eq!(DidMethod::TDW { scid: String::from("/* value */"), url: String::from("/* value */") }, did_obj.get_method());
 
         let resolve_all = did_obj.resolve_all(did_log_raw);
@@ -516,40 +511,43 @@ mod tests {
         let params = did_doc.get_did_method_parameters();
         assert!(!params.is_empty());
         assert!(params.contains_key("method"));
-        assert!(params.get_key_value("method").is_some_and(|t| {
-            t.1.get_name() == "method"
-                && t.1.is_string()
-                && t.1
+        assert!(params.get_key_value("method").is_some_and(|param| {
+            param.1.get_name() == "method"
+                && param.1.is_string()
+                && param
+                    .1
                     .get_string_value()
                     .unwrap()
                     .starts_with(format!("{}:", Did::DID).as_str())
         }));
         assert!(params.contains_key("scid"));
-        assert!(params.get_key_value("scid").is_some_and(|t| {
-            t.1.get_name() == "scid"
-                && t.1.is_string()
-                && !t.1.get_string_value().unwrap().is_empty()
-                && !t.1.get_string_value().unwrap().len() > 32
+        assert!(params.get_key_value("scid").is_some_and(|param| {
+            param.1.get_name() == "scid"
+                && param.1.is_string()
+                && !param.1.get_string_value().unwrap().is_empty()
+                && !param.1.get_string_value().unwrap().len() > 32
         }));
         assert!(params.contains_key("update_keys"));
-        assert!(params.get_key_value("update_keys").is_some_and(|t| {
-            t.1.get_name() == "update_keys"
-                && t.1.is_array()
-                && t.1.is_string_array()
-                && !t.1.is_empty_array()
-                && t.1.get_string_array_value().is_some()
-                && !t.1.get_string_array_value().unwrap().is_empty()
-                && t.1.get_string_array_value().unwrap().len() == 1
-                && t.1
+        assert!(params.get_key_value("update_keys").is_some_and(|param| {
+            param.1.get_name() == "update_keys"
+                && param.1.is_array()
+                && param.1.is_string_array()
+                && !param.1.is_empty_array()
+                && param.1.get_string_array_value().is_some()
+                && !param.1.get_string_array_value().unwrap().is_empty()
+                && param.1.get_string_array_value().unwrap().len() == 1
+                && param
+                    .1
                     .get_string_array_value()
                     .unwrap()
                     .iter()
-                    .all(|v| v.len() > 32)
-                && t.1
+                    .all(|val| val.len() > 32)
+                && param
+                    .1
                     .get_string_array_value()
                     .unwrap()
                     .iter()
-                    .all(|v| v.starts_with("z"))
+                    .all(|val| val.starts_with("z"))
         }));
     }
 
@@ -570,7 +568,7 @@ mod tests {
         #[case] did_log_raw: String,
         #[case] error_message_contains: String,
     ) {
-        let did_obj = Did::new(did.clone()).unwrap();
+        let did_obj = Did::new(did).unwrap(); // panic-safe unwrap call (as long as #case setup is correct)
 
         let did_doc = did_obj.resolve_all(did_log_raw);
         assert!(did_doc.is_err());
@@ -595,7 +593,7 @@ mod tests {
     )]
     #[case(
         "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com",
-        r#"{}"#,
+        "{}",
         "the supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation"
     )]
     #[case("did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
@@ -613,7 +611,7 @@ mod tests {
         #[case] did_log_raw: String,
         #[case] error_message: String,
     ) {
-        let did_obj = Did::new(did).unwrap();
+        let did_obj = Did::new(did).unwrap(); // panic-safe unwrap call (as long as #case setup is correct)
 
         let did_doc = did_obj.resolve_all(did_log_raw);
         assert!(did_doc.is_err());
@@ -624,10 +622,8 @@ mod tests {
     #[rstest]
     #[case("did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
     )]
-    fn test_resolve_invalid_did_log_with_no_entries(
-        #[case] did: String,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let did_obj = Did::new(did.to_string())?; // no error expected here
+    fn test_resolve_invalid_did_log_with_no_entries(#[case] did: String) {
+        let did_obj = Did::new(did).unwrap(); // panic-safe unwrap call (as long as #case setup is correct)
 
         let res = did_obj.resolve_all(String::new()); // empty string
         assert!(res.is_err(), "ERROR: {:?}", res.err().unwrap());
@@ -635,8 +631,6 @@ mod tests {
             res.unwrap_err().kind(),
             DidResolveErrorKind::DeserializationFailed
         ); // panic-safe unwrap call (see the previous line)
-
-        Ok(())
     }
 
     #[rstest]
@@ -660,23 +654,19 @@ mod tests {
     fn test_resolve_invalid_did_log_non_incremented_version(
         #[case] did_log_raw_filepath: String,
         #[case] did: String,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let did_obj = Did::new(did.to_string())?; // no error expected here
+    ) {
+        let did_log_raw_res = fs::read_to_string(Path::new(&did_log_raw_filepath));
+        assert!(did_log_raw_res.is_ok());
+        let did_log_raw = did_log_raw_res.unwrap(); // panic-safe unwrap call (see the previous line)
 
-        let did_log_raw = fs::read_to_string(Path::new(&did_log_raw_filepath));
-        assert!(did_log_raw.is_ok());
-        let did_log_raw = did_log_raw.unwrap();
-
-        let res = did_obj.resolve_all(did_log_raw); // panic-safe unwrap call (see above)
-        assert!(res.is_err());
-        let err = res.unwrap_err(); // panic-safe unwrap call (see the previous line)
+        let resolve_all_res = Did::new(did).unwrap().resolve_all(did_log_raw); // panic-safe unwrap call (as long as #case setup is correct)
+        assert!(resolve_all_res.is_err());
+        let err = resolve_all_res.unwrap_err(); // panic-safe unwrap call (see the previous line)
         assert_eq!(err.kind(), DidResolveErrorKind::DeserializationFailed);
         assert!(err
                     .to_string()
                     .contains("Version numbers (`versionId`) must be in a sequence of positive consecutive integers"),
                 "ERROR: {:?}", err);
-
-        Ok(())
     }
 
     #[rstest]
@@ -684,10 +674,10 @@ mod tests {
     #[case("did:web:did_method_not_yet_supported:my_domain")]
     #[case("did:XYZ:did_method_does_not_exist_at_all:my_domain")]
     fn test_did_not_supported(#[case] did: String) {
-        let did_obj = Did::new(did);
-        assert!(did_obj.is_err());
+        let did_obj_res = Did::new(did);
+        assert!(did_obj_res.is_err());
         assert_eq!(
-            did_obj.unwrap_err().kind(), // panic-safe unwrap call (see the previous line)
+            did_obj_res.unwrap_err().kind(), // panic-safe unwrap call (see the previous line)
             DidResolveErrorKind::DidNotSupported
         );
     }
@@ -730,12 +720,15 @@ mod tests {
             }
     )]
     fn test_did_ok(#[case] did: String, #[case] expected_method: DidMethod) {
-        let did_obj = Did::new(did); // no errors expected here
-        assert!(did_obj.is_ok());
-        let did_obj = did_obj.unwrap(); // panic-safe unwrap call (see the previous line)
+        let did_obj_res = Did::new(did); // no errors expected here (as long as #case setup is correct)
+
+        assert!(did_obj_res.is_ok());
+        let did_obj = did_obj_res.unwrap(); // panic-safe unwrap call (see the previous line)
+
         let url = did_obj.get_https_url();
         assert!(!url.is_empty());
         assert!(url.starts_with("https://"));
+
         let method = did_obj.get_method();
         assert_ne!(method, DidMethod::UNKNOWN); // anything but this
         assert_eq!(method, expected_method);
@@ -749,11 +742,11 @@ mod tests {
     #[case("did:webvh:malformed")]
     #[case("did:webvh:identifier#key01")]
     fn test_did_malformed(#[case] did: String) {
-        let did_obj = Did::new(did); // error is EXPECTED here
+        let did_obj_res = Did::new(did); // error is EXPECTED here
 
-        assert!(did_obj.is_err());
+        assert!(did_obj_res.is_err());
         assert_eq!(
-            did_obj.unwrap_err().kind(), // panic-safe unwrap call (see the previous line)
+            did_obj_res.unwrap_err().kind(), // panic-safe unwrap call (see the previous line)
             DidResolveErrorKind::MalformedDid
         );
     }
