@@ -259,11 +259,11 @@ impl Did {
         self.scid.to_owned()
     }
 
-    /// Returns the HTTP URL [*transformed*](https://identity.foundation/didwebvh/next/#the-did-to-https-transformation)
+    /// Returns the HTTPS URL [*transformed*](https://identity.foundation/didwebvh/next/#the-did-to-https-transformation)
     /// from the DID supplied via constructor.
     ///
     /// A UniFFI-compliant method.
-    #[deprecated(since = "2.2.0", note = "please use `get_http_url` instead")]
+    #[deprecated(since = "2.2.0", note = "please use `get_https_url` instead")]
     #[inline]
     pub fn get_url(&self) -> Result<String, DidResolveError> {
         Ok(self.get_https_url())
