@@ -348,7 +348,7 @@ impl TryFrom<String> for Did {
     #[inline]
     #[expect(clippy::indexing_slicing, reason = "panic-safe indexing ensured")]
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        let did_split: Vec<String> = value.splitn(4, ':').map(|x| x.to_owned()).collect();
+        let did_split: Vec<String> = value.splitn(4, ':').map(str::to_owned).collect();
         if did_split.len() < 4 {
             return Err(DidResolveError::MalformedDid(value));
         }
