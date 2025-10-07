@@ -97,7 +97,7 @@ impl From<DidResolverError> for DidResolveError {
 
 /// [`DidResolveError`] kind.
 ///
-/// Each [`DidResolveError`] variant has a kind provided by the [`DidResolveErrorKind::kind`] method.
+/// Each [`DidResolveError`] variant has a kind provided by the [`DidResolveError::kind`] method.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
 pub enum DidResolveErrorKind {
