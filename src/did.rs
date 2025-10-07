@@ -131,8 +131,8 @@ impl DidMethod {
     #[inline]
     #[expect(clippy::panic, reason = "..")]
     pub fn get_https_url(&self) -> String {
-        match self.to_owned() {
-            TDW { https_url: url, .. } | WEBVH { https_url: url, .. } => url,
+        match self {
+            TDW { https_url, .. } | WEBVH { https_url, .. } => https_url.clone(),
             UNKNOWN => panic!("DID method is unknown"),
         }
     }
@@ -142,8 +142,8 @@ impl DidMethod {
     #[inline]
     #[expect(clippy::panic, reason = "..")]
     pub fn get_scid(&self) -> String {
-        match self.to_owned() {
-            TDW { scid, .. } | WEBVH { scid, .. } => scid,
+        match self {
+            TDW { scid, .. } | WEBVH { scid, .. } => scid.clone(),
             UNKNOWN => panic!("DID method is unknown"),
         }
     }
