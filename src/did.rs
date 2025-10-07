@@ -362,9 +362,9 @@ impl TryFrom<String> for Did {
 
         Ok(Self {
             parts: did_split,
-            did_method: did_method.to_owned(),
             scid: did_method.get_scid(),
             https_url: did_method.get_https_url(),
+            did_method
         })
     }
 }
