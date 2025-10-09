@@ -14,7 +14,10 @@ use strum::{AsRefStr as EnumAsRefStr, Display as EnumDisplay};
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq, Eq)]
-#[non_exhaustive]
+#[expect(
+    clippy::exhaustive_enums,
+    reason = "further enum variants might be added in the future"
+)]
 pub enum DidResolveError {
     /// The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation
     #[error("The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation: {0}")]
@@ -97,9 +100,12 @@ impl From<DidResolverError> for DidResolveError {
 
 /// [`DidResolveError`] kind.
 ///
-/// Each [`DidResolveError`] variant has a kind provided by the [`DidResolveErrorKind::kind`] method.
+/// Each [`DidResolveError`] variant has a kind provided by the [`DidResolveError::kind`] method.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[non_exhaustive]
+#[expect(
+    clippy::exhaustive_enums,
+    reason = "further enum variants might be added in the future"
+)]
 pub enum DidResolveErrorKind {
     DeserializationFailed,
     DidNotSupported,
@@ -115,7 +121,10 @@ pub enum DidResolveErrorKind {
 
 /// The DID methods supported by [`Did`]
 #[derive(Debug, Clone, PartialEq, Eq, Default, EnumDisplay, EnumAsRefStr)]
-#[non_exhaustive]
+#[expect(
+    clippy::exhaustive_enums,
+    reason = "further enum variants might be added in the future"
+)]
 pub enum DidMethod {
     #[strum(to_string = "tdw", serialize = "tdw")]
     TDW { scid: String, https_url: String },
@@ -130,9 +139,10 @@ impl DidMethod {
     /// In case of [`UNKNOWN`]
     #[inline]
     #[expect(clippy::panic, reason = "..")]
+    #[expect(clippy::pattern_type_mismatch, reason = "..")]
     pub fn get_https_url(&self) -> String {
-        match self.to_owned() {
-            TDW { https_url: url, .. } | WEBVH { https_url: url, .. } => url,
+        match self {
+            TDW { https_url, .. } | WEBVH { https_url, .. } => https_url.to_owned(),
             UNKNOWN => panic!("DID method is unknown"),
         }
     }
@@ -141,9 +151,10 @@ impl DidMethod {
     /// In case of [`UNKNOWN`]
     #[inline]
     #[expect(clippy::panic, reason = "..")]
+    #[expect(clippy::pattern_type_mismatch, reason = "..")]
     pub fn get_scid(&self) -> String {
-        match self.to_owned() {
-            TDW { scid, .. } | WEBVH { scid, .. } => scid,
+        match self {
+            TDW { scid, .. } | WEBVH { scid, .. } => scid.to_owned(),
             UNKNOWN => panic!("DID method is unknown"),
         }
     }
@@ -259,11 +270,11 @@ impl Did {
         self.scid.to_owned()
     }
 
-    /// Returns the HTTP URL [*transformed*](https://identity.foundation/didwebvh/next/#the-did-to-https-transformation)
+    /// Returns the HTTPS URL [*transformed*](https://identity.foundation/didwebvh/next/#the-did-to-https-transformation)
     /// from the DID supplied via constructor.
     ///
     /// A UniFFI-compliant method.
-    #[deprecated(since = "2.2.0", note = "please use `get_http_url` instead")]
+    #[deprecated(since = "2.2.0", note = "please use `get_https_url` instead")]
     #[inline]
     pub fn get_url(&self) -> Result<String, DidResolveError> {
         Ok(self.get_https_url())
@@ -346,9 +357,12 @@ impl TryFrom<String> for Did {
     type Error = DidResolveError;
 
     #[inline]
-    #[expect(clippy::indexing_slicing, reason = "panic-safe indexing ensured")]
+    #[expect(
+        clippy::indexing_slicing,
+        reason = "panic-safe indexing ensured directly in code"
+    )]
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        let did_split: Vec<String> = value.splitn(4, ':').map(|x| x.to_owned()).collect();
+        let did_split: Vec<String> = value.splitn(4, ':').map(str::to_owned).collect();
         if did_split.len() < 4 {
             return Err(DidResolveError::MalformedDid(value));
         }
@@ -362,16 +376,22 @@ impl TryFrom<String> for Did {
 
         Ok(Self {
             parts: did_split,
-            did_method: did_method.to_owned(),
             scid: did_method.get_scid(),
             https_url: did_method.get_https_url(),
+            did_method,
         })
     }
 }
 
 #[cfg(test)]
-#[expect(clippy::unwrap_used, reason = "..")]
-#[expect(clippy::panic, reason = "..")]
+#[expect(
+    clippy::unwrap_used,
+    reason = "unwrap calls are panic-safe as long as test case setup is correct"
+)]
+#[expect(
+    clippy::panic,
+    reason = "no panic expected as long as test case setup is correct"
+)]
 mod tests {
     use super::DidResolveErrorKind;
     use super::{Did, DidMethod};
