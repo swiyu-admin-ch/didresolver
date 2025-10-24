@@ -1,0 +1,35 @@
+publiccodeYmlVersion: 0.4.0
+name: swiyu DID Resolver
+applicationSuite: swiyu Trust Infrastructure
+url: https://github.com/swiyu-admin-ch/didresolver
+softwareVersion: 2.2.0
+releaseDate: 2025-08-28
+platforms:
+  - linux
+categories:
+  - digital-citizenship
+  - identity-management
+usedBy:
+  - Federal Office of Justice
+  - Federal Office of Information Technology, Systems and Telecommunication
+  - Fedpol
+developmentStatus: beta
+softwareType: standalone/backend
+description:
+  en:
+    localisedName: swiyu DID Resolver
+    shortDescription: DID Resolver for did:tdw and did:webvh methods
+    longDescription: The library can be used either directly in rust as is or through the different built bindings which are published in different submodules.
+    documentation: https://swiyu-admin-ch.github.io/open-source-components/
+    apiDocumentation: https://github.com/swiyu-admin-ch/didresolver/blob/main/README.md
+    features:
+      - Resolving DID's for did:tdw method
+      - Resolving DID's for did:webvh method
+legal:
+  license: MIT
+maintenance:
+  type: internal
+localisation:
+  localisationReady: false
+  availableLanguages:
+    - en
