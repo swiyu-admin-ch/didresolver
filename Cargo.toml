@@ -1,6 +1,6 @@
 [package]
 name = "didresolver"
-version = "2.2.0"
+version = "2.3.0"
 edition = "2021"
 description = "DID resolver for various did:tdw and did:webvh methods"
 authors = ["Vladica Stojic", "Marcel Pfeuti", "Frithjof Hoppe", "Jonas Niestroj"]
@@ -28,8 +28,7 @@ did_tdw = { git = "https://github.com/swiyu-admin-ch/did-tdw.git", tag = "1.0.1"
 #did_tdw = { path = "../did-tdw" }
 did_sidekicks = { git = "https://github.com/swiyu-admin-ch/did-sidekicks.git", tag = "1.1.0" }
 #did_sidekicks = { path = "../did-sidekicks" }
-#did_webvh = { git = "https://github.com/swiyu-admin-ch/did-webvh.git", tag = "1.1.0" }
-did_webvh = { git = "https://github.com/swiyu-admin-ch/did-webvh.git", branch = "feature/EIDOMNI-297-pre-rotation-support" }
+did_webvh = { git = "https://github.com/swiyu-admin-ch/did-webvh.git", tag = "1.1.0" }
 #did_webvh = { path = "../did-webvh" }
 
 [build-dependencies]
