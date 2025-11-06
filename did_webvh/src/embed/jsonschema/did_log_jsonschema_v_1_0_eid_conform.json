@@ -1,0 +1,310 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DID log entry schema v1.0 (e-ID-conform)",
+  "type": "object",
+  "$comment": "As specified by https://identity.foundation/didwebvh/v1.0/#the-did-log-file w.r.t. to e-ID conformity",
+  "properties": {
+    "versionId": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]*-Q[1-9a-zA-NP-Z]{45,}$",
+      "$comment": "The value of versionId MUST be a string consisting of the DID version number (starting at 1 and incrementing by one per DID version), a literal dash -, and the entryHash, a hash calculated across the log entry content. The input to the hash is chosen so as to link each entry to its predecessor in a ledger-like chain."
+    },
+    "versionTime": {
+      "type": "string",
+      "did-version-time": true,
+      "$comment": "The value of versionTime MUST be a timestamp in UTC of the entry in ISO8601 format, as asserted by the DID Controller. The timestamp MUST be the time the DID will be retrieved by a witness or resolver, or before."
+    },
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "method": {
+          "const": "did:webvh:1.0",
+          "$comment": "Specifies the did:webvh [SEMVER] specification version to be used for processing the DID’s log. Each acceptable value in turn defines what cryptographic algorithms are permitted for the current and subsequent DID log entries. An update to the specification version in the middle of a DID Log could introduce new parameters."
+        },
+        "scid": {
+          "type": "string",
+          "pattern": "^Q[1-9a-zA-NP-Z]{45,}$",
+          "$comment": "The self-certifying identifier or SCID is a required parameter in the first DID log entry and is the hash of the DID’s inception event."
+        },
+        "updateKeys": {
+          "type": "array",
+          "$comment": "A JSON array of multikey formatted public keys associated with the private keys that are authorized to sign the log entries that update the DID.",
+          "items": {
+            "type": "string",
+            "pattern": "^z[1-9a-zA-NP-Z]{47,}$"
+          }
+        },
+        "nextKeyHashes": {
+          "type": [ "array" ],
+          "$comment": "A JSON array of strings that are hashes of multikey formatted public keys that MAY be added to the updateKeys list in the next log entry. At least one entry of nextKeyHashes MUST be added to the next updateKeys list.",
+          "items": {
+            "type": "string",
+            "pattern": "^Q[1-9a-zA-NP-Z]{45,}$"
+          }
+        },
+        "witness": {
+          "type": [ "object", "null" ],
+          "$comment": "A JSON object declaring the set of witnesses and threshold number of witness proofs required to update the DID.",
+          "properties": {
+            "threshold": {
+              "type": "integer",
+              "minimum": 0,
+              "$comment": "An integer that must be attained or surpassed by the count of the witnesses for a DID log entry to be considered approved. threshold MUST be between 1 and the number of items in the witnesses array, inclusive."
+            },
+            "witnesses": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^did:key:z[1-9a-zA-NP-Z]{47,}(#z[1-9a-zA-NP-Z]{47,})?$"
+                  }
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "watchers": {
+          "type": [ "array", "null" ],
+          "items": {
+            "type": "string"
+          },
+          "$comment": "An optional entry whose value is a JSON array containing a list of URLs ([RFC9110]) that have notified the DID Controller that they are willing to watch the DID."
+        },
+        "portable": {
+          "type": "boolean",
+          "$comment": "Boolean (JSON true / false) indicating if the DID is portable, allowing a DID Controller to control if a DID can be moved, while retaining its SCID and verifiable history."
+        },
+        "deactivated": {
+          "type": "boolean",
+          "$comment": "A JSON boolean that indicates whether the DID has been deactivated. A deactivated DID is no longer subject to updates but remains resolvable."
+        },
+        "ttl": {
+          "type": [ "integer", "null" ],
+          "$comment": "An unsigned integer that indicates how long, in seconds, a resolver should cache the resolved did:webvh DID before refreshing."
+        }
+      },
+      "additionalProperties": false,
+      "$comment": "Some early did:webvh implementations used the JSON null value to indicate the deactivation of parameters such as watchers, witness, updateKeys, nextKeyHashes, and ttl. Although this usage is deprecated and not valid per the current specification, resolver implementations SHOULD gracefully accept null and immediately convert the value to their equivalent default value for the parameter when processing DID Log entries."
+    },
+    "state": {
+      "type": "object",
+      "$comment": "The JSON object state contains the DIDDoc for this version of the DID. As specified by https://www.w3.org/TR/did-1.0/#did-document-properties",
+      "properties": {
+        "@context": {
+          "anyOf": [
+            { "const": [ "https://www.w3.org/ns/did/v1", "https://w3id.org/security/jwk/v1" ] },
+            { "const": [ "https://www.w3.org/ns/did/v1" ] },
+            { "const": [ "https://www.w3.org/ns/did/v1", "https://www.w3.org/ns/cid/v1" ] },
+            { "const": [ "https://www.w3.org/ns/did/v1", "https://w3id.org/security/multikey/v1" ] }
+          ],
+          "$comment": "The @context property is used to ensure that implementations are using the same semantics when terms in this specification are processed. CAUTION (e-ID conformity): The lowest three array elements were added for the sake of being able to use test vectors from third parties."
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^did:webvh:Q[1-9a-zA-NP-Z]{45,}(:[0-9a-z%A_.-]+)+$",
+          "$comment": "The DID for a particular DID subject is expressed using the id property in the DID document. As specified by https://www.w3.org/TR/did-1.0/#did-subject"
+        },
+        "authentication": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^did:webvh:Q[1-9a-zA-NP-Z]{45,}(:[0-9a-z%A_.-]+)+#[0-9a-zA-Z_-]+$"
+          },
+          "$comment": "The authentication verification relationship is used to specify how the subject is expected to be authenticated, for purposes such as logging into a website or engaging in any sort of challenge-response protocol. The processing performed following authentication is application-specific."
+        },
+        "assertionMethod": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^did:webvh:Q[1-9a-zA-NP-Z]{45,}(:[0-9a-z%A_.-]+)+#[0-9a-zA-Z_-]+$"
+          },
+          "$comment": "The assertionMethod verification relationship is used to specify verification methods that a controller authorizes for use when expressing assertions or claims, such as in verifiable credentials."
+        },
+        "keyAgreement": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^did:webvh:Q[1-9a-zA-NP-Z]{45,}(:[0-9a-z%A_.-]+)+#[0-9a-zA-Z_-]+$"
+          },
+          "$comment": "The keyAgreement verification relationship is used to specify how an entity can perform encryption in order to transmit confidential information intended for the controller, such as for the purposes of establishing a secure communication channel with the recipient."
+        },
+        "capabilityInvocation": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^did:webvh:Q[1-9a-zA-NP-Z]{45,}(:[0-9a-z%A_.-]+)+#[0-9a-zA-Z_-]+$"
+          },
+          "$comment": "The capabilityInvocation verification relationship is used to specify a verification method that might be used by the controller to invoke a cryptographic capability, such as the authorization to update the controlled identifier document."
+        },
+        "capabilityDelegation": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^did:webvh:Q[1-9a-zA-NP-Z]{45,}(:[0-9a-z%A_.-]+)+#[0-9a-zA-Z_-]+$"
+          },
+          "$comment": "The capabilityDelegation verification relationship is used to specify a mechanism that might be used to delegate a cryptographic capability to another party."
+        },
+        "verificationMethod": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^did:webvh:Q[1-9a-zA-NP-Z]{45,}(:[0-9a-z%A_.-]+)+#[0-9a-zA-Z_-]+$",
+                "$comment": "The value of the id property for a verification method MUST be a string that conforms to the [URL] syntax."
+              },
+              "controller": {
+                "type": "string",
+                "pattern": "^did:webvh:Q[1-9a-zA-NP-Z]{45,}(:[0-9a-z%A_.-]+)+$",
+                "$comment": "The value of the controller property MUST be a string that conforms to the [URL] syntax. Kept for the sake of backward compatibility. CAUTION (e-ID conformity): Although the 'controller' property is PROHIBITED in e-ID, it is kept as OPTIONAL (not REQUIRED) for the sake of being able to use test vectors from third parties."
+              },
+              "type": {
+                "enum": [
+                  "JsonWebKey2020",
+                  "Multikey"
+                ],
+                "$comment": "The value of the type property MUST be a string that references exactly one verification method type."
+              },
+              "publicKeyMultibase": {
+                "type": "string",
+                "pattern": "^z[1-9a-zA-NP-Z]{47,}$",
+                "$comment": "The publicKeyMultibase property is OPTIONAL. This feature is non-normative. If present, the value MUST be a string representation of a [MULTIBASE] encoded public key. Kept for the sake of backward compatibility. CAUTION (e-ID conformity): Although the 'publicKeyMultibase' property is PROHIBITED in e-ID, it is kept for the sake of being able to use test vectors from third parties."
+              },
+              "publicKeyJwk": {
+                "type": "object",
+                "properties": {
+                  "kty": {
+                    "enum": [
+                      "EC"
+                    ],
+                    "$comment": "The 'kty' (key type) parameter identifies the cryptographic algorithm family used with the key, such as 'RSA' or 'EC'."
+                  },
+                  "crv": {
+                    "enum": [
+                      "P-256"
+                    ],
+                    "$comment": "The 'crv' (curve) parameter identifies the cryptographic curve used with the key."
+                  },
+                  "kid": {
+                    "type": "string",
+                    "minLength": 1,
+                    "$comment": "The 'kid' (key ID) parameter is used to match a specific key."
+                  },
+                  "x": {
+                    "type": "string",
+                    "minLength": 43,
+                    "$comment": "The 'x' (x coordinate) parameter contains the x coordinate for the Elliptic Curve point."
+                  },
+                  "y": {
+                    "type": "string",
+                    "minLength": 43,
+                    "$comment": "The 'y' (y coordinate) parameter contains the y coordinate for the Elliptic Curve point."
+                  },
+                  "use": {
+                    "enum": [
+                      "sig",
+                      "enc"
+                    ],
+                    "$comment": "The 'use' (public key use) parameter identifies the intended use of the public key. The 'use' parameter is employed to indicate whether a public key is used for encrypting data or verifying the signature on data."
+                  }
+                },
+                "required": [
+                  "kty",
+                  "crv",
+                  "kid",
+                  "x",
+                  "y"
+                ],
+                "additionalProperties": false,
+                "$comment": "The publicKeyJwk property is OPTIONAL. If present, the value MUST be a map representing a JSON Web Key that conforms to [RFC7517]. CAUTION (e-ID conformity): Although the 'publicKeyJwk' property is REQUIRED (not OPTIONAL) in e-ID, it is kept as OPTIONAL (not REQUIRED) for the sake of being able to validate test vectors from third parties."
+              }
+            },
+            "required": [
+              "id",
+              "type"
+            ],
+            "additionalProperties": false,
+            "$comment": "CAUTION (e-ID conformity): See the comments for 'controller' and 'publicKeyJwk' properties."
+          },
+          "$comment": "The verificationMethod property is OPTIONAL. If present, the value MUST be a set of verification methods, where each verification method is expressed using a map. As specified by https://www.w3.org/TR/did-1.0/#verification-methods"
+        },
+        "service": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "$comment": "Services are used in DID documents to express ways of communicating with the DID subject or associated entities. As specified by https://www.w3.org/TR/did-1.0/#services. CAUTION (e-ID conformity): Although the 'service' property is PROHIBITED in e-ID, it is left OPTIONAL for the sake of being able to use test vectors from third parties."
+        }
+      },
+      "required": [
+        "id",
+        "@context"
+      ],
+      "additionalProperties": false
+    },
+    "proof": {
+      "type": "array",
+      "$comment": "The JSON array proof contains a Data Integrity proof created for the entry and signed by a key authorized to update the DIDDoc.",
+      "items": {
+        "type": "object",
+        "$comment": "As specified by https://www.w3.org/TR/vc-di-eddsa/#eddsa-jcs-2022",
+        "properties": {
+          "type": {
+            "const": "DataIntegrityProof"
+          },
+          "cryptosuite": {
+            "const": "eddsa-jcs-2022"
+          },
+          "verificationMethod": {
+            "type": "string",
+            "pattern": "^did:key:z[1-9a-zA-NP-Z]{47,}#z[1-9a-zA-NP-Z]{47,}$"
+          },
+          "created": {
+            "type": "string",
+            "did-version-time": true
+          },
+          "proofPurpose": {
+            "$comment": "As specified by https://www.w3.org/TR/vc-data-integrity/#proof-purposes",
+            "enum": [
+              "authentication",
+              "assertionMethod",
+              "keyAgreement",
+              "capabilityDelegation",
+              "capabilityInvocation"
+            ]
+          },
+          "proofValue": {
+            "type": "string",
+            "pattern": "^z[1-9a-zA-NP-Z]{87,}$",
+            "$comment": "The proofValue property of the proof MUST be a detached EdDSA signature produced according to [RFC8032], encoded using the base-58-btc header and alphabet as described in the Multibase section of Controlled Identifiers v1.0 (https://www.w3.org/TR/cid-1.0)."
+          },
+          "challenge": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]*-Q[1-9a-zA-NP-Z]{45,}$"
+          }
+        },
+        "required": [
+          "type",
+          "cryptosuite",
+          "verificationMethod",
+          "created",
+          "proofPurpose",
+          "proofValue"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "versionId",
+    "versionTime",
+    "parameters",
+    "state",
+    "proof"
+  ],
+  "additionalItems": false
+}

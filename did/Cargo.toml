@@ -1,0 +1,57 @@
+[package]
+name = "did"
+# CAUTION {key}.workspace = <true|false> notation supports only the {key} values listed here:
+#         https://doc.rust-lang.org/cargo/reference/workspaces.html#the-package-table
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+homepage = "https://github.com/swiyu-admin-ch/didresolver/did"
+repository.workspace = true
+license.workspace = true
+edition.workspace = true
+readme.workspace = true
+include = [
+    "Cargo.toml",
+    "README.md",
+    "src/**/*",
+]
+keywords.workspace = true
+categories.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+did_sidekicks = { path = "../did_sidekicks" }
+did_tdw = { path = "../did_tdw" }
+did_webvh = { path = "../did_webvh" }
+uniffi = { workspace = true, features = ["cli"] }
+thiserror.workspace = true
+strum.workspace = true
+
+[build-dependencies]
+uniffi = { workspace = true, features = ["build"] }
+
+[dev-dependencies]
+uniffi = { workspace = true, features = ["bindgen-tests"] }
+rstest.workspace = true
+ureq = "3.1.2"
+
+[lib]
+crate-type = ["lib", "cdylib", "staticlib"]
+name = "didresolver"
+
+[[bin]]
+name = "uniffi-bindgen"
+path = "uniffi-bindgen.rs"
+
+[[bin]]
+name = "uniffi-bindgen-swift"
+path = "uniffi-bindgen-swift.rs"
+
+[features]
+ffi-trace = ["uniffi/ffi-trace"]
+
+# See [workspace.lints.clippy] in ../Cargo.toml
+# (w.r.t. https://doc.rust-lang.org/cargo/reference/workspaces.html#the-lints-table)
+[lints]
+workspace = true

@@ -1,0 +1,5 @@
+[bindings.kotlin]
+android = false
+android_cleaner = false
+# CAUTION Due to backward compatibility with its predecessor
+package_name = "ch.admin.eid.didtoolbox"
