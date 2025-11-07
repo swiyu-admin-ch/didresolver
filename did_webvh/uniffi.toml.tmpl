@@ -1,0 +1,11 @@
+## Use this file in conjunction with 'sed' command to substitute all *_VALUE placeholders with concrete values
+## thus producing the final 'uniffi.toml' configuration file required when running 'cargo run --bin uniffi-bindgen generate ...'.
+##
+## In the context of this repo, the sole purpose of such templates is to enable a seamless generation of
+## Android-compliant Kotlin language bindings.
+##
+## The valid options are listed here: https://mozilla.github.io/uniffi-rs/0.29/kotlin/configuration.html
+[bindings.kotlin]
+android = ANDROID_VALUE
+android_cleaner = ANDROID_CLEANER_VALUE
+package_name = "PARENT_PACKAGE_NAME_VALUE.did_webvh"

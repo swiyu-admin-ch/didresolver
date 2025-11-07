@@ -59,8 +59,16 @@ jobs:
           cargo build --release
           
           jni_libs=bindings/kotlin/jniLibs; rust_lib=libdidresolver.so
-          echo ">>"; echo ">> Build Java Native Interface (JNI) libraries for Android"; echo ">>" 
+          echo ">>"; echo ">> Build Java Native Interface (JNI) libraries for Android"; echo ">>"
           cargo ndk -o ${jni_libs} --manifest-path ./Cargo.toml -t armeabi-v7a -t arm64-v8a -t x86 -t x86_64 build --release
+          echo ">>"; echo ">> Build language bindings for Android"; echo ">>"
+          
+          # Adjust the 'uniffi.toml' configuration file in order to produce Android-compliant Kotlin language bindings
+          # CAUTION This assumes every 'uniffi.toml' is accompanied by a proper 'uniffi.toml.tmpl' template file
+          for f in $(find . -name uniffi.toml); do \
+            sed -e 's/ANDROID_VALUE/true/g' -e 's/ANDROID_CLEANER_VALUE/true/g' -e 's/PARENT_PACKAGE_NAME_VALUE/ch.admin.eid.didresolver/g' -e '/^##/d' $f.tmpl > $f;
+          done
+          
           cargo run --bin uniffi-bindgen generate --library target/release/${rust_lib} --language kotlin --out-dir bindings/kotlin
           
           # ELF alignment (of shared libraries) check
