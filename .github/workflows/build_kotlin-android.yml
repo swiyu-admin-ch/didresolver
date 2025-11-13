@@ -11,7 +11,8 @@ on:
     # Use ${{ github.ref_name }} to get the short ref name of tag that triggered the workflow run
     tags:
       - '*'
-  workflow_dispatch:
+  # Enable it only while debugging
+  #workflow_dispatch:
 
 jobs:
   build:
@@ -23,14 +24,15 @@ jobs:
         with:
           #ssh-key: ${{ secrets.SSH_KEY }}
           submodules: recursive
-          ref: build/kotlin-android
-      - name: Install rust
-        run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-      #- uses: de-vri-es/setup-git-credentials@v2
-      #  with:
-      #    credentials: ${{ secrets.WORFKLOW_TOKEN_LIBRARIES }}
-      - name: Install targets
+          #ref: ${{ github.ref_name }}
+
+      - name: Rust toolchain (stable)
+        # For more Rust extensions, please visit: https://github.com/marketplace?query=rust&type=actions
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Install targets (cross-compilation)
         run: |
           cargo install cargo-ndk
           cargo ndk --version
@@ -59,22 +61,23 @@ jobs:
             ${{ runner.os }}-build-
             ${{ runner.os }}-
 
-      - name: Build JNI libraries for Kotlin Android (incl. UniFFI bindings)
+      - name: Generate (UniFFI) language bindings for Kotlin Android (incl. JNI libs)
         run: |
           cargo clean
-          echo ">>"; echo ">> Release build"; echo ">>" 
+          #echo ">>"; echo ">> Release build"; echo ">>" 
           cargo build --release
           
-          # Restore the target repo directory structure
+          # Restore the target repo (storing language bindings) directory structure
           repo_root=bindings-repo/didresolver-android/src/main
-          jni_libs=${repo_root}/jniLibs; rust_lib=libdidresolver.so
+          jni_libs=${repo_root}/jniLibs
+          rust_lib=libdidresolver.so
           
           echo ">>"; echo ">> Build Java Native Interface (JNI) libraries for Android"; echo ">>"
           cargo ndk -o ${jni_libs} --manifest-path ./Cargo.toml -t armeabi-v7a -t arm64-v8a -t x86 -t x86_64 build --release
           # CAUTION Get rid of any irrelevant SO file, as some further SO files might be generated as well
-          rm ${jni_libs}/**/*-[0-9a-z]*.so
+          rm ${jni_libs}/**/*-[0-9a-z]*.so || echo
           
-          echo ">>"; echo ">> Build language bindings for Android"; echo ">>"
+          echo ">>"; echo ">> Generate (UniFFI) language bindings for Kotlin Android"; echo ">>"
           
           # Adjust the 'uniffi.toml' configuration file in order to produce Android-compliant Kotlin language bindings
           # CAUTION This assumes every 'uniffi.toml' is accompanied by a proper 'uniffi.toml.tmpl' template file
