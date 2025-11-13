@@ -1,0 +1,174 @@
+// SPDX-License-Identifier: MIT
+
+namespace did_sidekicks {
+    /// The helper parses the supplied DID doc as string and returns a cryptographic public key (`Jwk`) referenced by the supplied `key_id`, if any.
+    ///
+    /// Parsing failure is denoted by returning `DidSidekicksError::DeserializationFailed`.
+    ///
+    /// The key lookup is always done across all verification methods (`verificationMethod`) and
+    /// verification relationships
+    /// (`authentication`, `assertionMethod`, `keyAgreement`, `capabilityInvocation`, `capabilityInvocation`).
+    ///
+    /// If no such key exists, `DidSidekicksError::KeyNotFound` is returned.
+    [Throws=DidSidekicksError]
+    Jwk get_key_from_did_doc(string did_doc, string key_id);
+};
+
+
+/// The error accompanying this crate.
+[Error]
+enum DidSidekicksError {
+    /// Failed to serialize DID document (to JSON).
+    "SerializationFailed",
+    /// The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation.
+    "DeserializationFailed",
+    /// Invalid DID document.
+    "InvalidDidDocument",
+    /// Invalid DID log integration proof.
+    "InvalidDataIntegrityProof",
+    /// Invalid DID method parameter.
+    "InvalidDidMethodParameter",
+    /// No such JWK in the DID document.
+    "KeyNotFound",
+    /// Non-existing key referenced in the DID document.
+    "NonExistingKeyReferenced"
+};
+
+/// A generic DID method parameter as seen from the perspective of a JSON deserializer.
+///
+/// The value returned by `DidMethodParameter`'s getter `get_json_text` is guaranteed to be deserializable back into a JSON object.
+interface DidMethodParameter {
+    string get_name();
+    string get_json_text();
+    boolean is_bool();
+    boolean is_string();
+    boolean is_f64();
+    boolean is_i64();
+    boolean is_u64();
+    boolean is_object();
+    boolean is_array();
+    boolean is_empty_array();
+    boolean is_string_array();
+    boolean is_null();
+    /// For any `DidMethodParameter` on which `DidMethodParameter::is_bool` returns `true`,
+    /// the getter is guaranteed to return a `bool` value.
+    boolean? get_bool_value();
+    /// For any `DidMethodParameter` on which `DidMethodParameter::is_string` returns `true`,
+    /// the getter is guaranteed to return a `string` value.
+    string? get_string_value();
+    /// For any `DidMethodParameter` on which `DidMethodParameter::is_string_array` returns `true`,
+    /// the getter is guaranteed to return a ``string array.
+    sequence<string>? get_string_array_value();
+    /// For any `DidMethodParameter` on which `DidMethodParameter::is_f64` returns `true`,
+    /// the getter is guaranteed to return a `f64` value.
+    double? get_f64_value();
+    /// For any `DidMethodParameter` on which `DidMethodParameter::is_i64` returns `true`,
+    /// the getter is guaranteed to return a `i64` value.
+    i64? get_i64_value();
+    /// For any `DidMethodParameter` on which `DidMethodParameter::is_u64` returns `true`,
+    /// the getter is guaranteed to return a `u64` value.
+    u64? get_u64_value();
+};
+
+dictionary Jwk {
+  string? alg;
+  string? kid;
+  string? kty;
+  string? crv;
+  string? x;
+  string? y;
+};
+
+enum VerificationType {
+    "Multikey",
+    "JsonWebKey2020",
+    "Ed25519VerificationKey2020",
+};
+
+dictionary VerificationMethod {
+    string id;
+    string controller;
+    VerificationType verification_type;
+    string? public_key_multibase;
+    Jwk? public_key_jwk;
+};
+
+/// The error accompanying any `DidResolver` implementation.
+/// It might occur while calling `DidResolver` methods.
+[Error]
+enum DidResolverError {
+    /// Invalid method-specific identifier.
+    "InvalidMethodSpecificId",
+    /// Failed to serialize DID document (to JSON).
+    "SerializationFailed",
+    /// The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation.
+    "DeserializationFailed",
+    /// Invalid DID parameter.
+    "InvalidDidParameter",
+    /// Invalid DID document.
+    "InvalidDidDocument",
+    /// Invalid DID log integration proof.
+    "InvalidDataIntegrityProof"
+};
+
+interface DidDoc {
+    [Name=from_json, Throws=DidSidekicksError]
+    constructor([ByRef] string json_content);
+    sequence<string> get_context();
+    string get_id();
+    sequence<VerificationMethod> get_verification_method();
+    sequence<VerificationMethod> get_authentication();
+    sequence<VerificationMethod> get_capability_invocation();
+    sequence<VerificationMethod> get_capability_delegation();
+    sequence<VerificationMethod> get_assertion_method();
+    sequence<string> get_controller();
+    boolean get_deactivated();
+    /// Returns a cryptographic public key (`Jwk`) referenced by the supplied `key_id`, if any.
+    /// The key lookup is always done across all verification methods (`verificationMethod`) and
+    /// verification relationships
+    /// (`authentication`, `assertionMethod`, `keyAgreement`, `capabilityInvocation`, `capabilityInvocation`).
+    ///
+    /// If no such key exists, `DidSidekicksError::KeyNotFound` is returned.
+    [Throws=DidSidekicksError]
+    Jwk get_key(string key_id);
+};
+
+/// A simple container for both `DidDoc` and the related collection of `DidMethodParameter` objects.
+interface DidDocExtended {
+    DidDoc get_did_doc();
+    record<string, DidMethodParameter> get_did_method_parameters();
+};
+
+/// W.r.t. any of specification versions available at https://identity.foundation/didwebvh
+[Trait]
+interface DidLogEntryJsonSchema {
+    /// Delivers a proper JSON schema (in UTF-8 format) fully describing a DID log entry.
+    string get_json_schema();
+};
+
+/// Represents any error condition that might occur in conjunction with `DidLogEntryValidator`
+[Error]
+enum DidLogEntryValidatorError {
+    /// The supplied JSON `instance` is not a valid DID log.
+    "ValidationError",
+    /// The supplied JSON `instance` cannot be deserialized.
+    "DeserializationError",
+};
+
+/// A compiled JSON Schema validator.
+///
+/// This structure represents a JSON Schema that has been parsed and compiled into
+/// an efficient internal representation for validation. It contains the root node
+/// of the schema tree and the configuration options used during compilation.
+///
+/// Intended to be used predominantly in conjunction with `DidLogEntryJsonSchema` trait implementations.
+interface DidLogEntryValidator {
+    /// Create a new DID log entry JSON Schema validator using `JSON Schema Draft 2020-12` specifications and supplied `schema`.
+    [Name=from]
+    constructor(DidLogEntryJsonSchema schema);
+    /// Validate the supplied `instance` against the `schema` (supplied earlier via constructor).
+    ///
+    /// `DidLogEntryValidatorError` is returned as soon the very first validation error occurs.
+    [Throws=DidLogEntryValidatorError]
+    void validate(string instance);
+};

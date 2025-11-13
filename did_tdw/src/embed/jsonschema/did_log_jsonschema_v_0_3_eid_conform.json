@@ -1,0 +1,264 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DID log entry schema v0.3 (e-ID-conform)",
+  "type": "array",
+  "did-log-entry": true,
+  "$comment": "As specified by https://identity.foundation/didwebvh/v0.3/#the-did-log-file w.r.t. to e-ID conformity",
+  "allOf": [{
+    "prefixItems": [
+      {
+        "type": "string",
+        "pattern": "^[1-9][0-9]*-Q[1-9a-zA-NP-Z]{45,}$",
+        "$comment": "The entry versionId is a value that combines the version number (starting at 1 and incrementing by one per DID version), a literal dash -, and the entryHash, a hash calculated across the log entry content."
+      },
+      {
+        "type": "string",
+        "did-version-time": true,
+        "$comment": "The versionTime (as stated by the DID Controller) of the entry, in ISO8601 format."
+      },
+      {
+        "type": "object",
+        "properties": {
+          "method": {
+            "const": "did:tdw:0.3",
+            "$comment": "Required only within first entry. This item MUST appear in the first DID log entry."
+          },
+          "scid": {
+            "type": "string",
+            "pattern": "^Q[1-9a-zA-NP-Z]{45,}$",
+            "$comment": "The self-certifying identifier or SCID is a required parameter in the first DID log entry and is the hash of the DID’s inception event."
+          },
+          "updateKeys": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^z[1-9a-zA-NP-Z]{47,}$"
+            },
+            "$comment": "A list of one or more multikey formatted public keys associated with the private keys that are authorized to sign the log entries that update the DID from one version to the next. This item MUST appear in the first DID log entry."
+          },
+          "portable": {
+            "type": "boolean",
+            "$comment": "A boolean flag indicating if the DID is portable and thus can be renamed to change the Web location of the DID. Must be unset or false in the first did log entry (REQUIREMENT)"
+          },
+          "prerotation": {
+            "type": "boolean",
+            "$comment": "A boolean value indicating that subsequent authentication keys added to the DIDDoc (after this version) MUST have their hash included in a nextKeyHashes parameter item. (warning) Is removed in future versions. Must be a boolean or unset (SPEC)"
+          },
+          "nextKeyHashes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^z[1-9a-zA-NP-Z]{47,}$"
+            },
+            "$comment": "An array of strings that are hashes of multikey formatted public keys that MAY be added to the updateKeys list in the log entry of a future version of the DID."
+          },
+          "witnesses": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "$comment": "A list of one or more multikey formatted public keys associated with the private keys that are authorized to sign the log entries that update the DID from one version to the next. This item MUST appear in the first DID log entry. Must be unset or null (REQUIREMENT)"
+          },
+          "deactivated": {
+            "type": "boolean",
+            "$comment": "A JSON boolean that SHOULD be set to true when the DID is to be deactivated. See the deactivate (revoke) section of this specification for more details."
+          },
+          "ttl": {
+            "type": "integer",
+            "$comment": "A number, the number of seconds that a cache entry for a resolved did:tdw DID SHOULD last, as recommended by the DID Controller."
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "object",
+            "properties": {
+              "@context": {
+                "anyOf": [
+                  { "const": ["https://www.w3.org/ns/did/v1", "https://w3id.org/security/jwk/v1"] },
+                  { "const": ["https://www.w3.org/ns/did/v1", "https://w3id.org/security/multikey/v1"] },
+                  { "const": ["https://www.w3.org/ns/did/v1", "https://w3id.org/security/suites/jws-2020/v1"] }
+                ],
+                "$comment": "The @context property is used to ensure that implementations are using the same semantics when terms in this specification are processed. CAUTION (e-ID conformity): The last two array element left for the sake of backward compatibility with (deprecated) didtoolbox-java v1.0.0-RC1 and v1.0.0."
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^did:tdw:Q[1-9a-zA-NP-Z]{45,}(:[0-9a-z%A_.-]+)+$",
+                "$comment": "The DID for a particular DID subject is expressed using the id property in the DID document. As specified by https://www.w3.org/TR/did-1.0/#did-subject"
+              },
+              "authentication": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^did:tdw:Q[1-9a-zA-NP-Z]{45,}(:[0-9a-z%A_.-]+)+#[0-9a-zA-Z_-]+$"
+                },
+                "$comment": "The authentication verification relationship is used to specify how the subject is expected to be authenticated, for purposes such as logging into a website or engaging in any sort of challenge-response protocol. The processing performed following authentication is application-specific."
+              },
+              "assertionMethod": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^did:tdw:Q[1-9a-zA-NP-Z]{45,}(:[0-9a-z%A_.-]+)+#[0-9a-zA-Z_-]+$"
+                },
+                "$comment": "The assertionMethod verification relationship is used to specify verification methods that a controller authorizes for use when expressing assertions or claims, such as in verifiable credentials."
+              },
+              "keyAgreement": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^did:tdw:Q[1-9a-zA-NP-Z]{45,}(:[0-9a-z%A_.-]+)+#[0-9a-zA-Z_-]+$"
+                },
+                "$comment": "The keyAgreement verification relationship is used to specify how an entity can perform encryption in order to transmit confidential information intended for the controller, such as for the purposes of establishing a secure communication channel with the recipient."
+              },
+              "capabilityInvocation": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^did:tdw:Q[1-9a-zA-NP-Z]{45,}(:[0-9a-z%A_.-]+)+#[0-9a-zA-Z_-]+$"
+                },
+                "$comment": "The capabilityInvocation verification relationship is used to specify a verification method that might be used by the controller to invoke a cryptographic capability, such as the authorization to update the controlled identifier document."
+              },
+              "capabilityDelegation": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^did:tdw:Q[1-9a-zA-NP-Z]{45,}(:[0-9a-z%A_.-]+)+#[0-9a-zA-Z_-]+$"
+                },
+                "$comment": "The capabilityDelegation verification relationship is used to specify a mechanism that might be used to delegate a cryptographic capability to another party."
+              },
+              "verificationMethod": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^did:tdw:Q[1-9a-zA-NP-Z]{45,}(:[0-9a-z%A_.-]+)+#[0-9a-zA-Z_-]+$",
+                      "$comment": "The value of the id property for a verification method MUST be a string that conforms to the [URL] syntax."
+                    },
+                    "controller": {
+                      "type": "string",
+                      "pattern": "^did:tdw:Q[1-9a-zA-NP-Z]{45,}(:[0-9a-z%A_.-]+)+$",
+                      "$comment": "The value of the controller property MUST be a string that conforms to the [URL] syntax. Kept for the sake of backward compatibility. CAUTION (e-ID conformity): Left for the sake of backward compatibility only i.e. to avoid ''controller' was unexpected' error."
+                    },
+                    "type": {
+                      "enum": [ "JsonWebKey2020", "Multikey" ],
+                      "$comment": "The value of the type property MUST be a string that references exactly one verification method type."
+                    },
+                    "publicKeyJwk": {
+                      "type": "object",
+                      "properties": {
+                        "kty": {
+                          "enum": [ "EC" ],
+                          "$comment": "The 'kty' (key type) parameter identifies the cryptographic algorithm family used with the key, such as 'RSA' or 'EC'."
+                        },
+                        "crv": {
+                          "enum": [ "P-256" ],
+                          "$comment": "The 'crv' (curve) parameter identifies the cryptographic curve used with the key."
+                        },
+                        "kid": {
+                          "type": "string",
+                          "minLength": 1,
+                          "$comment": "The 'kid' (key ID) parameter is used to match a specific key."
+                        },
+                        "x": {
+                          "type": "string",
+                          "minLength": 43,
+                          "$comment": "The 'x' (x coordinate) parameter contains the x coordinate for the Elliptic Curve point."
+                        },
+                        "y": {
+                          "type": "string",
+                          "minLength": 43,
+                          "$comment": "The 'y' (y coordinate) parameter contains the y coordinate for the Elliptic Curve point."
+                        },
+                        "use": {
+                          "enum": [ "sig", "enc" ],
+                          "$comment": "The 'use' (public key use) parameter identifies the intended use of the public key. The 'use' parameter is employed to indicate whether a public key is used for encrypting data or verifying the signature on data."
+                        }
+                      },
+                      "required": [
+                        "kty",
+                        "crv",
+                        "x",
+                        "y"
+                      ],
+                      "additionalProperties": false,
+                      "$comment": "The publicKeyJwk property is OPTIONAL. If present, the value MUST be a map representing a JSON Web Key that conforms to [RFC7517].",
+                      "$comment": "The publicKeyJwk property is OPTIONAL. If present, the value MUST be a map representing a JSON Web Key that conforms to [RFC7517]. CAUTION (e-ID conformity): 'kid' is not among required props for the sake of backward compatibility with (deprecated) didtoolbox-java v1.0.0-RC1."
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "type",
+                    "publicKeyJwk"
+                  ],
+                  "additionalProperties": false
+                },
+                "$comment": "The verificationMethod property is OPTIONAL. If present, the value MUST be a set of verification methods, where each verification method is expressed using a map. As specified by https://www.w3.org/TR/did-1.0/#verification-methods."
+              }
+            },
+            "required": [
+              "id",
+              "@context"
+            ],
+            "additionalProperties": false,
+            "$comment": "As specified by https://www.w3.org/TR/did-1.0/#did-document-properties"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "$comment": "As specified by https://www.w3.org/TR/vc-di-eddsa/#eddsa-jcs-2022",
+          "properties": {
+            "type": {
+              "const": "DataIntegrityProof"
+            },
+            "cryptosuite": {
+              "const": "eddsa-jcs-2022"
+            },
+            "verificationMethod": {
+              "type": "string",
+              "pattern": "^did:key:z[1-9a-zA-NP-Z]{47,}#z[1-9a-zA-NP-Z]{47,}$"
+            },
+            "created": {
+              "type": "string",
+              "did-version-time": true
+            },
+            "proofPurpose": {
+              "$comment": "As specified by https://www.w3.org/TR/vc-data-integrity/#proof-purposes",
+              "enum": ["authentication", "assertionMethod", "keyAgreement", "capabilityDelegation", "capabilityInvocation"]
+            },
+            "proofValue": {
+              "type": "string",
+              "pattern": "^z[1-9a-zA-NP-Z]{87,}$",
+              "$comment": "The proofValue property of the proof MUST be a detached EdDSA signature produced according to [RFC8032], encoded using the base-58-btc header and alphabet as described in the Multibase section of Controlled Identifiers v1.0 (https://www.w3.org/TR/cid-1.0)."
+            },
+            "challenge": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]*-Q[1-9a-zA-NP-Z]{45,}$"
+            }
+          },
+          "required": [
+            "type",
+            "cryptosuite",
+            "verificationMethod",
+            "created",
+            "proofPurpose",
+            "proofValue",
+            "challenge"
+          ],
+          "additionalProperties": false
+        }
+      }
+    ]}],
+  "additionalItems": false
+}

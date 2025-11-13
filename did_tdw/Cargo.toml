@@ -1,0 +1,51 @@
+[package]
+name = "did_tdw"
+# CAUTION {key}.workspace = <true|false> notation supports only the {key} values listed here:
+#         https://doc.rust-lang.org/cargo/reference/workspaces.html#the-package-table
+version.workspace = true
+authors.workspace = true
+description = "A partial implementation (focusing on resolution) of historical Trust DID Web - did:tdw - v0.3 specification"
+homepage = "https://github.com/swiyu-admin-ch/didresolver/did_tdw"
+repository.workspace = true
+license.workspace = true
+edition.workspace = true
+readme = "README.md"
+include = [
+    "Cargo.toml",
+    "README.md",
+    "src/**/*",
+]
+keywords = ["did", "tdw"]
+categories.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+did_sidekicks = { path = "../did_sidekicks" }
+uniffi = { workspace = true, features = ["cli"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true, features = ["preserve_order"] }
+chrono = { workspace = true, features = ["serde"] }
+rand.workspace = true
+regex.workspace = true
+url-escape.workspace = true
+thiserror.workspace = true
+url.workspace = true
+rust-embed = { workspace = true , features = ["include-exclude", "compression"]}
+rayon.workspace = true
+
+[build-dependencies]
+uniffi = { workspace = true, features = ["build"] }
+
+[dev-dependencies]
+rstest.workspace = true
+criterion.workspace = true
+
+[[bench]]
+name = "did_tdw_benchmark"
+harness = false
+
+# See [workspace.lints.clippy] in ../Cargo.toml
+# (w.r.t. https://doc.rust-lang.org/cargo/reference/workspaces.html#the-lints-table)
+[lints]
+workspace = true

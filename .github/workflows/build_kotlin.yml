@@ -1,10 +1,17 @@
 name: Build library (Kotlin)
 
 permissions:
-  contents: read
+  #contents: read
+  contents: write
+  pull-requests: write
 
 on:
-  workflow_dispatch:
+  push:
+    # Pattern matched against refs/tags
+    # Use ${{ github.ref_name }} to get the short ref name of tag that triggered the workflow run
+    tags:
+      - '*'
+  #workflow_dispatch:
 
 # limit the concurrency of entire workflow runs for a specific branch
 concurrency:
@@ -12,12 +19,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+
   build-for-matrix:
     name: Build Kotlin bindings
     strategy:
       max-parallel: 5
       matrix:
-        os: [ ubuntu, ubuntu-24.04-arm, windows, macos, macos-13 ]
+        os: [ ubuntu, ubuntu-24.04-arm, windows, macos, macos-15-intel ]
         include:
           - os: ubuntu
             label: -latest
@@ -39,13 +47,12 @@ jobs:
             jna-dir: darwin-aarch64
             file-prefix: lib
             file-extension: dylib
-          - os: macos-13
-            # macOS 13 Ventura is the final macOS version to officially support Intel x86 processors
-            #label: -13
+          - os: macos-15-intel
+            #label:
             jna-dir: darwin-x86-64
             file-prefix: lib
             file-extension: dylib
-    # See https://docs.github.com/en/actions/using-github-hosted-runners/using-github-hosted-runners/about-github-hosted-runners#standard-github-hosted-runners-for-public-repositories
+    # See https://docs.github.com/en/actions/reference/runners/github-hosted-runners#standard-github-hosted-runners-for-public-repositories
     runs-on: ${{ matrix.os }}${{ matrix.label }}
     steps:
       - name: Checkout
@@ -72,11 +79,92 @@ jobs:
         run:  cargo build --release
       - name: Generate UniFFI bindings
         run:  |
-          cargo run --bin uniffi-bindgen generate --library target/release/${{ matrix.file-prefix }}didresolver.${{ matrix.file-extension }} --language kotlin --out-dir bindings/kotlin
-          mkdir -p bindings/kotlin/${{ matrix.jna-dir }}
-          cp target/release/${{ matrix.file-prefix }}didresolver.${{ matrix.file-extension }} bindings/kotlin/${{ matrix.jna-dir }}/
-      - name: Save kotlin artifact
+          # Restore the target repo directory structure
+          mkdir -p bindings-repo/src/main/resources/${{ matrix.jna-dir }}
+          cargo run --bin uniffi-bindgen generate --library target/release/${{ matrix.file-prefix }}didresolver.${{ matrix.file-extension }} --language kotlin --out-dir bindings-repo/src/main/kotlin
+          cp target/release/${{ matrix.file-prefix }}didresolver.${{ matrix.file-extension }} bindings-repo/src/main/resources/${{ matrix.jna-dir }}/
+      - name: Save Bindings Patch as Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kotlin-bindings-${{ matrix.os }}
-          path: bindings/kotlin
+          name: bindings-repo-patch-${{ matrix.os }}${{ matrix.label }}
+          path: bindings-repo
+          #include-hidden-files: true
+          retention-days: 1
+
+  set-context:
+    name: Set context
+    runs-on: ubuntu-latest
+    outputs:
+      timestamp: ${{ steps.timestamp.outputs.timestamp }}
+      latest_git_tag: ${{ steps.latest_git_tag.outputs.latest_git_tag }}
+    steps:
+      - name: Set timestamp
+        id: timestamp
+        run: echo "timestamp=$(date +"%Y%m%d%H%M%S")" >> "$GITHUB_OUTPUT"
+      - name: Output the latest Git tag
+        id: latest_git_tag
+        run: echo "latest_git_tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
+
+  create-pull-request:
+    name: Create Pull Request
+    runs-on: ubuntu-latest
+    needs: [build-for-matrix, set-context]
+    env:
+      timestamp: ${{ needs.set-context.outputs.timestamp }}
+      latest_git_tag: ${{ needs.set-context.outputs.latest_git_tag }}
+    steps:
+      - name: Checkout Bindings Repo
+        uses: actions/checkout@v4
+        with:
+          # CAUTION This assumes such repo exists
+          repository: ${{ github.repository }}-kotlin
+          # CAUTION This secret MUST be a PAT with RW access for Contents and Pull requests (for the target repo)
+          token: ${{ secrets.GH_PAT_BINDINGS_REPO_RW }}
+          path: bindings-repo
+          lfs: true
+
+      - name: Download Generated Bindings Patch (macos-latest)
+        uses: actions/download-artifact@v4
+        with:
+          name: bindings-repo-patch-macos-latest
+          path: bindings-repo
+      - name: Download Generated Bindings Patch (macos-15-intel)
+        uses: actions/download-artifact@v4
+        with:
+          name: bindings-repo-patch-macos-15-intel
+          path: bindings-repo
+      - name: Download Generated Bindings Patch (windows-latest)
+        uses: actions/download-artifact@v4
+        with:
+          name: bindings-repo-patch-windows-latest
+          path: bindings-repo
+      - name: Download Generated Bindings Patch (ubuntu-24.04-arm)
+        uses: actions/download-artifact@v4
+        with:
+          name: bindings-repo-patch-ubuntu-24.04-arm
+          path: bindings-repo
+      - name: Download Generated Bindings Patch (ubuntu-latest)
+        uses: actions/download-artifact@v4
+        with:
+          name: bindings-repo-patch-ubuntu-latest
+          path: bindings-repo
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          path: bindings-repo
+          #branch: automated-pull-request/bindings-patch-${{ env.timestamp }}
+          branch: automated-pull-request/bindings-patch-${{ env.latest_git_tag }}
+          # CAUTION This secret MUST be a PAT with RW access for Contents and Pull requests (for the target repo)
+          token: ${{ secrets.GH_PAT_BINDINGS_REPO_RW }}
+          commit-message: ':package: Automated commit made by the ''${{ github.workflow }}'' GitHub action workflow'
+          # CAUTION Only files generated by the previous job are relevant here
+          add-paths: |
+            src/main/kotlin/**/*.kt
+            src/main/resources/**/*.*
+          title: ':package: Bindings updated by the ''${{ github.workflow }}'' GitHub action workflow'
+          body: ':warning: Automated changes by the ''${{ github.workflow }}'' GitHub action workflow. **DO NOT EDIT**'
+          assignees: ${{ github.actor }}
+          # CAUTION Review cannot be requested from pull request author!
+          #reviewers: ${{ github.actor }}
+          maintainer-can-modify: false

@@ -1,0 +1,46 @@
+[package]
+name = "did_sidekicks"
+# CAUTION {key}.workspace = <true|false> notation supports only the {key} values listed here:
+#         https://doc.rust-lang.org/cargo/reference/workspaces.html#the-package-table
+version.workspace = true
+authors.workspace = true
+description = "A set of various Rust modules required while implementing either of did:tdw (v0.3) and did:webvh (v1.0) specifications"
+homepage = "https://github.com/swiyu-admin-ch/didresolver/did_sidekicks"
+repository.workspace = true
+license.workspace = true
+edition.workspace = true
+readme = "README.md"
+include = [
+    "Cargo.toml",
+    "README.md",
+    "src/**/*",
+]
+keywords = ["did"]
+categories = ["cryptography"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+uniffi = { workspace = true, features = ["cli"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true, features = ["preserve_order"] }
+serde_json_canonicalizer = "0.3.1"
+chrono = { workspace = true, features = ["serde"] }
+ed25519-dalek = { version = "2.2.0", features = ["rand_core"] }
+rand.workspace = true
+sha2 = "0.10.9"
+hex = "0.4.3"
+bs58 = { version = "0.5.1", features = ["check", "cb58"] }
+thiserror.workspace = true
+jsonschema = "0.33.0"
+
+[build-dependencies]
+uniffi = { workspace = true, features = ["build"] }
+
+[dev-dependencies]
+rstest.workspace = true
+
+# See [workspace.lints.clippy] in ../Cargo.toml
+# (w.r.t. https://doc.rust-lang.org/cargo/reference/workspaces.html#the-lints-table)
+[lints]
+workspace = true

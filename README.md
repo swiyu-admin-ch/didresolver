@@ -21,8 +21,9 @@ This project contains a DID resolver which allows to resolve the following DID m
 - [Overview](#overview)
 - [Using the library](#using-the-library)
 - [Example](#example)
-- [Hierarchical structure](#hierarchical-structure)
+- [Crate's hierarchical structure](#crates-hierarchical-structure)
 - [Internal dependencies](#internal-dependencies)
+- [Benchmarks](#benchmarks)
 - [Missing Features and Known Issues](#missing-features-and-known-issues)
 - [Contributions and feedback](#contributions-and-feedback)
 - [License](#license)
@@ -99,7 +100,9 @@ fn main() {
 }
 ```
 
-## Hierarchical structure
+## Crate's hierarchical structure
+
+Such structure may be easily obtained by simply running `cargo-modules structure --lib --package did`:
 
 ```text
 crate didresolver
@@ -118,7 +121,7 @@ crate didresolver
     │   ├── fn get_scid: pub
     │   └── fn new_did_resolver_impl: pub(self)
     ├── enum DidResolveError: pub
-    │   └── fn kind: pub
+    │   └── const fn kind: pub
     └── enum DidResolveErrorKind: pub
 ```
 
@@ -127,6 +130,10 @@ crate didresolver
 ![Dependencies](/images/dependencies.png)
 
 The graph is also available in other layouts: [circo](/images/dependencies-circo.png), [dot](/images/dependencies-dot.png), [fdp](/images/dependencies-fdp.png), [neato](/images/dependencies-neato.png), [sfdp](/images/dependencies-sfdp.png), [twopi](/images/dependencies-twopi.png)  
+
+## Benchmarks
+
+All the relevant reports are available [here](criterion/README.md).
 
 ## Missing Features and Known Issues
 
