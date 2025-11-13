@@ -11,7 +11,7 @@ on:
     # Use ${{ github.ref_name }} to get the short ref name of tag that triggered the workflow run
     tags:
       - '*'
-  #workflow_dispatch:
+  workflow_dispatch:
 
 jobs:
   build:
