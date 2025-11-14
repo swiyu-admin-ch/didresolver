@@ -4,7 +4,7 @@ This directory feature DID logs created by various legacy versions od DID Toolbo
 
 ⚠️ Needless to say, these DID logs are intended for testing purposes only.
 
-All the *.jsonl` files available here can be generated using the following script:
+All the `*.jsonl` files available here can be generated using the following script:
 
 ```bash
 # PREREQ Java is already installed
@@ -40,17 +40,12 @@ create_did_log_using_didtoolbox_ver () {
 	# download the exact version
 	wget -q https://repo1.maven.org/maven2/io/github/swiyu-admin-ch/didtoolbox/$ver/didtoolbox-$ver-jar-with-dependencies.jar -O didtoolbox-$ver.jar
 	# DID log creation
-	java -jar didtoolbox-$ver.jar create -u $url -f > did-$ver.jsonl
+	java -jar didtoolbox-$ver.jar create -u $url -m did:tdw:0.3 -f > did-$ver.jsonl
 }
 
-# v1.3.1 (first version available on Maven Central Repository)
-create_did_log_using_didtoolbox_ver 1.3.1 $DID_URL
-
-# v1.4.0
-create_did_log_using_didtoolbox_ver 1.4.0 $DID_URL
-
-# v1.4.1
-create_did_log_using_didtoolbox_ver 1.4.1 $DID_URL
-
-# further versions will be added here as soon as they are released
+# All versions available on Maven Central Repository.
+# Further versions will be added here as soon as they get released
+for ver in 1.3.1 1.4.0 1.4.1 1.4.2 1.5.0 1.6.0 1.7.0; do \
+  create_did_log_using_didtoolbox_ver $ver $DID_URL
+done
 ```
