@@ -307,10 +307,14 @@ impl Did {
     /// A UniFFI-compliant method.
     #[deprecated(since = "2.2.0", note = "please use more potent `resolve_all` instead")]
     #[inline]
-    pub fn resolve(&self, did_log: String) -> Result<Arc<DidDoc>, DidResolveError> {
+    pub fn resolve(&self, did_log: String) -> Result<Option<Arc<DidDoc>>, DidResolveError> {
         // may throw did_sidekicks::error::DidResolver
         match self.resolve_all(did_log) {
-            Ok(resolve_all) => Ok(Arc::new(resolve_all.get_did_doc_obj())),
+            Ok(resolve_all) => {
+                resolve_all
+                    .get_did_doc_obj()
+                    .map_or(Ok(None), |did_doc| Ok(Some(Arc::new(did_doc))))
+            }
             // CAUTION Calling `DidResolveError::from(err)` would be useless here since
             //         DidResolveError already implements From<did_sidekicks::error::DidResolver> trait
             Err(err) => Err(err),

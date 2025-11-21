@@ -94,7 +94,7 @@ interface Did {
     ///
     /// @deprecated as of 2.2.0 replaced by more potent `resolve_all`
     [Throws=DidResolveError]
-    DidDoc resolve(string did_log);
+    DidDoc? resolve(string did_log);
     /// The essential method of `Did` implementing the "Read (Resolve)" DID method operation for either a
     /// `did:tdw:0.3` (w.r.t. https://identity.foundation/didwebvh/v0.3/#read-resolve) or a
     /// `did:webvh:1.0` DID (w.r.t. https://identity.foundation/didwebvh/v1.0/#read-resolve).

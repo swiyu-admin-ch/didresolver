@@ -135,7 +135,7 @@ interface DidDoc {
 
 /// A simple container for both `DidDoc` and the related collection of `DidMethodParameter` objects.
 interface DidDocExtended {
-    DidDoc get_did_doc();
+    DidDoc? get_did_doc();
     record<string, DidMethodParameter> get_did_method_parameters();
 };
 

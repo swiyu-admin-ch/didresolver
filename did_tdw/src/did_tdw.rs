@@ -899,8 +899,8 @@ impl TryFrom<(String, Option<bool>)> for TrustDidWebId {
 pub struct TrustDidWeb {
     did: String,
     did_log: String,
-    did_doc: String,
-    did_doc_obj: DidDoc,
+    did_doc: Option<String>,
+    did_doc_obj: Option<DidDoc>,
     did_method_parameters: TrustDidWebDidMethodParameters,
 }
 
@@ -916,12 +916,12 @@ impl TrustDidWeb {
     }
 
     #[inline]
-    pub fn get_did_doc(&self) -> String {
+    pub fn get_did_doc(&self) -> Option<String> {
         self.did_doc.clone()
     }
 
     /// Delivers the fully qualified DID document (as [`DidDoc`]) contained within the DID log previously supplied via [`TrustDidWeb::resolve`] constructor.
-    fn get_did_doc_obj(&self) -> DidDoc {
+    fn get_did_doc_obj(&self) -> Option<DidDoc> {
         self.did_doc_obj.clone()
     }
 
@@ -929,8 +929,9 @@ impl TrustDidWeb {
     ///
     /// Yet another UniFFI-compliant getter.
     #[inline]
-    pub fn get_did_doc_obj_thread_safe(&self) -> Arc<DidDoc> {
-        Arc::new(self.get_did_doc_obj())
+    pub fn get_did_doc_obj_thread_safe(&self) -> Option<Arc<DidDoc>> {
+        let did_doc = self.get_did_doc_obj()?;
+        Arc::new(did_doc).into()
     }
 
     fn get_did_method_parameters_obj(&self) -> TrustDidWebDidMethodParameters {
@@ -971,8 +972,8 @@ impl TrustDidWeb {
         Ok(Self {
             did: did_doc_valid.to_owned().id,
             did_log: did_log_obj.to_string(), // the type implements std::fmt::Display trait
-            did_doc: did_doc_str,
-            did_doc_obj: did_doc_valid,
+            did_doc: did_doc_str.into(),
+            did_doc_obj: did_doc_valid.into(),
             did_method_parameters: did_log_obj.get_did_method_parameters(),
         })
     }
@@ -982,7 +983,7 @@ impl DidResolver for TrustDidWeb {
     //type Error = DidResolverError;
 
     #[inline]
-    fn get_did_doc_obj(&self) -> DidDoc {
+    fn get_did_doc_obj(&self) -> Option<DidDoc> {
         self.get_did_doc_obj()
     }
 

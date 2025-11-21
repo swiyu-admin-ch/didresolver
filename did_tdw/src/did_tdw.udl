@@ -88,12 +88,12 @@ interface TrustDidWeb {
     constructor(string did_tdw, string did_log);
     string get_did();
     string get_did_log();
-    string get_did_doc();
+    string? get_did_doc();
     ///
     TrustDidWebDidMethodParameters get_did_method_parameters();
     /// Delivers the fully qualified DID document (as `DidDoc`) contained within the DID log previously resolved in the constructor
     ///[Throws=TrustDdidWebError]
-    DidDoc get_did_doc_obj_thread_safe();
+    DidDoc? get_did_doc_obj_thread_safe();
 };
 
 /// W.r.t. corresponding specification version available at https://identity.foundation/didwebvh/v0.3

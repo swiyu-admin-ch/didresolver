@@ -305,7 +305,7 @@ impl DidDocNormalized {
 /// A simple container for both [`DidDoc`] and the related collection of [`DidMethodParameter`] objects.
 #[derive(Debug, Clone)]
 pub struct DidDocExtended {
-    did_doc: DidDoc,
+    did_doc: Option<DidDoc>,
     did_method_parameters: HashMap<String, Arc<DidMethodParameter>>,
 }
 
@@ -435,7 +435,7 @@ impl DidDocExtended {
     /// The only non-empty constructor of the type.
     #[inline]
     pub const fn new(
-        did_doc: DidDoc,
+        did_doc: Option<DidDoc>,
         did_method_parameters: HashMap<String, Arc<DidMethodParameter>>,
     ) -> Self {
         Self {
@@ -445,14 +445,15 @@ impl DidDocExtended {
     }
 
     #[inline]
-    pub fn get_did_doc_obj(&self) -> DidDoc {
+    pub fn get_did_doc_obj(&self) -> Option<DidDoc> {
         self.did_doc.clone()
     }
 
     /// A UniFFI-compliant version of [`DidDocExtended::get_did_doc_obj`] getter.
     #[inline]
-    pub fn get_did_doc(&self) -> Arc<DidDoc> {
-        Arc::new(self.get_did_doc_obj())
+    pub fn get_did_doc(&self) -> Option<Arc<DidDoc>> {
+        let did_doc = self.get_did_doc_obj()?;
+        Arc::new(did_doc).into()
     }
 
     /// A UniFFI-compliant getter.
