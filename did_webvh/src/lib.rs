@@ -302,9 +302,11 @@ mod test {
         let did_log_raw = fs::read_to_string(Path::new(&did_log_raw_filepath)).unwrap();
 
         // Read the newly did doc
-        let webvh_v1 = WebVerifiableHistory::resolve(did_url.clone(), did_log_raw).unwrap();
-        let did_doc_v1: JsonValue = serde_json::from_str(&webvh_v1.get_did_doc()).unwrap();
-        let did_doc_obj_v1 = DidDoc::from_json(&webvh_v1.get_did_doc()).unwrap();
+        let web_vh_v1 = WebVerifiableHistory::resolve(did_url.clone(), did_log_raw).unwrap();
+        assert!(web_vh_v1.get_did_doc().is_some());
+        let did_doc = web_vh_v1.get_did_doc().unwrap(); // panic-safe unwrap call (as long as #case setup is correct)
+        let did_doc_v1: JsonValue = serde_json::from_str(&did_doc).unwrap();
+        let did_doc_obj_v1 = DidDoc::from_json(&did_doc).unwrap();
 
         assert!(!did_doc_v1["@context"].to_string().is_empty());
         match did_doc_v1["id"] {
@@ -317,7 +319,7 @@ mod test {
         assert!(!did_doc_v1["authentication"].to_string().is_empty());
         assert!(!did_doc_v1["controller"].to_string().is_empty());
 
-        assert_eq!(did_doc_obj_v1.id, webvh_v1.get_did());
+        assert_eq!(did_doc_obj_v1.id, web_vh_v1.get_did());
         assert!(!did_doc_obj_v1.verification_method.is_empty());
         assert!(!did_doc_obj_v1.authentication.is_empty());
         assert!(did_doc_obj_v1.controller.is_empty());

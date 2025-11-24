@@ -310,11 +310,9 @@ impl Did {
     pub fn resolve(&self, did_log: String) -> Result<Option<Arc<DidDoc>>, DidResolveError> {
         // may throw did_sidekicks::error::DidResolver
         match self.resolve_all(did_log) {
-            Ok(resolve_all) => {
-                resolve_all
-                    .get_did_doc_obj()
-                    .map_or(Ok(None), |did_doc| Ok(Some(Arc::new(did_doc))))
-            }
+            Ok(resolve_all) => resolve_all
+                .get_did_doc_obj()
+                .map_or(Ok(None), |did_doc| Ok(Some(Arc::new(did_doc)))),
             // CAUTION Calling `DidResolveError::from(err)` would be useless here since
             //         DidResolveError already implements From<did_sidekicks::error::DidResolver> trait
             Err(err) => Err(err),
@@ -447,7 +445,9 @@ mod tests {
 
         let res = did_obj.resolve_all(did_log_raw);
         assert!(res.is_ok(), "ERROR: {:?}", res.err().unwrap());
-        let did_doc = res.unwrap().get_did_doc_obj(); // panic-safe unwrap call (see the previous line)
+        let did_doc_opt = res.unwrap().get_did_doc_obj(); // panic-safe unwrap call (see the previous line)
+        assert!(did_doc_opt.is_some());
+        let did_doc = did_doc_opt.unwrap(); // panic-safe unwrap call (see the previous line)
 
         // CAUTION Such assertions are not really possible when using GitHub gists as input
         //         assert_eq!(did_doc.get_id(), did.to_string()); // assuming the Display trait is implemented accordingly for DID struct
@@ -491,7 +491,9 @@ mod tests {
         let res = did_obj.resolve_all(did_log_raw);
 
         assert!(res.is_ok(), "ERROR: {:?}", res.err().unwrap());
-        let did_doc = res.unwrap().get_did_doc_obj(); // panic-safe unwrap call (see the previous line)
+        let did_doc_opt = res.unwrap().get_did_doc_obj(); // panic-safe unwrap call (see the previous line)
+        assert!(did_doc_opt.is_some());
+        let did_doc = did_doc_opt.unwrap(); // panic-safe unwrap call (see the previous line)
         assert_eq!(did_doc.id, did);
 
         //assert_eq!(did_doc.get_id(), did.to_string()); // assuming the Display trait is implemented accordingly for DID struct
@@ -530,10 +532,12 @@ mod tests {
 
         let resolve_all = did_obj.resolve_all(did_log_raw);
         assert!(resolve_all.is_ok());
-        let did_doc = resolve_all.unwrap();
-        assert_eq!(did_doc.get_did_doc().get_id(), did);
+        let did_doc_ext = resolve_all.unwrap();
+        assert!(did_doc_ext.get_did_doc().is_some());
+        let did_doc = did_doc_ext.get_did_doc().unwrap(); // panic-safe unwrap call (see the previous line)
+        assert_eq!(did_doc.get_id(), did);
 
-        let params = did_doc.get_did_method_parameters();
+        let params = did_doc_ext.get_did_method_parameters();
         assert!(!params.is_empty());
         assert!(params.contains_key("method"));
         assert!(params.get_key_value("method").is_some_and(|param| {
