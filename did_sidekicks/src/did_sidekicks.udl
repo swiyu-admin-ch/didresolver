@@ -112,8 +112,13 @@ enum DidResolverError {
 };
 
 interface DidDoc {
+    /// The deserialization-based constructor.
+    /// It attempts to deserialize an instance of type `DidDoc` from a string of JSON text.
     [Name=from_json, Throws=DidSidekicksError]
     constructor([ByRef] string json_content);
+    /// Serializes this `DidDoc` object as a `String` of JSON.
+    [Throws=DidSidekicksError]
+    string to_json();
     sequence<string> get_context();
     string get_id();
     sequence<VerificationMethod> get_verification_method();
