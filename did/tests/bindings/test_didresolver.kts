@@ -1,6 +1,5 @@
 import ch.admin.eid.didresolver.*
 import ch.admin.eid.did_sidekicks.*
-//import ch.admin.eid.didtoolbox.*
 
 import java.io.IOException
 import java.net.URI
@@ -85,7 +84,7 @@ private fun fetchDidLog(httpsUrl: String?): String {
 
 private fun assertDidDoc(didDoc: DidDoc?) {
     assert(didDoc != null)
-    val didDocId = didDoc?.getId();
+    val didDocId = didDoc?.getId()
     assert(didDoc?.getAuthentication() != null)
     assert(didDoc?.getAssertionMethod() != null)
     val verificationMethod = didDoc?.getVerificationMethod()
@@ -94,8 +93,22 @@ private fun assertDidDoc(didDoc: DidDoc?) {
     val verificationMethod0 = verificationMethod?.get(0)
     assert(verificationMethod0 != null)
     assert(verificationMethod0?.publicKeyJwk != null)
-    assert(verificationMethod0?.id == didDocId + "#" + verificationMethod0?.publicKeyJwk?.kid)
     assert(verificationMethod0?.verificationType == VerificationType.JSON_WEB_KEY2020)
+    val kid = verificationMethod0?.publicKeyJwk?.kid
+    assert(verificationMethod0?.id == didDocId + "#" + kid)
+
+    val jwk = didDoc?.getKey(kid!!)
+    assert(jwk != null)
+    assert(jwk == verificationMethod0?.publicKeyJwk)
+    assert(jwk?.kid == kid)
+
+    val didDocJson = didDoc?.toJson()
+    assert(didDocJson != null)
+    assert(didDocJson is String)
+    assert(didDocJson?.length != 0)
+    val didDocFromJson = DidDoc.fromJson(didDocJson!!)
+    assert(didDocFromJson != null)
+    assert(didDoc?.getId() == didDocFromJson?.getId())
 }
 
 private fun assertDidMethodParameters(params: Map<String, DidMethodParameter>?) {

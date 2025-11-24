@@ -11,7 +11,7 @@
     reason = "further enum variants may be added in the future"
 )]
 pub enum DidSidekicksError {
-    /// Failed to serialize ID document (to JSON)
+    /// Failed to serialize DID document (to JSON)
     #[error("failed to serialize DID document (to JSON): {0}")]
     SerializationFailed(String),
     /// The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation

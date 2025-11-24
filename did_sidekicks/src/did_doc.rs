@@ -355,18 +355,29 @@ impl DidDoc {
         self.deactivated.unwrap_or(false)
     }
 
+    /// The deserialization-based constructor. It attempts to deserialize an instance of type `[`DidDoc`] from a string of JSON text.
+    ///
+    /// # Errors
+    ///
+    /// The conversion can fail if the structure of the input does not match the structure expected by [`DidDoc`].
     #[inline]
     pub fn from_json(json_content: &str) -> Result<Self, DidSidekicksError> {
-        let did_doc: Self = match serde_json::from_str(json_content) {
-            Ok(did_doc) => did_doc,
-            Err(err) => {
-                return Err(DidSidekicksError::DeserializationFailed(format!(
-                    "Error parsing DID Document. Make sure the content is correct -> {err}"
-                )));
-            }
-        };
+        serde_json::from_str(json_content)
+            .map_err(|err| DidSidekicksError::DeserializationFailed(err.to_string()))
+    }
 
-        Ok(did_doc)
+    /// Serializes this [`DidDoc`] object as a [`String`] of JSON.
+    ///
+    /// A UniFFI-compliant method.
+    ///
+    /// # Errors
+    ///
+    /// Serialization can fail if [`DidDoc`]'s implementation of [`Serialize`] decides to fail,
+    /// or if [`DidDoc`] contains a map with non-string keys.
+    #[inline]
+    pub fn to_json(&self) -> Result<String, DidSidekicksError> {
+        serde_json::to_string(&self)
+            .map_err(|err| DidSidekicksError::SerializationFailed(err.to_string()))
     }
 
     /// Returns a cryptographic public key ([`Jwk`]) referenced by the supplied `key_id`, if any.
