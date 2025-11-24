@@ -39,7 +39,8 @@ crate did_sidekicks
 │   │   ├── fn get_deactivated: pub
 │   │   ├── fn get_id: pub
 │   │   ├── fn get_key: pub
-│   │   └── fn get_verification_method: pub
+│   │   ├── fn get_verification_method: pub
+│   │   └── fn to_json: pub
 │   ├── struct DidDocExtended: pub
 │   │   ├── fn get_did_doc: pub
 │   │   ├── fn get_did_doc_obj: pub
