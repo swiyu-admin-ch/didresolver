@@ -5,6 +5,7 @@ use crate::did_tdw_method_parameters::*;
 use crate::errors::*;
 use chrono::serde::ts_seconds;
 use chrono::{DateTime, SecondsFormat, Utc};
+use core::cmp::PartialEq as _;
 use did_sidekicks::did_doc::*;
 use did_sidekicks::did_jsonschema::{DidLogEntryJsonSchema, DidLogEntryValidator};
 use did_sidekicks::did_method_parameters::DidMethodParameter;
@@ -21,7 +22,6 @@ use serde_json::Value::Object as JsonObject;
 use serde_json::{
     from_str as json_from_str, json, to_string as json_to_string, Value as JsonValue,
 };
-use core::cmp::PartialEq as _;
 use std::collections::HashMap;
 use std::sync::Arc;
 use url::Url;
@@ -969,6 +969,7 @@ impl TrustDidWeb {
             Ok(str) => str,
             Err(err) => return Err(DidResolverError::SerializationFailed(err.to_string())),
         };
+
         Ok(Self {
             did: did_doc_valid.to_owned().id,
             did_log: did_log_obj.to_string(), // the type implements std::fmt::Display trait

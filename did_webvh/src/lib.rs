@@ -49,6 +49,7 @@ mod test {
     use crate::errors::*;
     use core::panic;
     use did_sidekicks::did_doc::*;
+    use did_sidekicks::did_resolver::DidResolver;
     use did_sidekicks::errors::{DidResolverError, DidResolverErrorKind};
     use rand::distributions::Alphanumeric;
     use rand::Rng as _;
@@ -275,10 +276,6 @@ mod test {
     )]
     */
     #[case(
-        "test_data/third_party_test_vectors/revoked-did.jsonl",
-        "did:webvh:QmWC6mWD7HSbkkqvyZ64mfrK4JiSMFxgCeh3awNzRdwfMr:localhost%3A8000"
-    )]
-    #[case(
         "test_data/generated_by_didtoolbox_java/single_update_key.jsonl",
         "did:webvh:QmQqco6RKGLje7JdQpwsPsM5qyuVou9NmiHTs5S3dqu78a:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
     )]
@@ -301,10 +298,9 @@ mod test {
     fn test_read_did_webvh(#[case] did_log_raw_filepath: String, #[case] did_url: String) {
         let did_log_raw = fs::read_to_string(Path::new(&did_log_raw_filepath)).unwrap();
 
-        // Read the newly did doc
-        let web_vh_v1 = WebVerifiableHistory::resolve(did_url.clone(), did_log_raw).unwrap();
-        assert!(web_vh_v1.get_did_doc().is_some());
-        let did_doc = web_vh_v1.get_did_doc().unwrap(); // panic-safe unwrap call (as long as #case setup is correct)
+        let webvh_v1 = WebVerifiableHistory::resolve(did_url.clone(), did_log_raw).unwrap();
+        assert!(webvh_v1.get_did_doc().is_some());
+        let did_doc = webvh_v1.get_did_doc().unwrap(); // panic-safe unwrap call (as long as #case setup is correct)
         let did_doc_v1: JsonValue = serde_json::from_str(&did_doc).unwrap();
         let did_doc_obj_v1 = DidDoc::from_json(&did_doc).unwrap();
 
@@ -319,50 +315,30 @@ mod test {
         assert!(!did_doc_v1["authentication"].to_string().is_empty());
         assert!(!did_doc_v1["controller"].to_string().is_empty());
 
-        assert_eq!(did_doc_obj_v1.id, web_vh_v1.get_did());
+        assert_eq!(did_doc_obj_v1.id, webvh_v1.get_did());
         assert!(!did_doc_obj_v1.verification_method.is_empty());
         assert!(!did_doc_obj_v1.authentication.is_empty());
         assert!(did_doc_obj_v1.controller.is_empty());
     }
 
-    /* TODO implement the test case using proper input
     #[rstest]
     #[case(
-        "test_data/generated_by_tdw_js/deactivated.jsonl",
-        "did:tdw:QmdSU7F2rF8r4m6GZK7Evi2tthfDDxhw3NppU8pJMbd2hB:example.com"
+        "test_data/third_party_test_vectors/revoked-did.jsonl",
+        "did:webvh:QmWC6mWD7HSbkkqvyZ64mfrK4JiSMFxgCeh3awNzRdwfMr:localhost%3A8000"
     )]
     fn test_read_did_webvh_deactivated(
         #[case] did_log_raw_filepath: String,
         #[case] did_url: String,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        //let did_log_raw_filepath = "test_data/generated_by_tdw_js/deactivated.jsonl";
-        //let did_url: String = String::from("did:tdw:QmdSU7F2rF8r4m6GZK7Evi2tthfDDxhw3NppU8pJMbd2hB:example.com");
+    ) {
+        let did_log_raw = fs::read_to_string(Path::new(&did_log_raw_filepath)).unwrap();
 
-        let did_log_raw = fs::read_to_string(Path::new(&did_log_raw_filepath))?;
+        // panic-safe unwrap call (as long as #case setup is correct)
+        let webvh_v1 = WebVerifiableHistory::resolve(did_url.clone(), did_log_raw).unwrap();
 
-        // Read the newly did doc
-        let tdw_v1 = TrustDidWeb::read(did_url.clone(), did_log_raw)?;
-        let did_doc_json_v1: JsonValue = serde_json::from_str(&tdw_v1.get_did_doc())?;
-        let did_doc_obj_v1 = DidDoc::from_json(&tdw_v1.get_did_doc())?;
-
-        assert!(!did_doc_json_v1["@context"].to_string().is_empty());
-        match did_doc_json_v1["id"] {
-            JsonValue::String(ref doc_v1) => {
-                assert!(doc_v1.eq(did_url.as_str()), "DID mismatch")
-            }
-            _ => panic!("Invalid did doc"),
-        }
-        assert!(!did_doc_json_v1["verificationMethod"].to_string().is_empty());
-        assert!(!did_doc_json_v1["authentication"].to_string().is_empty());
-        assert!(!did_doc_json_v1["controller"].to_string().is_empty());
-
-        assert_eq!(did_doc_obj_v1.id, tdw_v1.get_did());
-        // CAUTION after deactivation these should be empty
-        assert!(did_doc_obj_v1.verification_method.is_empty());
-        assert!(did_doc_obj_v1.authentication.is_empty());
-        //assert!(!did_doc_v1_obj.controller.is_empty());
-
-        Ok(())
+        // "Once done, a resolver MUST NOT return the DIDDoc ..."
+        // (as specified by https://identity.foundation/didwebvh/v1.0/#deactivate-revoke)
+        assert!(webvh_v1.get_did_doc().is_none());
+        assert!(webvh_v1.get_did_doc_obj().is_none());
+        assert!(webvh_v1.get_did_doc_obj_thread_safe().is_none());
     }
-     */
 }
