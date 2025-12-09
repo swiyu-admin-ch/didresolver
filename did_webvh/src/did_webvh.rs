@@ -1054,15 +1054,12 @@ impl WebVerifiableHistory {
             Err(err) => return Err(DidResolverError::SerializationFailed(err.to_string())),
         };
 
-        // "Once done, a resolver MUST NOT return the DIDDoc ..."
-        // (as specified by https://identity.foundation/didwebvh/v1.0/#deactivate-revoke)
-        let mut did_doc = did_doc_str.into();
-        let mut did_doc_obj = did_doc_valid.to_owned().into();
         let did_method_parameters = did_log_obj.get_did_method_parameters();
-        if did_method_parameters.is_deactivated() {
-            did_doc = None;
-            did_doc_obj = None;
-        }
+        let (did_doc, did_doc_obj) = if did_method_parameters.is_deactivated() {
+            (None, None)
+        } else {
+            (did_doc_str.into(), did_doc_valid.to_owned().into())
+        };
 
         Ok(Self {
             did: did_doc_valid.id,
