@@ -14,7 +14,7 @@ pub trait DidResolver {
     //         as elaborated at https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility
 
     /// The getter for a [`DidDoc`] object collected during the resolution process.
-    fn get_did_doc_obj(&self) -> DidDoc;
+    fn get_did_doc_obj(&self) -> Option<DidDoc>;
 
     /// The method aims at returning a map of all [`DidMethodParameter`] collected during resolution process.
     fn collect_did_method_parameters_map(

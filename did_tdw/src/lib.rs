@@ -326,8 +326,10 @@ mod test {
 
         // Read the newly did doc
         let tdw_v1 = TrustDidWeb::resolve(did_url.clone(), did_log_raw).unwrap();
-        let did_doc_v1: JsonValue = serde_json::from_str(&tdw_v1.get_did_doc()).unwrap();
-        let did_doc_obj_v1 = DidDoc::from_json(&tdw_v1.get_did_doc()).unwrap();
+        assert!(tdw_v1.get_did_doc().is_some());
+        let did_doc = tdw_v1.get_did_doc().unwrap(); // panic-safe unwrap call (as long as #case setup is correct)
+        let did_doc_v1: JsonValue = serde_json::from_str(&did_doc).unwrap();
+        let did_doc_obj_v1 = DidDoc::from_json(&did_doc).unwrap();
 
         assert!(!did_doc_v1["@context"].to_string().is_empty());
         match did_doc_v1["id"] {

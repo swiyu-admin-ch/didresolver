@@ -5,6 +5,7 @@ use crate::did_webvh_method_parameters::*;
 use crate::errors::*;
 use chrono::serde::ts_seconds;
 use chrono::{DateTime, SecondsFormat, Utc};
+use core::cmp::PartialEq as _;
 use did_sidekicks::did_doc::*;
 use did_sidekicks::did_jsonschema::{DidLogEntryJsonSchema, DidLogEntryValidator};
 use did_sidekicks::did_method_parameters::DidMethodParameter;
@@ -24,7 +25,6 @@ use serde_json::Value::Object as JsonObject;
 use serde_json::{
     from_str as json_from_str, json, to_string as json_to_string, Value as JsonValue,
 };
-use core::cmp::PartialEq as _;
 use std::collections::HashMap;
 use std::sync::Arc;
 use url::Url;
@@ -456,160 +456,160 @@ impl TryFrom<String> for WebVerifiableHistoryDidLog {
         let now = Utc::now();
 
         let did_log_entries = did_log
-                .lines()
-                .filter(|line| !line.is_empty())
-                .map(|line| {
-                    if is_deactivated {
-                        return Err(DidResolverError::InvalidDidDocument(
-                            "This DID document is already deactivated. Therefore no additional DID logs are allowed.".to_owned()
-                        ));
-                    }
+            .lines()
+            .filter(|line| !line.is_empty())
+            .map(|line| {
+                if is_deactivated {
+                    return Err(DidResolverError::InvalidDidDocument(
+                        "This DID document is already deactivated. Therefore no additional DID logs are allowed.".to_owned()
+                    ));
+                }
 
-                    // CAUTION: It is assumed that the did:webvh JSON schema conformity check (see above)
-                    //          have already been ensured at this point! 
-                    //          Therefore, at this point, the current DID log entry may be considered fully JSON-schema-compliant, so...
-                    let entry: JsonValue = serde_json::from_str(line).unwrap(); // ...no panic is expected here
-                    let version: DidLogVersion = match serde_json::from_str(format!("{}", entry[DID_LOG_ENTRY_VERSION_ID]).as_str()) {
-                        Ok(ver) => ver,
-                        Err(err) => { return Err(DidResolverError::DeserializationFailed(format!("Invalid versionId: {err}"))); },
-                    };
+                // CAUTION: It is assumed that the did:webvh JSON schema conformity check (see above)
+                //          have already been ensured at this point! 
+                //          Therefore, at this point, the current DID log entry may be considered fully JSON-schema-compliant, so...
+                let entry: JsonValue = serde_json::from_str(line).unwrap(); // ...no panic is expected here
+                let version: DidLogVersion = match serde_json::from_str(format!("{}", entry[DID_LOG_ENTRY_VERSION_ID]).as_str()) {
+                    Ok(ver) => ver,
+                    Err(err) => { return Err(DidResolverError::DeserializationFailed(format!("Invalid versionId: {err}"))); }
+                };
 
-                    if prev_entry.is_none() && version.index != 1
-                        || prev_entry.is_some() && (version.index - 1).ne(&prev_entry.to_owned().unwrap().version.index) {
-                        return Err(DidResolverError::DeserializationFailed("Version numbers (`versionId`) must be in a sequence of positive consecutive integers.".to_owned()));
-                    }
+                if prev_entry.is_none() && version.index != 1
+                    || prev_entry.is_some() && (version.index - 1).ne(&prev_entry.to_owned().unwrap().version.index) {
+                    return Err(DidResolverError::DeserializationFailed("Version numbers (`versionId`) must be in a sequence of positive consecutive integers.".to_owned()));
+                }
 
-                    // https://identity.foundation/didwebvh/v1.0/#the-did-log-file:
-                    // The `versionTime` (as stated by the DID Controller) of the entry,
-                    // in ISO8601 format (https://identity.foundation/didwebvh/v0.3/#term:iso8601).
-                    let version_time = entry[DID_LOG_ENTRY_VERSION_TIME].as_str()
-                        .map(|rfc3339| DateTime::parse_from_rfc3339(rfc3339)
-                            .unwrap() // panic-safe unwrap call here (as the entry has already been validated)
-                            .to_utc())
-                        .unwrap(); // panic-safe unwrap call here (as the entry has already been validated)
+                // https://identity.foundation/didwebvh/v1.0/#the-did-log-file:
+                // The `versionTime` (as stated by the DID Controller) of the entry,
+                // in ISO8601 format (https://identity.foundation/didwebvh/v0.3/#term:iso8601).
+                let version_time = entry[DID_LOG_ENTRY_VERSION_TIME].as_str()
+                    .map(|rfc3339| DateTime::parse_from_rfc3339(rfc3339)
+                        .unwrap() // panic-safe unwrap call here (as the entry has already been validated)
+                        .to_utc())
+                    .unwrap(); // panic-safe unwrap call here (as the entry has already been validated)
 
-                    // CAUTION This check is not really required as it has been already implemented by the JSON schema validator
-                    if version_time.ge(&now) {
-                        return Err(DidResolverError::DeserializationFailed(format!("`versionTime` '{version_time}' must be before the current datetime '{now}'.")));
-                    }
+                // CAUTION This check is not really required as it has been already implemented by the JSON schema validator
+                if version_time.ge(&now) {
+                    return Err(DidResolverError::DeserializationFailed(format!("`versionTime` '{version_time}' must be before the current datetime '{now}'.")));
+                }
 
-                    if prev_entry.to_owned().is_some_and(|prev_entr| {
-                        version_time.lt(&prev_entr.version_time)
-                    }) {
-                        return Err(DidResolverError::DeserializationFailed("`versionTime` must be greater than the `versionTime` of the previous entry.".to_owned()));
-                    }
+                if prev_entry.to_owned().is_some_and(|prev_entr| {
+                    version_time.lt(&prev_entr.version_time)
+                }) {
+                    return Err(DidResolverError::DeserializationFailed("`versionTime` must be greater than the `versionTime` of the previous entry.".to_owned()));
+                }
 
-                    let mut new_params: Option<WebVerifiableHistoryDidMethodParameters> = None;
-                    current_params = match entry[DID_LOG_ENTRY_PARAMETERS].to_owned() {
-                        JsonObject(obj) => {
-                            if !obj.is_empty() {
-                                new_params = Some(WebVerifiableHistoryDidMethodParameters::from_json(&entry[DID_LOG_ENTRY_PARAMETERS].to_string())?);
-                            }
-
-                            match (current_params.clone(), new_params.clone()) {
-                                (None, None) => return Err(DidResolverError::DeserializationFailed(
-                                    "Missing DID Document parameters.".to_owned(),
-                                )),
-                                (None, Some(mut new_par)) => {
-                                    // this is the first entry, therefore we check for the base configuration
-                                    new_par.validate_initial()?;
-
-                                    Some(new_par) // from the initial log entry
-                                }
-                                (Some(current_par), None) => {
-                                    new_params = Some(WebVerifiableHistoryDidMethodParameters::empty());
-                                    Some(current_par)
-                                }
-                                (Some(mut current_par), Some(new_par)) => {
-                                    current_par.merge_from(&new_par)?;
-                                    Some(current_par)
-                                }
-                            }
+                let mut new_params: Option<WebVerifiableHistoryDidMethodParameters> = None;
+                current_params = match entry[DID_LOG_ENTRY_PARAMETERS].to_owned() {
+                    JsonObject(obj) => {
+                        if !obj.is_empty() {
+                            new_params = Some(WebVerifiableHistoryDidMethodParameters::from_json(&entry[DID_LOG_ENTRY_PARAMETERS].to_string())?);
                         }
-                        _ => {
-                            return Err(DidResolverError::DeserializationFailed(
-                                "Missing DID method parameters.".to_owned(),
-                            ))
-                        }
-                    };
 
-                    is_deactivated = current_params.to_owned().is_some_and(|par| par.deactivated.is_some_and(|dct| dct));
-                    if is_deactivated {
-                        // https://identity.foundation/didwebvh/v1.0/#deactivate-revoke:
-                        // To deactivate the DID, the DID Controller SHOULD add to the DID log entry parameters the item "deactivated": true.
-                        // A DID MAY update the DIDDoc further to indicate the deactivation of the DID,
-                        // such as including an empty updateKeys list ("updateKeys": []) in the parameters,
-                        // preventing further versions of the DID.
-                        if let Some(mut _current_params) = current_params.to_owned() {
-                            _current_params.deactivate();
-                            current_params = Some(_current_params);
-                        }
-                    }
+                        match (current_params.clone(), new_params.clone()) {
+                            (None, None) => return Err(DidResolverError::DeserializationFailed(
+                                "Missing DID Document parameters.".to_owned(),
+                            )),
+                            (None, Some(mut new_par)) => {
+                                // this is the first entry, therefore we check for the base configuration
+                                new_par.validate_initial()?;
 
-                    let did_doc_value = entry[DID_LOG_ENTRY_STATE].to_owned();
-                    let current_did_doc: DidDoc = match did_doc_value {
-                        JsonObject(_) => {
-                            if did_doc_value.is_null() {
-                                return Err(DidResolverError::DeserializationFailed(
-                                    "DID Document was empty.".to_owned(),
-                                ));
+                                Some(new_par) // from the initial log entry
                             }
-
-                            let json = entry[DID_LOG_ENTRY_STATE].to_string();
-
-                            match serde_json::from_str::<DidDoc>(&json) {
-                                Ok(did_doc) => did_doc,
-                                Err(_) => {
-                                    match serde_json::from_str::<DidDocNormalized>(&json) {
-                                        Ok(did_doc_alt) => {
-                                            match did_doc_alt.to_did_doc() {
-                                                Ok(doc) => doc,
-                                                Err(err) => return Err(DidResolverError::DeserializationFailed(format!(
-                                                    "Deserialization of DID document failed due to: {err}"
-                                                ))),
-                                            }
-                                        }
-                                        Err(err) => return Err(DidResolverError::DeserializationFailed(
-                                            format!("Missing DID document: {err}")
-                                        ))
-                                    }
-                                }
+                            (Some(current_par), None) => {
+                                new_params = Some(WebVerifiableHistoryDidMethodParameters::empty());
+                                Some(current_par)
+                            }
+                            (Some(mut current_par), Some(new_par)) => {
+                                current_par.merge_from(&new_par)?;
+                                Some(current_par)
                             }
                         }
-                        _ => {
-                            return Err(DidResolverError::DeserializationFailed(
-                                "Missing DID Document.".to_owned(),
-                            ))
-                        }
-                    };
-
-                    let proof = match DataIntegrityProof::from(entry[DID_LOG_ENTRY_PROOF].to_string()) {
-                        Ok(prf) => prf,
-                        Err(err) => return Err(DidResolverError::DeserializationFailed(format!(
-                            "Failed to deserialize data integrity proof due to: {err}"
-                        ))),
-                    };
-
-                    let parameters = match new_params {
-                        Some(new_par) => new_par,
-                        None => return Err(DidResolverError::DeserializationFailed(
-                            "Internal error: Missing parameter values.".to_owned(),
+                    }
+                    _ => {
+                        return Err(DidResolverError::DeserializationFailed(
+                            "Missing DID method parameters.".to_owned(),
                         ))
-                    };
+                    }
+                };
 
-                    let current_entry = DidLogEntry::new(
-                        version,
-                        version_time,
-                        parameters,
-                        current_did_doc,
-                        did_doc_value,
-                        proof,
-                        prev_entry.to_owned(),
-                    );
-                    prev_entry = Some(Arc::from(current_entry.to_owned()));
+                is_deactivated = current_params.to_owned().is_some_and(|par| par.deactivated.is_some_and(|dct| dct));
+                if is_deactivated {
+                    // https://identity.foundation/didwebvh/v1.0/#deactivate-revoke:
+                    // To deactivate the DID, the DID Controller SHOULD add to the DID log entry parameters the item "deactivated": true.
+                    // A DID MAY update the DIDDoc further to indicate the deactivation of the DID,
+                    // such as including an empty updateKeys list ("updateKeys": []) in the parameters,
+                    // preventing further versions of the DID.
+                    if let Some(mut _current_params) = current_params.to_owned() {
+                        _current_params.deactivate();
+                        current_params = Some(_current_params);
+                    }
+                }
 
-                    Ok(current_entry)
-                }).collect::<Result<Vec<DidLogEntry>, DidResolverError>>()?;
+                let did_doc_value = entry[DID_LOG_ENTRY_STATE].to_owned();
+                let current_did_doc: DidDoc = match did_doc_value {
+                    JsonObject(_) => {
+                        if did_doc_value.is_null() {
+                            return Err(DidResolverError::DeserializationFailed(
+                                "DID Document was empty.".to_owned(),
+                            ));
+                        }
+
+                        let json = entry[DID_LOG_ENTRY_STATE].to_string();
+
+                        match serde_json::from_str::<DidDoc>(&json) {
+                            Ok(did_doc) => did_doc,
+                            Err(_) => {
+                                match serde_json::from_str::<DidDocNormalized>(&json) {
+                                    Ok(did_doc_alt) => {
+                                        match did_doc_alt.to_did_doc() {
+                                            Ok(doc) => doc,
+                                            Err(err) => return Err(DidResolverError::DeserializationFailed(format!(
+                                                "Deserialization of DID document failed due to: {err}"
+                                            ))),
+                                        }
+                                    }
+                                    Err(err) => return Err(DidResolverError::DeserializationFailed(
+                                        format!("Missing DID document: {err}")
+                                    ))
+                                }
+                            }
+                        }
+                    }
+                    _ => {
+                        return Err(DidResolverError::DeserializationFailed(
+                            "Missing DID Document.".to_owned(),
+                        ))
+                    }
+                };
+
+                let proof = match DataIntegrityProof::from(entry[DID_LOG_ENTRY_PROOF].to_string()) {
+                    Ok(prf) => prf,
+                    Err(err) => return Err(DidResolverError::DeserializationFailed(format!(
+                        "Failed to deserialize data integrity proof due to: {err}"
+                    ))),
+                };
+
+                let parameters = match new_params {
+                    Some(new_par) => new_par,
+                    None => return Err(DidResolverError::DeserializationFailed(
+                        "Internal error: Missing parameter values.".to_owned(),
+                    ))
+                };
+
+                let current_entry = DidLogEntry::new(
+                    version,
+                    version_time,
+                    parameters,
+                    current_did_doc,
+                    did_doc_value,
+                    proof,
+                    prev_entry.to_owned(),
+                );
+                prev_entry = Some(Arc::from(current_entry.to_owned()));
+
+                Ok(current_entry)
+            }).collect::<Result<Vec<DidLogEntry>, DidResolverError>>()?;
 
         current_params.map_or_else(
             || {
@@ -663,7 +663,7 @@ impl WebVerifiableHistoryDidLog {
                         "Invalid did log for version {}. Version id has to be incremented",
                         entry.version.index,
                     )))
-                }
+                };
             }
 
             // Verify data integrity proof
@@ -686,8 +686,8 @@ impl WebVerifiableHistoryDidLog {
                 if let Some(res) = scid_to_validate.to_owned() {
                     if res.ne(scid.as_str()) {
                         return Err(DidResolverError::InvalidDataIntegrityProof(format!(
-                                        "The SCID '{scid}' supplied inside the DID document does not match the one supplied for validation: '{res}'"
-                                    )));
+                            "The SCID '{scid}' supplied inside the DID document does not match the one supplied for validation: '{res}'"
+                        )));
                     }
                 }
 
@@ -975,8 +975,8 @@ impl TryFrom<(String, Option<bool>)> for WebVerifiableHistoryId {
 /// A fully UniFFI-compliant struct.
 pub struct WebVerifiableHistory {
     did: String,
-    did_doc: String,
-    did_doc_obj: DidDoc,
+    did_doc: Option<String>,
+    did_doc_obj: Option<DidDoc>,
     did_log: String,
     did_method_parameters: WebVerifiableHistoryDidMethodParameters,
 }
@@ -1002,12 +1002,12 @@ impl WebVerifiableHistory {
     ///
     /// Yet another UniFFI-compliant method.
     #[inline]
-    pub fn get_did_doc(&self) -> String {
+    pub fn get_did_doc(&self) -> Option<String> {
         self.did_doc.clone()
     }
 
     /// Delivers the fully qualified DID document (as [`DidDoc`]) contained within the DID log previously supplied via [`WebVerifiableHistory::read`] constructor.
-    fn get_did_doc_obj(&self) -> DidDoc {
+    fn get_did_doc_obj(&self) -> Option<DidDoc> {
         self.did_doc_obj.clone()
     }
 
@@ -1015,8 +1015,9 @@ impl WebVerifiableHistory {
     ///
     /// Yet another UniFFI-compliant getter.
     #[inline]
-    pub fn get_did_doc_obj_thread_safe(&self) -> Arc<DidDoc> {
-        Arc::new(self.get_did_doc_obj())
+    pub fn get_did_doc_obj_thread_safe(&self) -> Option<Arc<DidDoc>> {
+        let did_doc = self.get_did_doc_obj()?;
+        Arc::new(did_doc).into()
     }
 
     fn get_did_method_parameters_obj(&self) -> WebVerifiableHistoryDidMethodParameters {
@@ -1041,7 +1042,6 @@ impl WebVerifiableHistory {
     #[inline]
     pub fn resolve(did_webvh: String, did_log: String) -> Result<Self, DidResolverError> {
         // according to https://identity.foundation/didwebvh/v1.0/#read-resolve
-        // parse did logs
         let did_log_obj = WebVerifiableHistoryDidLog::try_from(did_log)?;
 
         // 1. DID-to-HTTPS Transformation
@@ -1054,12 +1054,19 @@ impl WebVerifiableHistory {
             Err(err) => return Err(DidResolverError::SerializationFailed(err.to_string())),
         };
 
+        let did_method_parameters = did_log_obj.get_did_method_parameters();
+        let (did_doc, did_doc_obj) = if did_method_parameters.is_deactivated() {
+            (None, None)
+        } else {
+            (did_doc_str.into(), did_doc_valid.to_owned().into())
+        };
+
         Ok(Self {
-            did: did_doc_valid.to_owned().id,
+            did: did_doc_valid.id,
             did_log: did_log_obj.to_string(), // the type implements std::fmt::Display trait
-            did_doc: did_doc_str,
-            did_doc_obj: did_doc_valid,
-            did_method_parameters: did_log_obj.get_did_method_parameters(),
+            did_doc,
+            did_doc_obj,
+            did_method_parameters,
         })
     }
 }
@@ -1077,7 +1084,7 @@ impl DidResolver for WebVerifiableHistory {
     }
 
     #[inline]
-    fn get_did_doc_obj(&self) -> DidDoc {
+    fn get_did_doc_obj(&self) -> Option<DidDoc> {
         self.get_did_doc_obj()
     }
 }
@@ -1166,7 +1173,7 @@ mod test {
         "did:webvh:QmT7BM5RsM9SoaqAQKkNKHBzSEzpS2NRzT2oKaaaPYPpGr:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
         DidResolverErrorKind::InvalidIntegrityProof,
         "invalid DID log integration proof: The SCID"
-        )]
+    )]
     #[case(
         "test_data/manually_created/unhappy_path/signed_with_unauthorized_key.jsonl",
         "did:webvh:QmT7BM5RsM9SoaqAQKkNKHBzSEzpS2NRzT2oKaaaPYPpGr:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
