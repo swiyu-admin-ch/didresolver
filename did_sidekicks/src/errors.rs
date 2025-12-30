@@ -14,8 +14,8 @@ pub enum DidSidekicksError {
     /// Failed to serialize DID document (to JSON)
     #[error("failed to serialize DID document (to JSON): {0}")]
     SerializationFailed(String),
-    /// The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation
-    #[error("the supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation: {0}"
+    /// The supplied DID document is invalid or contains an argument which isn't part of the DID specification/recommendation
+    #[error("the supplied DID document is invalid or contains an argument which isn't part of the DID specification/recommendation: {0}"
     )]
     DeserializationFailed(String),
     /// Invalid DID document
@@ -27,12 +27,27 @@ pub enum DidSidekicksError {
     /// Invalid DID method parameter
     #[error("invalid DID method parameter: {0}")]
     InvalidDidMethodParameter(String),
+    /// Failed to calculate SHA2-256 hash of canonical JSON UTF-8 string
+    #[error("failed to calculate SHA2-256 hash of canonical JSON UTF-8 string: {0}")]
+    JscHashingFailed(String),
     /// No such JWK in the DID document
     #[error("no such JWK in the DID document: {0}")]
     KeyNotFound(String),
+    /// Failed to save key
+    #[error("failed to save key: {0}")]
+    KeySerializationFailed(String),
+    /// Failed to load key
+    #[error("failed to load key: {0}")]
+    KeyDeserializationFailed(String),
+    /// Failed to convert key from multibase format
+    #[error("failed to convert key from multibase format: {0}")]
+    MultibaseKeyConversionFailed(String),
     /// Non-existing key referenced in the DID document
     #[error("non-existing key referenced in the DID document: {0}")]
     NonExistingKeyReferenced(String),
+    /// General VC data integrity error
+    #[error("general VC data integrity error: {0}")]
+    VCDataIntegrityError(String),
 }
 
 impl DidSidekicksError {
@@ -45,8 +60,13 @@ impl DidSidekicksError {
             Self::InvalidDidDocument(_) => DidSidekicksErrorKind::InvalidDidDocument,
             Self::InvalidDataIntegrityProof(_) => DidSidekicksErrorKind::InvalidIntegrityProof,
             Self::InvalidDidMethodParameter(_) => DidSidekicksErrorKind::InvalidDidMethodParameter,
+            Self::JscHashingFailed(_) => DidSidekicksErrorKind::JscHashingFailed,
             Self::KeyNotFound(_) => DidSidekicksErrorKind::KeyNotFound,
+            Self::KeySerializationFailed(_) => DidSidekicksErrorKind::KeySerializationFailed,
+            Self::KeyDeserializationFailed(_) => DidSidekicksErrorKind::KeyDeserializationFailed,
+            Self::MultibaseKeyConversionFailed(_) => DidSidekicksErrorKind::MultibaseKeyConversionFailed,
             Self::NonExistingKeyReferenced(_) => DidSidekicksErrorKind::NonExistingKeyReferenced,
+            Self::VCDataIntegrityError(_) => DidSidekicksErrorKind::VCDataIntegrityError,
         }
     }
 }
@@ -65,8 +85,13 @@ pub enum DidSidekicksErrorKind {
     InvalidDidDocument,
     InvalidIntegrityProof,
     InvalidDidMethodParameter,
+    JscHashingFailed,
     KeyNotFound,
+    KeySerializationFailed,
+    KeyDeserializationFailed,
+    MultibaseKeyConversionFailed,
     NonExistingKeyReferenced,
+    VCDataIntegrityError,
 }
 
 /// The error accompanying [`DidResolver`] trait.

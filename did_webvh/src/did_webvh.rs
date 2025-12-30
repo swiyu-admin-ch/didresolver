@@ -5,6 +5,7 @@ use crate::did_webvh_method_parameters::*;
 use crate::errors::*;
 use chrono::serde::ts_seconds;
 use chrono::{DateTime, SecondsFormat, Utc};
+use core::cmp::PartialEq as _;
 use did_sidekicks::did_doc::*;
 use did_sidekicks::did_jsonschema::{DidLogEntryJsonSchema, DidLogEntryValidator};
 use did_sidekicks::did_method_parameters::DidMethodParameter;
@@ -24,7 +25,6 @@ use serde_json::Value::Object as JsonObject;
 use serde_json::{
     from_str as json_from_str, json, to_string as json_to_string, Value as JsonValue,
 };
-use core::cmp::PartialEq as _;
 use std::collections::HashMap;
 use std::sync::Arc;
 use url::Url;
@@ -72,7 +72,7 @@ pub struct DidLogEntry {
     pub proof: Option<Vec<DataIntegrityProof>>,
 
     #[serde(skip)]
-    pub prev_entry: Option<Arc<DidLogEntry>>, // Arc-ed to prevent "recursive without indirection"
+    pub prev_entry: Option<Arc<Self>>, // Arc-ed to prevent "recursive without indirection"
 }
 
 #[expect(clippy::exhaustive_structs, reason = "..")]
@@ -232,13 +232,8 @@ impl DidLogEntry {
                 )));
             }
 
-            let cryptosuite = EddsaJcs2022Cryptosuite {
-                verifying_key: Some(verifying_key),
-                signing_key: None,
-            };
-
             // use entire DidLogEntry for signature
-            let doc = Self {
+            let did_log_entry = Self {
                 version: self.version.clone(),
                 version_time: self.version_time,
                 parameters: self.parameters.clone(),
@@ -250,10 +245,12 @@ impl DidLogEntry {
             .to_log_entry_line()?;
 
             let doc_hash = JcsSha256Hasher::default()
-                .encode_hex(&doc)
+                .encode_hex_json_value(&did_log_entry)
                 .map_err(|err| DidResolverError::SerializationFailed(format!("{err}")))?;
 
-            match cryptosuite.verify_proof(&proof, doc_hash.as_str()) {
+            match EddsaJcs2022Cryptosuite::from_verifying_key(&verifying_key)
+                .verify_proof(&proof, doc_hash.as_str())
+            {
                 Ok(_) => (),
                 Err(err) => {
                     return Err(DidResolverError::InvalidDataIntegrityProof(format!(
@@ -297,9 +294,9 @@ impl DidLogEntry {
         let entry_json = entry.to_log_entry_line()?;
         // 5 calculate  the hash string
         let calculated_hash = JcsSha256Hasher::default()
-            .base58btc_encode_multihash(&entry_json)
+            .base58btc_encode_multihash_json_value(&entry_json)
             .map_err(|err| {
-                DidResolverError::SerializationFailed(format!("Failed to encode multihash: {err}"))
+                DidResolverError::SerializationFailed(format!("Failed to base58btc-encode SHA2-256 multihash of canonical JSON UTF-8 string: {err}"))
             })?;
         Ok(calculated_hash)
     }
@@ -398,7 +395,7 @@ impl DidLogEntry {
         });
 
         let hash = JcsSha256Hasher::default()
-            .base58btc_encode_multihash(&entry_with_placeholder_without_proof)?;
+            .base58btc_encode_multihash_json_value(&entry_with_placeholder_without_proof)?;
         Ok(hash)
     }
 }
@@ -583,7 +580,7 @@ impl TryFrom<String> for WebVerifiableHistoryDidLog {
                         }
                     };
 
-                    let proof = match DataIntegrityProof::from(entry[DID_LOG_ENTRY_PROOF].to_string()) {
+                    let proof = match DataIntegrityProof::from_json_string(entry[DID_LOG_ENTRY_PROOF].to_string()) {
                         Ok(prf) => prf,
                         Err(err) => return Err(DidResolverError::DeserializationFailed(format!(
                             "Failed to deserialize data integrity proof due to: {err}"
@@ -663,7 +660,7 @@ impl WebVerifiableHistoryDidLog {
                         "Invalid did log for version {}. Version id has to be incremented",
                         entry.version.index,
                     )))
-                }
+                };
             }
 
             // Verify data integrity proof

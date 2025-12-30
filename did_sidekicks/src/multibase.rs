@@ -25,15 +25,18 @@ pub struct MultibaseEncoderDecoder {
     alphabet: &'static Alphabet58,
 }
 
-impl MultibaseEncoderDecoder {
-    /// The default constructor featuring Base58btc algorithm.
-    pub(crate) const fn default() -> Self {
+impl Default for MultibaseEncoderDecoder {
+    /// The default constructor featuring [`MultibaseAlgorithm::Base58btc`] algorithm.
+    #[inline]
+    fn default() -> Self {
         Self {
             algorithm: MultibaseAlgorithm::Base58btc,
             alphabet: Alphabet58::BITCOIN,
         }
     }
+}
 
+impl MultibaseEncoderDecoder {
     /// Encode bytes into a new owned string using the alphabet supplied earlier.
     #[inline]
     #[expect(clippy::panic, reason = "sanity guard")]

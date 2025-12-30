@@ -28,10 +28,20 @@ enum DidSidekicksError {
     "InvalidDataIntegrityProof",
     /// Invalid DID method parameter.
     "InvalidDidMethodParameter",
+    /// Failed to calculate SHA2-256 hash of canonical JSON UTF-8 string.
+    "JscHashingFailed",
     /// No such JWK in the DID document.
     "KeyNotFound",
+    /// Failed to save key.
+    "KeySerializationFailed",
+    /// Failed to load key.
+    "KeyDeserializationFailed",
+    /// Failed to convert key from multibase format
+    "MultibaseKeyConversionFailed",
     /// Non-existing key referenced in the DID document.
-    "NonExistingKeyReferenced"
+    "NonExistingKeyReferenced",
+    /// General VC data integrity error.
+    "VCDataIntegrityError",
 };
 
 /// A generic DID method parameter as seen from the perspective of a JSON deserializer.
@@ -176,4 +186,74 @@ interface DidLogEntryValidator {
     /// `DidLogEntryValidatorError` is returned as soon the very first validation error occurs.
     [Throws=DidLogEntryValidatorError]
     void validate(string instance);
+};
+
+interface Ed25519Signature {
+    [Name=from_multibase, Throws=DidSidekicksError]
+    constructor([ByRef] string multibase);
+    string to_multibase();
+};
+
+interface Ed25519SigningKey {
+    [Name=generate]
+    constructor();
+    [Name=from_multibase, Throws=DidSidekicksError]
+    constructor([ByRef] string multibase);
+    [Name=from_pkcs8_pem, Throws=DidSidekicksError]
+    constructor([ByRef] string pkcs8_pem);
+    [Name=read_pkcs8_pem_file, Throws=DidSidekicksError]
+    constructor([ByRef] string pkcs8_pem_file);
+    [Throws=DidSidekicksError]
+    void write_pkcs8_pem_file([ByRef] string pkcs8_pem_file);
+    string to_multibase();
+    Ed25519Signature sign([ByRef] string message);
+    Ed25519VerifyingKey get_verifying_key();
+};
+
+interface Ed25519VerifyingKey {
+    [Name=from_multibase, Throws=DidSidekicksError]
+    constructor([ByRef] string multibase);
+    [Name=from_public_key_pem, Throws=DidSidekicksError]
+    constructor([ByRef] string public_key_pem);
+    [Name=read_public_key_pem_file, Throws=DidSidekicksError]
+    constructor([ByRef] string public_key_pem_file);
+    [Throws=DidSidekicksError]
+    void write_public_key_pem_file([ByRef] string public_key_pem_file);
+    string to_multibase();
+    [Throws=DidSidekicksError]
+    void verify_strict([ByRef] string message, [ByRef] Ed25519Signature signature);
+    [Throws=DidSidekicksError]
+    void verify_strict_from_hex([ByRef] string message_hex, [ByRef] Ed25519Signature signature);
+};
+
+interface DataIntegrityProof {
+    [Name=from_json_string, Throws=DidSidekicksError]
+    constructor(string json);
+};
+
+interface CryptoSuiteProofOptions {
+    [Name=default]
+    constructor();
+    [Name=new_eddsa_jcs_2022, Throws=DidSidekicksError]
+    constructor(string? created_dt_rfc3339, string verification_method, string? proof_purpose, sequence<string>? context, string? challenge);
+};
+
+interface JcsSha256Hasher {
+    [Name=default]
+    constructor();
+    [Throws=DidSidekicksError]
+    string encode_hex([ByRef] string json);
+    [Throws=DidSidekicksError]
+    string base58btc_encode_multihash([ByRef] string json);
+};
+
+interface EddsaJcs2022Cryptosuite {
+    [Name=from_signing_key]
+    constructor([ByRef] Ed25519SigningKey signing_key);
+    [Name=from_verifying_key]
+    constructor([ByRef] Ed25519VerifyingKey verifying_key);
+    [Throws=DidSidekicksError]
+    string add_proof([ByRef] string unsecured_document, [ByRef] CryptoSuiteProofOptions options);
+    [Throws=DidSidekicksError]
+    void verify_proof([ByRef] DataIntegrityProof proof, [ByRef] string doc_hash);
 };

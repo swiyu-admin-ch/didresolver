@@ -23,7 +23,7 @@ As advised by [uniffi-rs examples](https://github.com/mozilla/uniffi-rs/tree/mai
   jna_jar_url=https://repo1.maven.org/maven2/net/java/dev/jna/jna/$jna_ver/jna-$jna_ver.jar
   
   wget -q $jna_jar_url -P target
-  export CLASSPATH=target/jna-$jna_ver.jar
+  export CLASSPATH=$(pwd)/target/jna-$jna_ver.jar
   ``` 
 * Python 3
 * The [Swift command-line tools](https://swift.org/download/), particularly `swift`, `swiftc` and
