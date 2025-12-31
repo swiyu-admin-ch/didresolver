@@ -335,19 +335,14 @@ impl DataIntegrityProof {
     /// Converts this [`DataIntegrityProof`] to [`serde_json::Value`]
     #[inline]
     #[expect(clippy::indexing_slicing, reason = "panic-safe indexing")]
-    pub fn json_value(&self) -> Result<JsonValue, DidSidekicksError> {
-        let mut value = match serde_json::to_value(self) {
-            Ok(val) => val,
-            Err(err) => {
-                return Err(VCDataIntegrityError(format!(
-                    "Could not serialize proof: {err}"
-                )))
-            }
-        };
+    pub fn to_json_value(&self) -> JsonValue {
+        // CAUTION The type MUST implement the required trait (serde_derive::Serialize)
+        let mut value = json!(self);
 
         value["created"] =
             JsonValue::String(self.created.to_rfc3339_opts(SecondsFormat::Secs, true));
-        Ok(value)
+
+        value
     }
 
     /// Delivers first available update key
@@ -400,30 +395,29 @@ pub trait VCDataIntegrity {
 /// JSON Canonicalization Scheme [`RFC8785`](https://www.rfc-editor.org/rfc/rfc8785),
 /// and then cryptographically hashes and signs the output resulting in the production of a data integrity proof.
 pub struct EddsaJcs2022Cryptosuite {
-    verifying_key: Option<Ed25519VerifyingKey>,
+    verifying_key: Ed25519VerifyingKey,
     signing_key: Option<Ed25519SigningKey>,
+    hasher: JcsSha256Hasher,
 }
 
 impl EddsaJcs2022Cryptosuite {
-    /// The signing-capable constructor.
-    ///
-    /// A UniFFI-compliant constructor
+    /// The (UniFFI-compliant) signing-capable constructor.
     #[inline]
     pub fn from_signing_key(signing_key: &Ed25519SigningKey) -> Self {
         Self {
-            verifying_key: Some(signing_key.verifying_key()),
+            verifying_key: signing_key.verifying_key(),
             signing_key: Some(signing_key.to_owned()),
+            hasher: JcsSha256Hasher::default(),
         }
     }
 
-    /// The verifying-capable constructor.
-    ///
-    /// A UniFFI-compliant constructor
+    /// The (UniFFI-compliant) verifying-capable constructor.
     #[inline]
     pub fn from_verifying_key(verifying_key: &Ed25519VerifyingKey) -> Self {
         Self {
-            verifying_key: Some(verifying_key.to_owned()),
+            verifying_key: verifying_key.to_owned(),
             signing_key: None,
+            hasher: JcsSha256Hasher::default(),
         }
     }
 
@@ -441,17 +435,35 @@ impl EddsaJcs2022Cryptosuite {
             ))),
         }
     }
+
+    /// Being nothing but a wrapper of [`JcsSha256Hasher::encode_hex_json_value`],
+    /// this private helper is introduced for the sake of code condensation.
+    #[inline]
+    fn encode_hex_json_value(&self, json: &JsonValue) -> Result<String, DidSidekicksError> {
+        self.hasher.to_owned().encode_hex_json_value(json)
+    }
 }
 
 impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
-    // See https://www.w3.org/TR/vc-di-eddsa/#create-proof-eddsa-jcs-2022
+    /// As [specified](https://www.w3.org/TR/vc-di-eddsa/#create-proof-eddsa-jcs-2022).
+    ///
+    /// # Panics
+    ///
+    /// If the [`EddsaJcs2022Cryptosuite`] instance features no signing key (required for proof creation)
     #[inline]
     #[expect(clippy::indexing_slicing, reason = "panic-safe indexing")]
+    #[expect(clippy::panic, reason = "..")]
+    #[expect(clippy::panic_in_result_fn, reason = "..")]
+    #[expect(clippy::unwrap_used, reason = "panic-safe unwrap call")]
     fn add_proof_to_json_value(
         &self,
         unsecured_data_document: &JsonValue, // map that contains no proof values
         options: &CryptoSuiteProofOptions,
     ) -> Result<JsonValue, DidSidekicksError> {
+        if self.signing_key.is_none() {
+            panic!("the cryptosuite object features no signing key required for proof creation")
+        }
+
         // According to https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022:
         // If proofConfig.type is not set to DataIntegrityProof or proofConfig.cryptosuite is not set to eddsa-jcs-2022,
         // an error MUST be raised that SHOULD convey an error type of PROOF_GENERATION_ERROR.
@@ -461,6 +473,7 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
                 CryptoSuiteType::EddsaJcs2022
             )));
         }
+
         if options.proof_type != "DataIntegrityProof" {
             return Err(VCDataIntegrityError(
                 "Unsupported proof's type. Only 'DataIntegrityProof' is supported".to_owned(),
@@ -486,48 +499,35 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
             proof_without_proof_value["@context"] = json!(ctx);
         }
 
-        // See https://www.w3.org/TR/vc-di-eddsa/#hashing-eddsa-jcs-2022
+        // According to https://www.w3.org/TR/vc-di-eddsa/#hashing-eddsa-jcs-2022:
         // 1) Let transformedDocumentHash be the result of applying the SHA-256 (SHA-2 with 256-bit output)
         //    cryptographic hashing algorithm [RFC6234] to the transformedDocument.transformedDocumentHash will be exactly 32 bytes in size.
-        let doc_hash = JcsSha256Hasher::default().encode_hex_json_value(unsecured_data_document)?;
-
-        // See https://www.w3.org/TR/vc-di-eddsa/#hashing-eddsa-jcs-2022
         // 2) Let proofConfigHash be the result of applying the SHA-256 (SHA-2 with 256-bit output)
         //    cryptographic hashing algorithm [RFC6234] to the canonicalProofConfig.proofConfigHash will be exactly 32 bytes in size.
-        let proof_hash =
-            JcsSha256Hasher::default().encode_hex_json_value(&proof_without_proof_value)?;
-
-        // See https://www.w3.org/TR/vc-di-eddsa/#hashing-eddsa-jcs-2022
         // 3) Let hashData be the result of joining proofConfigHash (the first hash) with transformedDocumentHash (the second hash).
-        // CAUTION Since it's actually hex-encoded at this point, and raw bytes are required
-        let decoded_hash_data = match hex_decode(format!("{proof_hash}{doc_hash}")) {
-            Ok(hex_data) => hex_data,
-            Err(err) => {
-                return Err(VCDataIntegrityError(format!(
-                    "Unable to decode created hash: {err}"
-                )))
-            }
-        };
+        proof_without_proof_value["proofValue"] = JsonString(
+            self.signing_key
+                .to_owned() // move occurs because the underlying type does not implement the `Copy` trait
+                .unwrap() // at this point, it is panic-safe unwrap call
+                .sign_bytes(
+                    // raw bytes are required here (which hex_decode delivers)
+                    &hex_decode(format!(
+                        "{}{}",
+                        self.encode_hex_json_value(&proof_without_proof_value)?, // "proofConfigHash"
+                        self.encode_hex_json_value(unsecured_data_document)?, // "transformedDocumentHash"
+                    ))
+                    .map_err(|err| panic!("{err}"))?, // at this point, both "proofConfigHash" and "transformedDocumentHash" MUST be hex-encoded already
+                )
+                .to_multibase(),
+        );
 
-        let signature = match self.signing_key.to_owned() {
-            Some(signing_key) => signing_key.sign_bytes(&decoded_hash_data),
-            None => return Err(VCDataIntegrityError(
-                "Invalid eddsa cryptosuite. Signing key is missing but required for proof creation"
-                    .to_owned(),
-            )),
-        };
-        //let signature_hex = hex::encode(signature.signature.to_bytes()); // checkpoint
-
-        let proof_value = signature.to_multibase();
-        proof_without_proof_value["proofValue"] = JsonString(proof_value);
-        let mut secured_document = unsecured_data_document.clone();
+        let mut secured_document = unsecured_data_document.to_owned();
         secured_document["proof"] = json!([proof_without_proof_value]);
+
         Ok(secured_document)
     }
 
-    // See https://www.w3.org/TR/vc-di-eddsa/#proof-verification-eddsa-jcs-2022
-    // See https://www.w3.org/TR/vc-di-eddsa/#verify-proof-eddsa-jcs-2022
-
+    /// As [specified](https://www.w3.org/TR/vc-di-eddsa/#verify-proof-eddsa-jcs-2022).
     #[inline]
     #[expect(clippy::indexing_slicing, reason = "panic-safe indexing")]
     fn verify_proof(
@@ -545,6 +545,7 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
             "verificationMethod": proof.verification_method,
             "proofPurpose": proof.proof_purpose,
         });
+
         if let Some(challenge) = proof.challenge.to_owned() {
             proof_without_proof_value["challenge"] = json!(challenge) // EIDSYS-429
         }
@@ -556,29 +557,18 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
         // According to https://www.w3.org/TR/vc-di-eddsa/#hashing-eddsa-jcs-2022:
         // 2) Let proofConfigHash be the result of applying the SHA-256 (SHA-2 with 256-bit output)
         //    cryptographic hashing algorithm [RFC6234] to the canonicalProofConfig. proofConfigHash will be exactly 32 bytes in size.
-        let proof_hash =
-            JcsSha256Hasher::default().encode_hex_json_value(&proof_without_proof_value)?;
-
-        // According to https://www.w3.org/TR/vc-di-eddsa/#hashing-eddsa-jcs-2022:
         // 3) Let hashData be the result of joining proofConfigHash (the first hash) with transformedDocumentHash (the second hash).
-        let hash_data = format!("{proof_hash}{doc_hash}");
-
-        // REMINDER A "proof_value" (from DataIntegrityProof) is an Ed25519 signature
-        let signature = Ed25519Signature::from_multibase(proof.proof_value.as_str())?;
-
-        self.verifying_key.to_owned().map_or_else(
-            || {
-                Err(VCDataIntegrityError(
-                    "The cryptosuite features no verifying key required for proof verification"
-                        .to_owned(),
-                ))
-            },
-            |verifying_key| {
-                verifying_key
-                    // Strictly verify a signature on a message with this keypair's public key.
-                    // It may respond with: "signature error: Verification equation was not satisfied"
-                    .verify_strict_from_hex(&hash_data, &signature)
-            },
+        //
+        // Strictly verify a signature on a message with this keypair's public key.
+        // It may respond with: "signature error: Verification equation was not satisfied"
+        self.verifying_key.verify_strict_from_hex(
+            &format!(
+                "{}{}",
+                self.encode_hex_json_value(&proof_without_proof_value)?, // "proofConfigHash"
+                doc_hash                                                 // "transformedDocumentHash"
+            ),
+            // REMINDER A "proof_value" (from DataIntegrityProof) is nothing but a multibase-formatted Ed25519 signature
+            &Ed25519Signature::from_multibase(proof.proof_value.as_str())?,
         )
     }
 }
@@ -659,14 +649,12 @@ mod test {
     fn test_invalid_proof_parsing(
         #[case] input_str: String,
         #[case] error_string: &str,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) {
         assert_error(
             DataIntegrityProof::from_json_string(input_str),
             DidSidekicksErrorKind::InvalidIntegrityProof,
             error_string,
-        );
-
-        Ok(())
+        )
     }
 
     #[rstest]

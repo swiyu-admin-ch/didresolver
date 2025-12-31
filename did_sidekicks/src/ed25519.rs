@@ -50,6 +50,7 @@ impl MultiBaseConverter for Ed25519Signature {
     }
 }
 
+/// A [`SigningKey`] derivation implementing [`MultiBaseConverter`] trait.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Ed25519SigningKey {
     signing_key: SigningKey,
@@ -177,6 +178,7 @@ impl Ed25519SigningKey {
     }
 }
 
+/// A [`VerifyingKey`] derivation implementing [`MultiBaseConverter`] trait.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Ed25519VerifyingKey {
     verifying_key: VerifyingKey,

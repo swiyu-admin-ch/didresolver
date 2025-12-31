@@ -16,7 +16,7 @@ use sha2::{Digest as _, Sha256};
 ///
 /// It is capable of hashing any JSON structure
 /// w.r.t. JSON Canonicalization Scheme (JCS) [`RFC-8785`](https://datatracker.ietf.org/doc/html/rfc8785).
-//#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct JcsSha256Hasher {
     hasher: Sha256,
 }

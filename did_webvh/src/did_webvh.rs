@@ -366,15 +366,11 @@ impl DidLogEntry {
         if let Some(proof) = self.proof.to_owned() {
             let Some(first_proof) = proof.first() else {
                 return Err(DidResolverError::InvalidDataIntegrityProof(
-                    "Invalid did log. Proof is empty.".to_owned(),
+                    "Proof is empty.".to_owned(),
                 ));
             };
 
-            let first_proof_json_val = match first_proof.json_value() {
-                Ok(val) => val,
-                Err(err) => return Err(DidResolverError::SerializationFailed(format!("{err}"))),
-            };
-            entry[DID_LOG_ENTRY_PROOF] = json!(vec![first_proof_json_val]);
+            entry[DID_LOG_ENTRY_PROOF] = json!(vec![first_proof.to_json_value()]);
         }
 
         Ok(entry)

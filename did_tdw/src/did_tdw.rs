@@ -188,7 +188,9 @@ impl DidLogEntry {
         let entry_hash = JcsSha256Hasher::default()
             .base58btc_encode_multihash_json_value(&entry_line)
             .map_err(|err| {
-                DidResolverError::SerializationFailed(format!("Failed to base58btc-encode canonical JSON multihash: {err}"))
+                DidResolverError::SerializationFailed(format!(
+                    "Failed to base58btc-encode canonical JSON multihash: {err}"
+                ))
             })?;
 
         Ok(format!("{}-{}", self.version_index, entry_hash))
@@ -257,15 +259,8 @@ impl DidLogEntry {
                     Some(pr) => pr,
                     None => {
                         return Err(DidResolverError::InvalidDataIntegrityProof(
-                            "Invalid did log. Proof is empty.".to_owned(),
+                            "Proof is empty.".to_owned(),
                         ))
-                    }
-                };
-
-                let first_proof_json_val = match first_proof.json_value() {
-                    Ok(val) => val,
-                    Err(err) => {
-                        return Err(DidResolverError::SerializationFailed(format!("{err}")))
                     }
                 };
 
@@ -277,7 +272,7 @@ impl DidLogEntry {
                         "value": did_doc_json_value
                     },
 
-                    vec![first_proof_json_val]
+                    vec![first_proof.to_json_value()]
                 ]))
             }
             None => Ok(json!([
