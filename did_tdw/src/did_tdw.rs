@@ -13,6 +13,7 @@ use did_sidekicks::did_resolver::DidResolver;
 use did_sidekicks::ed25519::*;
 use did_sidekicks::errors::DidResolverError;
 use did_sidekicks::jcs_sha256_hasher::JcsSha256Hasher;
+use did_sidekicks::multibase::MultiBaseConvertible as _;
 use did_sidekicks::vc_data_integrity::*;
 use rayon::prelude::*;
 use regex;
@@ -121,14 +122,11 @@ impl DidLogEntry {
         let prev = self.prev_entry.as_ref().map_or(self, |err| err);
 
         for proof in proof_vec {
-            let update_key = match proof.extract_update_key() {
-                Ok(key) => key,
-                Err(err) => {
-                    return Err(DidResolverError::InvalidDataIntegrityProof(format!(
-                        "Failed to extract update key due to: {err}"
-                    )))
-                }
-            };
+            let update_key = proof.extract_update_key().map_err(|err| {
+                DidResolverError::InvalidDataIntegrityProof(format!(
+                    "Failed to extract update key due to: {err}"
+                ))
+            })?;
 
             let verifying_key = prev.is_key_authorized_for_update(update_key)?;
 

@@ -7,6 +7,25 @@ use core::cmp::PartialEq;
 /// See https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html#appendix-D.1
 pub const BASE58BTC_MULTIBASE_IDENTIFIER: &str = "z";
 
+/// The trait describes type conversion w.r.t [Multibase Data Format](https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html)
+///
+/// Raw binary data is often encoded using a mechanism that enables the data to be included in human-readable text-based formats.
+/// This mechanism is often referred to as "base-encoding the data" and is often used when expressing binary data in hyperlinks,
+/// cryptographic keys in web pages, or security tokens in application software.
+///
+/// There are a variety of base-encodings, such as base32, base58, and base64.
+/// To be able to differentiate one base-encoding from another, a multibase-encoded value always
+/// starts with a single character header, which identifies the base and encoding alphabet used to encode a binary value,
+/// followed by the encoded binary value (using that base and alphabet).
+pub trait MultiBaseConvertible {
+    /// The multibase-encoding method.
+    fn to_multibase(&self) -> String;
+    /// The type constructor from a multibase-encoded value.
+    fn from_multibase(multibase: &str) -> Result<Self, DidSidekicksError>
+    where
+        Self: Sized;
+}
+
 /// See https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html#appendix-D.1
 #[derive(PartialEq, Eq, Debug)]
 #[expect(

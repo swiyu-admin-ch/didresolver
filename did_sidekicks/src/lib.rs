@@ -38,6 +38,9 @@ use errors::*;
 use jcs_sha256_hasher::*;
 #[allow(unused_imports, reason = "required by the UniFFI compiler!")]
 #[expect(clippy::allow_attributes, reason = "..")]
+use multibase::*;
+#[allow(unused_imports, reason = "required by the UniFFI compiler!")]
+#[expect(clippy::allow_attributes, reason = "..")]
 use vc_data_integrity::*;
 
 uniffi::include_scaffolding!("did_sidekicks");

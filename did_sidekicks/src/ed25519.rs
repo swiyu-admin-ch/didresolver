@@ -5,9 +5,10 @@ use std::sync::Arc;
 
 use crate::errors::DidSidekicksError;
 use crate::errors::DidSidekicksError::{
-    KeyDeserializationFailed, KeySerializationFailed, MultibaseKeyConversionFailed,
+    KeyDeserializationFailed, KeySerializationFailed, KeySignatureError,
+    MultibaseKeyConversionFailed,
 };
-use crate::multibase::MultibaseEncoderDecoder as multibase;
+use crate::multibase::{MultiBaseConvertible, MultibaseEncoderDecoder};
 use ed25519_dalek::{
     pkcs8::{
         spki::der::pem::LineEnding, DecodePrivateKey as _, DecodePublicKey as _,
@@ -19,29 +20,31 @@ use ed25519_dalek::{
 use hex::FromHex as from_hex;
 use rand::rngs::OsRng;
 
-pub trait MultiBaseConverter {
-    fn to_multibase(&self) -> String;
-    fn from_multibase(multibase: &str) -> Result<Self, DidSidekicksError>
-    where
-        Self: Sized;
-}
-
-/// A [`Signature`] derivation implementing [`MultiBaseConverter`] trait.
+/// A (Ed25519) [`Signature`] derivation implementing [`MultiBaseConvertible`] trait.
+///
+/// This type represents a container for the byte serialization of an Ed25519
+/// signature, and does not necessarily represent well-formed field or curve
+/// elements.
+///
+/// Furthermore, the type supports (de)serialization w.r.t [Multibase Data Format].
+///
+/// [Multibase Data Format]: https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html
 #[derive(Clone)]
 pub struct Ed25519Signature {
     signature: Signature,
 }
-impl MultiBaseConverter for Ed25519Signature {
+impl MultiBaseConvertible for Ed25519Signature {
     #[inline]
     fn to_multibase(&self) -> String {
         let signature_bytes = self.signature.to_bytes();
-        multibase::default().encode_base58btc(&signature_bytes)
+        MultibaseEncoderDecoder::default().encode_base58btc(&signature_bytes)
     }
 
     #[inline]
     fn from_multibase(multibase: &str) -> Result<Self, DidSidekicksError> {
         let mut signature_bytes: [u8; SIGNATURE_LENGTH] = [0; SIGNATURE_LENGTH];
-        match multibase::default().decode_base58_onto(multibase, &mut signature_bytes) {
+        match MultibaseEncoderDecoder::default().decode_base58_onto(multibase, &mut signature_bytes)
+        {
             Err(err) => Err(MultibaseKeyConversionFailed(format!("{err}"))),
             Ok(_) => Ok(Self {
                 signature: Signature::from_bytes(&signature_bytes),
@@ -50,20 +53,31 @@ impl MultiBaseConverter for Ed25519Signature {
     }
 }
 
-/// A [`SigningKey`] derivation implementing [`MultiBaseConverter`] trait.
+/// A [`SigningKey`] derivation implementing [`MultiBaseConvertible`] trait.
+///
+/// Ed25519 secret key as defined in [RFC8032 § 5.1.5]:
+///
+/// > The private key is 32 octets (256 bits, corresponding to b) of
+/// > cryptographically secure random data.
+///
+/// Furthermore, the type supports (de)serialization w.r.t [Multibase Data Format].
+///
+/// [RFC8032 § 5.1.5]: https://www.rfc-editor.org/rfc/rfc8032#section-5.1.5
+/// [Multibase Data Format]: https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Ed25519SigningKey {
     signing_key: SigningKey,
 }
 
-/// As specified by https://www.w3.org/TR/controller-document/#Multikey
-impl MultiBaseConverter for Ed25519SigningKey {
-    /// As specified by https://www.w3.org/TR/controller-document/#Multikey:
+impl MultiBaseConvertible for Ed25519SigningKey {
+    /// As specified by [Multikey]:
     ///
     /// The encoding of an Ed25519 secret key MUST start with the two-byte prefix 0x8026 (the varint expression of 0x1300),
     /// followed by the 32-byte secret key data. The resulting 34-byte value MUST then be encoded using the base-58-btc alphabet,
     /// according to Section 2.4 Multibase (https://www.w3.org/TR/controller-document/#multibase-0),
     /// and then prepended with the base-58-btc Multibase header (z).
+    ///
+    /// [Multikey]: https://www.w3.org/TR/controller-document/#Multikey
     #[inline]
     fn to_multibase(&self) -> String {
         let signing_key_bytes = self.signing_key.to_bytes();
@@ -71,19 +85,22 @@ impl MultiBaseConverter for Ed25519SigningKey {
         signing_key_with_prefix[0] = 0x80;
         signing_key_with_prefix[1] = 0x26;
         signing_key_with_prefix[2..].copy_from_slice(&signing_key_bytes);
-        multibase::default().encode_base58btc(&signing_key_with_prefix)
+        MultibaseEncoderDecoder::default().encode_base58btc(&signing_key_with_prefix)
     }
 
-    /// As specified by https://www.w3.org/TR/controller-document/#Multikey:
+    /// As specified by [Multikey]:
     ///
     /// The encoding of an Ed25519 secret key MUST start with the two-byte prefix 0x8026 (the varint expression of 0x1300),
     /// followed by the 32-byte secret key data. The resulting 34-byte value MUST then be encoded using the base-58-btc alphabet,
     /// according to Section 2.4 Multibase (https://www.w3.org/TR/controller-document/#multibase-0),
     /// and then prepended with the base-58-btc Multibase header (z).
+    ///
+    /// [Multikey]: https://www.w3.org/TR/controller-document/#Multikey
     #[inline]
     fn from_multibase(multibase: &str) -> Result<Self, DidSidekicksError> {
         let mut signing_key_buff: [u8; SECRET_KEY_LENGTH + 2] = [0; SECRET_KEY_LENGTH + 2];
-        if let Err(err) = multibase::default().decode_base58_onto(multibase, &mut signing_key_buff)
+        if let Err(err) =
+            MultibaseEncoderDecoder::default().decode_base58_onto(multibase, &mut signing_key_buff)
         {
             return Err(MultibaseKeyConversionFailed(format!("{err}")));
         }
@@ -96,12 +113,14 @@ impl MultiBaseConverter for Ed25519SigningKey {
         })
     }
 }
+
 impl Ed25519SigningKey {
     #[inline]
     pub const fn new(signing_key: SigningKey) -> Self {
         Self { signing_key }
     }
 
+    /// Generate an ed25519 signing key
     #[inline]
     pub fn generate() -> Self {
         let mut csprng = OsRng;
@@ -109,7 +128,7 @@ impl Ed25519SigningKey {
         Self { signing_key }
     }
 
-    /// Deserialize PKCS#8-encoded private key from PEM.
+    /// Deserialize PKCS#8-encoded private key from PEM
     #[inline]
     pub fn from_pkcs8_pem(pkcs8_pem: &str) -> Result<Self, DidSidekicksError> {
         SigningKey::from_pkcs8_pem(pkcs8_pem).map_or_else(
@@ -123,7 +142,7 @@ impl Ed25519SigningKey {
         )
     }
 
-    /// Load public key object from a PEM-encoded file on the local filesystem.
+    /// Load public key object from a PEM-encoded file on the local filesystem
     #[inline]
     pub fn read_pkcs8_pem_file(pkcs8_pem_file: &str) -> Result<Self, DidSidekicksError> {
         SigningKey::read_pkcs8_pem_file(Path::new(pkcs8_pem_file)).map_or_else(
@@ -144,7 +163,7 @@ impl Ed25519SigningKey {
             .map_err(|err| KeySerializationFailed(format!("{err}")))
     }
 
-    /// Sign the given message and return a digital signature
+    /// Sign the given message and return a digital signature.
     ///
     /// UniFFI-compliant method
     #[inline]
@@ -152,7 +171,7 @@ impl Ed25519SigningKey {
         self.sign_bytes(message.as_bytes()).into()
     }
 
-    /// Sign the given message and return a digital signature
+    /// Sign the given message and return a digital signature.
     ///
     /// UniFFI-irrelevant
     #[inline]
@@ -178,21 +197,29 @@ impl Ed25519SigningKey {
     }
 }
 
-/// A [`VerifyingKey`] derivation implementing [`MultiBaseConverter`] trait.
+/// A [`VerifyingKey`] derivation implementing [`MultiBaseConvertible`] trait.
+///
+/// Represents an Ed25519 public key as defined in [RFC8032 § 5.1.5].
+///
+/// Furthermore, the type supports (de)serialization w.r.t [Multibase Data Format].
+///
+/// [RFC8032 § 5.1.5]: https://www.rfc-editor.org/rfc/rfc8032#section-5.1.5
+/// [Multibase Data Format]: https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Ed25519VerifyingKey {
     verifying_key: VerifyingKey,
 }
 
-/// As specified by https://www.w3.org/TR/controller-document/#Multikey
-impl MultiBaseConverter for Ed25519VerifyingKey {
-    /// As specified by https://www.w3.org/TR/controller-document/#Multikey:
+impl MultiBaseConvertible for Ed25519VerifyingKey {
+    /// As specified by [Multikey]:
     ///
     /// The encoding of an Ed25519 public key MUST start with the two-byte prefix 0xed01 (the varint expression of 0xed),
     /// followed by the 32-byte public key data.
     /// The resulting 34-byte value MUST then be encoded using the base-58-btc alphabet,
     /// according to Section 2.4 Multibase (https://www.w3.org/TR/controller-document/#multibase-0),
     /// and then prepended with the base-58-btc Multibase header (z).
+    ///
+    /// [Multikey]: https://www.w3.org/TR/controller-document/#Multikey
     #[inline]
     fn to_multibase(&self) -> String {
         let public_key_without_prefix = self.verifying_key.to_bytes();
@@ -200,21 +227,23 @@ impl MultiBaseConverter for Ed25519VerifyingKey {
         public_key_with_prefix[0] = 0xed;
         public_key_with_prefix[1] = 0x01;
         public_key_with_prefix[2..].copy_from_slice(&public_key_without_prefix);
-        multibase::default().encode_base58btc(&public_key_with_prefix)
+        MultibaseEncoderDecoder::default().encode_base58btc(&public_key_with_prefix)
     }
 
-    /// As specified by https://www.w3.org/TR/controller-document/#Multikey:
+    /// As specified by [Multikey]:
     ///
     /// The encoding of an Ed25519 public key MUST start with the two-byte prefix 0xed01 (the varint expression of 0xed),
     /// followed by the 32-byte public key data.
     /// The resulting 34-byte value MUST then be encoded using the base-58-btc alphabet,
     /// according to Section 2.4 Multibase (https://www.w3.org/TR/controller-document/#multibase-0),
     /// and then prepended with the base-58-btc Multibase header (z).
+    ///
+    /// [Multikey]: https://www.w3.org/TR/controller-document/#Multikey
     #[inline]
     fn from_multibase(multibase: &str) -> Result<Self, DidSidekicksError> {
         let mut verifying_key_buff: [u8; PUBLIC_KEY_LENGTH + 2] = [0; PUBLIC_KEY_LENGTH + 2];
-        if let Err(err) =
-            multibase::default().decode_base58_onto(multibase, &mut verifying_key_buff)
+        if let Err(err) = MultibaseEncoderDecoder::default()
+            .decode_base58_onto(multibase, &mut verifying_key_buff)
         {
             return Err(MultibaseKeyConversionFailed(format!("{err}")));
         }
@@ -252,7 +281,7 @@ impl Ed25519VerifyingKey {
         )
     }
 
-    /// Load public key object from a PEM-encoded file on the local filesystem.
+    /// Load public key object from a PEM-encoded file on the local filesystem
     #[inline]
     pub fn read_public_key_pem_file(public_key_pem_file: &str) -> Result<Self, DidSidekicksError> {
         VerifyingKey::read_public_key_pem_file(Path::new(public_key_pem_file)).map_or_else(
@@ -276,10 +305,14 @@ impl Ed25519VerifyingKey {
             .map_err(|err| KeySerializationFailed(format!("{err}")))
     }
 
-    /// Strictly verify a signature on a message with this keypair's public key.
+    /// Strictly verify a signature on a message with this public key.
     ///
     /// Basically, calling the method is the same as calling [`Self::verify_strict_bytes`],
     /// but with previous conversion from a `&str`.
+    ///
+    /// # Errors
+    ///
+    /// See [`Self::verify_strict_bytes`]
     #[inline]
     pub fn verify_strict(
         &self,
@@ -289,9 +322,14 @@ impl Ed25519VerifyingKey {
         self.verify_strict_bytes(message.as_bytes(), signature)
     }
 
-    /// Strictly verify a signature on a message with this keypair's public key.
+    /// Strictly verify a signature on a message with this public key.
     ///
-    /// UniFFI-irrelevant
+    /// UniFFI-irrelevant.
+    ///
+    /// # Errors
+    ///
+    /// [`KeySignatureError`] if:
+    /// - supplied `signature` is invalid in terms of [`VerifyingKey::verify_strict`]
     #[inline]
     pub fn verify_strict_bytes(
         &self,
@@ -302,13 +340,19 @@ impl Ed25519VerifyingKey {
         // It may respond with: "signature error: Verification equation was not satisfied"
         self.verifying_key
             .verify_strict(message_bytes, &signature.signature)
-            .map_err(|err| DidSidekicksError::InvalidDataIntegrityProof(format!("{err}")))
+            .map_err(|err| KeySignatureError(format!("{err}")))
     }
 
-    /// Strictly verify a signature on a hex message with this keypair's public key.
+    /// Strictly verify a signature on a hex message with this public key.
     ///
     /// Basically, calling the method is the same as calling [`Self::verify_strict_bytes`],
     /// but with previous decoding from a hex string.
+    ///
+    /// # Errors
+    ///
+    /// [`KeySignatureError`] if:
+    /// - `message_hex` is not hex-encoded
+    /// - supplied `signature` is invalid in terms of [`Self::verify_strict_bytes`]
     #[inline]
     pub fn verify_strict_from_hex(
         &self,
@@ -318,7 +362,7 @@ impl Ed25519VerifyingKey {
         let hash_data_decoded: [u8; 64] = match from_hex::from_hex(message_hex) {
             Ok(decoded_hash) => decoded_hash,
             Err(_) => {
-                return Err(DidSidekicksError::InvalidDataIntegrityProof(
+                return Err(KeySignatureError(
                     "Failed to decode from hex string.".to_owned(),
                 ))
             }

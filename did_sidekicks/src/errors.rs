@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: MIT
 
-//use std::cmp::PartialEq;
-
 /// Yet another UniFFI-compliant error.
 ///
 /// Resembles ssi::dids::resolution::Error
@@ -39,15 +37,32 @@ pub enum DidSidekicksError {
     /// Failed to load key
     #[error("failed to load key: {0}")]
     KeyDeserializationFailed(String),
+    /// Failure of a signature to satisfy the verification equation
+    #[error("failure of a signature to satisfy the verification equation: {0}")]
+    KeySignatureError(String),
     /// Failed to convert key from multibase format
     #[error("failed to convert key from multibase format: {0}")]
     MultibaseKeyConversionFailed(String),
     /// Non-existing key referenced in the DID document
     #[error("non-existing key referenced in the DID document: {0}")]
     NonExistingKeyReferenced(String),
-    /// General VC data integrity error
-    #[error("general VC data integrity error: {0}")]
-    VCDataIntegrityError(String),
+    /// A request to generate a proof failed, as specified by https://www.w3.org/TR/vc-data-integrity/#processing-errors
+    #[error("a request to generate a proof failed: {0}")]
+    VCDataIntegrityProofGenerationError(String),
+    /// An error was encountered during proof verification, as specified by https://www.w3.org/TR/vc-data-integrity/#processing-errors
+    #[error("an error was encountered during proof verification: {0}")]
+    VCDataIntegrityProofVerificationError(String),
+    /// An error was encountered during the transformation process, as specified by https://www.w3.org/TR/vc-data-integrity/#processing-errors
+    #[error("an error was encountered during the transformation process: {0}")]
+    VCDataIntegrityProofTransformationError(String),
+    /*
+    /// The domain value in a proof did not match the expected value, as specified by https://www.w3.org/TR/vc-data-integrity/#processing-errors
+    #[error("the domain value in a proof did not match the expected value: {0}")]
+    VCDataIntegrityInvalidDomainError(String),
+    /// The challenge value in a proof did not match the expected value, as specified by https://www.w3.org/TR/vc-data-integrity/#processing-errors
+    #[error("the challenge value in a proof did not match the expected value: {0}")]
+    VCDataIntegrityInvalidChallengeError(String),
+     */
 }
 
 impl DidSidekicksError {
@@ -63,10 +78,25 @@ impl DidSidekicksError {
             Self::JscHashingFailed(_) => DidSidekicksErrorKind::JscHashingFailed,
             Self::KeyNotFound(_) => DidSidekicksErrorKind::KeyNotFound,
             Self::KeySerializationFailed(_) => DidSidekicksErrorKind::KeySerializationFailed,
+            Self::KeySignatureError(_) => DidSidekicksErrorKind::KeySignatureError,
             Self::KeyDeserializationFailed(_) => DidSidekicksErrorKind::KeyDeserializationFailed,
-            Self::MultibaseKeyConversionFailed(_) => DidSidekicksErrorKind::MultibaseKeyConversionFailed,
+            Self::MultibaseKeyConversionFailed(_) => {
+                DidSidekicksErrorKind::MultibaseKeyConversionFailed
+            }
             Self::NonExistingKeyReferenced(_) => DidSidekicksErrorKind::NonExistingKeyReferenced,
-            Self::VCDataIntegrityError(_) => DidSidekicksErrorKind::VCDataIntegrityError,
+            Self::VCDataIntegrityProofGenerationError(_) => {
+                DidSidekicksErrorKind::VCDataIntegrityProofGenerationError
+            }
+            Self::VCDataIntegrityProofVerificationError(_) => {
+                DidSidekicksErrorKind::VCDataIntegrityProofVerificationError
+            }
+            Self::VCDataIntegrityProofTransformationError(_) => {
+                DidSidekicksErrorKind::VCDataIntegrityProofTransformationError
+            }
+            /*
+            Self::VCDataIntegrityInvalidDomainError(_) => DidSidekicksErrorKind::VCDataIntegrityInvalidDomainError,
+            Self::VCDataIntegrityInvalidChallengeError(_) => DidSidekicksErrorKind::VCDataIntegrityInvalidChallengeError,
+             */
         }
     }
 }
@@ -88,10 +118,17 @@ pub enum DidSidekicksErrorKind {
     JscHashingFailed,
     KeyNotFound,
     KeySerializationFailed,
+    KeySignatureError,
     KeyDeserializationFailed,
     MultibaseKeyConversionFailed,
     NonExistingKeyReferenced,
-    VCDataIntegrityError,
+    VCDataIntegrityProofGenerationError,
+    VCDataIntegrityProofVerificationError,
+    VCDataIntegrityProofTransformationError,
+    /*
+    VCDataIntegrityInvalidDomainError,
+    VCDataIntegrityInvalidChallengeError,
+     */
 }
 
 /// The error accompanying [`DidResolver`] trait.

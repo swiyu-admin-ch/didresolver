@@ -39,8 +39,9 @@ impl JcsSha256Hasher {
     ///
     /// # Errors
     ///
-    /// Serialization can fail if `T`'s implementation of `Serialize` decides to
-    /// fail, or if `T` contains a map with non-string keys.
+    /// [`JscHashingFailed`] if serialization fails due to:
+    /// - `T`'s implementation of `Serialize` decides to fail, or
+    /// - `T` contains a map with non-string keys.
     #[inline]
     pub fn encode_hex_json_value(&mut self, json: &JsonValue) -> Result<String, DidSidekicksError> {
         self.hasher.reset();

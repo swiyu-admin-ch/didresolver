@@ -2,8 +2,12 @@
 
 use crate::ed25519::*;
 use crate::errors::DidSidekicksError;
-use crate::errors::DidSidekicksError::{InvalidDataIntegrityProof, VCDataIntegrityError};
+use crate::errors::DidSidekicksError::{
+    InvalidDataIntegrityProof, VCDataIntegrityProofGenerationError,
+    VCDataIntegrityProofTransformationError, VCDataIntegrityProofVerificationError,
+};
 use crate::jcs_sha256_hasher::JcsSha256Hasher;
+use crate::multibase::MultiBaseConvertible as _;
 use chrono::{serde::ts_seconds, DateTime, SecondsFormat, Utc};
 use core::ops::Deref as _;
 use hex::decode as hex_decode;
@@ -110,7 +114,10 @@ impl CryptoSuiteProofOptions {
                     options.created = created.to_utc();
                 }
                 Err(err) => {
-                    return Err(VCDataIntegrityError(format!("{err}")));
+                    // According to https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022:
+                    // 3) If proofConfig.created is set to a value that is not a valid [XMLSCHEMA11-2] datetime,
+                    //    an error MUST be raised and SHOULD convey an error type of PROOF_GENERATION_ERROR.
+                    return Err(VCDataIntegrityProofGenerationError(format!("{err}")));
                 }
             };
         }
@@ -345,7 +352,13 @@ impl DataIntegrityProof {
         value
     }
 
-    /// Delivers first available update key
+    /// Delivers (`multibase` formatted public) update key, if any.
+    ///
+    /// # Errors
+    ///
+    /// [`InvalidDataIntegrityProof`] if `self.verification_method` meets at least one of the criteria:
+    /// - features no `did:key`
+    /// - is not `#`-delimited
     #[inline]
     #[expect(
         clippy::indexing_slicing,
@@ -357,13 +370,14 @@ impl DataIntegrityProof {
             let update_key_split = hash_separated.split('#').collect::<Vec<&str>>();
             if update_key_split.is_empty() {
                 return Err(InvalidDataIntegrityProof(
-                    "A proof's verificationMethod must be #-delimited".to_owned(),
+                    "A proof's 'verificationMethod' must be #-delimited".to_owned(),
                 ));
             }
+
             Ok(update_key_split[0].to_owned())
         } else {
             Err(InvalidDataIntegrityProof(
-                format!("Unsupported proof's verificationMethod (only 'did:key' is currently supported): {}", self.verification_method)
+                format!("Unsupported proof's 'verificationMethod' (only 'did:key' is currently supported): {}", self.verification_method)
             ))
         }
     }
@@ -430,7 +444,7 @@ impl EddsaJcs2022Cryptosuite {
     ) -> Result<String, DidSidekicksError> {
         match json_from_str(unsecured_data_document) {
             Ok(val) => Ok(self.add_proof_to_json_value(&val, options)?.to_string()),
-            Err(err) => Err(VCDataIntegrityError(format!(
+            Err(err) => Err(VCDataIntegrityProofTransformationError(format!(
                 "Failed to deserialize unsecured data document from a string of JSON text: {err}"
             ))),
         }
@@ -438,18 +452,30 @@ impl EddsaJcs2022Cryptosuite {
 
     /// Being nothing but a wrapper of [`JcsSha256Hasher::encode_hex_json_value`],
     /// this private helper is introduced for the sake of code condensation.
+    ///
+    /// # Errors
+    ///
+    /// [`VCDataIntegrityProofTransformationError`] if [`JcsSha256Hasher::encode_hex_json_value`] fails
     #[inline]
     fn encode_hex_json_value(&self, json: &JsonValue) -> Result<String, DidSidekicksError> {
-        self.hasher.to_owned().encode_hex_json_value(json)
+        self.hasher
+            .to_owned()
+            .encode_hex_json_value(json)
+            .map_err(|err| VCDataIntegrityProofTransformationError(format!("{err}")))
     }
 }
 
 impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
     /// As [specified](https://www.w3.org/TR/vc-di-eddsa/#create-proof-eddsa-jcs-2022).
     ///
+    /// # Errors
+    ///
+    /// - [`VCDataIntegrityProofVerificationError`] w.r.t. https://www.w3.org/TR/vc-di-eddsa/#transformation-eddsa-jcs-2022
+    /// - [`VCDataIntegrityProofTransformationError`] w.r.t. https://www.w3.org/TR/vc-di-eddsa/#transformation-eddsa-jcs-2022:
+    ///
     /// # Panics
     ///
-    /// If the [`EddsaJcs2022Cryptosuite`] instance features no signing key (required for proof creation)
+    /// If this [`EddsaJcs2022Cryptosuite`] instance features no signing key (required for proof creation)
     #[inline]
     #[expect(clippy::indexing_slicing, reason = "panic-safe indexing")]
     #[expect(clippy::panic, reason = "..")]
@@ -464,20 +490,19 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
             panic!("the cryptosuite object features no signing key required for proof creation")
         }
 
-        // According to https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022:
-        // If proofConfig.type is not set to DataIntegrityProof or proofConfig.cryptosuite is not set to eddsa-jcs-2022,
-        // an error MUST be raised that SHOULD convey an error type of PROOF_GENERATION_ERROR.
+        // According to https://www.w3.org/TR/vc-di-eddsa/#transformation-eddsa-jcs-2022:
+        // 1) If options.type is not set to the string DataIntegrityProof and options.cryptosuite is not set to the string eddsa-jcs-2022,
+        //    an error MUST be raised that SHOULD convey an error type of PROOF_VERIFICATION_ERROR.
+        if options.proof_type != "DataIntegrityProof" {
+            return Err(VCDataIntegrityProofVerificationError(
+                "Unsupported proof's type. Only 'DataIntegrityProof' is supported".to_owned(),
+            ));
+        }
         if !matches!(options.crypto_suite, CryptoSuiteType::EddsaJcs2022) {
-            return Err(VCDataIntegrityError(format!(
+            return Err(VCDataIntegrityProofVerificationError(format!(
                 "Unsupported proof's cryptosuite. Only '{}' is supported",
                 CryptoSuiteType::EddsaJcs2022
             )));
-        }
-
-        if options.proof_type != "DataIntegrityProof" {
-            return Err(VCDataIntegrityError(
-                "Unsupported proof's type. Only 'DataIntegrityProof' is supported".to_owned(),
-            ));
         }
 
         // See https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022
@@ -505,6 +530,11 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
         // 2) Let proofConfigHash be the result of applying the SHA-256 (SHA-2 with 256-bit output)
         //    cryptographic hashing algorithm [RFC6234] to the canonicalProofConfig.proofConfigHash will be exactly 32 bytes in size.
         // 3) Let hashData be the result of joining proofConfigHash (the first hash) with transformedDocumentHash (the second hash).
+        //
+        // According to https://www.w3.org/TR/vc-di-eddsa/#proof-serialization-eddsa-jcs-2022:
+        // 2) Let proofBytes be the result of applying the Edwards-Curve Digital Signature Algorithm (EdDSA) [RFC8032],
+        //    using the Ed25519 variant (Pure EdDSA), with hashData as the data to be signed using the private key specified by privateKeyBytes.
+        //    proofBytes will be exactly 64 bytes in size.
         proof_without_proof_value["proofValue"] = JsonString(
             self.signing_key
                 .to_owned() // move occurs because the underlying type does not implement the `Copy` trait
@@ -528,6 +558,12 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
     }
 
     /// As [specified](https://www.w3.org/TR/vc-di-eddsa/#verify-proof-eddsa-jcs-2022).
+    ///
+    /// # Errors
+    ///
+    /// - [`VCDataIntegrityProofTransformationError`] w.r.t. https://www.w3.org/TR/vc-di-eddsa/#transformation-eddsa-jcs-2022:
+    /// - [`DidSidekicksError::KeySignatureError`] if verification of a signature on a hex message
+    ///   with this verification key fails (see [`Ed25519VerifyingKey::verify_strict_from_hex`])
     #[inline]
     #[expect(clippy::indexing_slicing, reason = "panic-safe indexing")]
     fn verify_proof(
@@ -554,6 +590,11 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
             proof_without_proof_value["@context"] = json!(ctx);
         }
 
+        // According to https://www.w3.org/TR/vc-di-eddsa/#proof-verification-eddsa-jcs-2022:
+        // 3) Let verificationResult be the result of applying the verification algorithm for the
+        //    Edwards-Curve Digital Signature Algorithm (EdDSA) [RFC8032], using the Ed25519 variant (Pure EdDSA),
+        //    with hashData as the data to be verified against the proofBytes using the public key specified by publicKeyBytes.
+
         // According to https://www.w3.org/TR/vc-di-eddsa/#hashing-eddsa-jcs-2022:
         // 2) Let proofConfigHash be the result of applying the SHA-256 (SHA-2 with 256-bit output)
         //    cryptographic hashing algorithm [RFC6234] to the canonicalProofConfig. proofConfigHash will be exactly 32 bytes in size.
@@ -568,7 +609,8 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
                 doc_hash                                                 // "transformedDocumentHash"
             ),
             // REMINDER A "proof_value" (from DataIntegrityProof) is nothing but a multibase-formatted Ed25519 signature
-            &Ed25519Signature::from_multibase(proof.proof_value.as_str())?,
+            &Ed25519Signature::from_multibase(proof.proof_value.as_str())
+                .map_err(|err| VCDataIntegrityProofTransformationError(format!("{err}")))?,
         )
     }
 }
@@ -583,9 +625,10 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
     reason = "panic-safe as long as test case setup is correct"
 )]
 mod test {
-    use crate::ed25519::{Ed25519SigningKey, MultiBaseConverter as _};
+    use crate::ed25519::Ed25519SigningKey;
     use crate::errors::DidSidekicksErrorKind;
     use crate::jcs_sha256_hasher::JcsSha256Hasher;
+    use crate::multibase::MultiBaseConvertible as _;
     use crate::test::assert_error;
     use crate::vc_data_integrity::{
         CryptoSuiteProofOptions, DataIntegrityProof, EddsaJcs2022Cryptosuite, VCDataIntegrity as _,
@@ -646,10 +689,7 @@ mod test {
     #[case("[{\"type\":\"DataIntegrityProof\", \"cryptosuite\":\"eddsa-jcs-2022\", \"created\":\"2012-12-12T12:12:12Z\", \"verificationMethod\": \"did:key:123\", \"proofPurpose\":\"authentication\", \"challenge\":\"1-hash\", \"proofValue\":5}]",
         "Wrong format of proofValue parameter"
     )]
-    fn test_invalid_proof_parsing(
-        #[case] input_str: String,
-        #[case] error_string: &str,
-    ) {
+    fn test_invalid_proof_parsing(#[case] input_str: String, #[case] error_string: &str) {
         assert_error(
             DataIntegrityProof::from_json_string(input_str),
             DidSidekicksErrorKind::InvalidIntegrityProof,
