@@ -5,6 +5,7 @@ use crate::did_tdw_method_parameters::*;
 use crate::errors::*;
 use chrono::serde::ts_seconds;
 use chrono::{DateTime, SecondsFormat, Utc};
+use core::cmp::PartialEq as _;
 use did_sidekicks::did_doc::*;
 use did_sidekicks::did_jsonschema::{DidLogEntryJsonSchema, DidLogEntryValidator};
 use did_sidekicks::did_method_parameters::DidMethodParameter;
@@ -12,6 +13,7 @@ use did_sidekicks::did_resolver::DidResolver;
 use did_sidekicks::ed25519::*;
 use did_sidekicks::errors::DidResolverError;
 use did_sidekicks::jcs_sha256_hasher::JcsSha256Hasher;
+use did_sidekicks::multibase::MultiBaseConvertible as _;
 use did_sidekicks::vc_data_integrity::*;
 use rayon::prelude::*;
 use regex;
@@ -21,7 +23,6 @@ use serde_json::Value::Object as JsonObject;
 use serde_json::{
     from_str as json_from_str, json, to_string as json_to_string, Value as JsonValue,
 };
-use core::cmp::PartialEq as _;
 use std::collections::HashMap;
 use std::sync::Arc;
 use url::Url;
@@ -57,7 +58,7 @@ pub struct DidLogEntry {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proof: Option<Vec<DataIntegrityProof>>,
     #[serde(skip)]
-    pub prev_entry: Option<Arc<DidLogEntry>>, // Arc-ed to prevent "recursive without indirection"
+    pub prev_entry: Option<Arc<Self>>, // Arc-ed to prevent "recursive without indirection"
 }
 
 impl DidLogEntry {
@@ -121,14 +122,11 @@ impl DidLogEntry {
         let prev = self.prev_entry.as_ref().map_or(self, |err| err);
 
         for proof in proof_vec {
-            let update_key = match proof.extract_update_key() {
-                Ok(key) => key,
-                Err(err) => {
-                    return Err(DidResolverError::InvalidDataIntegrityProof(format!(
-                        "Failed to extract update key due to: {err}"
-                    )))
-                }
-            };
+            let update_key = proof.extract_update_key().map_err(|err| {
+                DidResolverError::InvalidDataIntegrityProof(format!(
+                    "Failed to extract update key due to: {err}"
+                ))
+            })?;
 
             let verifying_key = prev.is_key_authorized_for_update(update_key)?;
 
@@ -139,12 +137,9 @@ impl DidLogEntry {
                 )));
             }
 
-            let cryptosuite = EddsaJcs2022Cryptosuite {
-                verifying_key: Some(verifying_key),
-                signing_key: None,
-            };
-
-            match cryptosuite.verify_proof(&proof, self.did_doc_hash.as_str()) {
+            match EddsaJcs2022Cryptosuite::from_verifying_key(&verifying_key)
+                .verify_proof(&proof, self.did_doc_hash.as_str())
+            {
                 Ok(_) => (),
                 Err(err) => {
                     return Err(DidResolverError::InvalidDataIntegrityProof(format!(
@@ -189,9 +184,11 @@ impl DidLogEntry {
         };
         let entry_line = entry_without_proof.to_log_entry_line()?;
         let entry_hash = JcsSha256Hasher::default()
-            .base58btc_encode_multihash(&entry_line)
+            .base58btc_encode_multihash_json_value(&entry_line)
             .map_err(|err| {
-                DidResolverError::SerializationFailed(format!("Failed to encode multihash: {err}"))
+                DidResolverError::SerializationFailed(format!(
+                    "Failed to base58btc-encode canonical JSON multihash: {err}"
+                ))
             })?;
 
         Ok(format!("{}-{}", self.version_index, entry_hash))
@@ -260,15 +257,8 @@ impl DidLogEntry {
                     Some(pr) => pr,
                     None => {
                         return Err(DidResolverError::InvalidDataIntegrityProof(
-                            "Invalid did log. Proof is empty.".to_owned(),
+                            "Proof is empty.".to_owned(),
                         ))
-                    }
-                };
-
-                let first_proof_json_val = match first_proof.json_value() {
-                    Ok(val) => val,
-                    Err(err) => {
-                        return Err(DidResolverError::SerializationFailed(format!("{err}")))
                     }
                 };
 
@@ -280,7 +270,7 @@ impl DidLogEntry {
                         "value": did_doc_json_value
                     },
 
-                    vec![first_proof_json_val]
+                    vec![first_proof.to_json_value()]
                 ]))
             }
             None => Ok(json!([
@@ -303,7 +293,7 @@ impl DidLogEntry {
         ]);
 
         let hash = JcsSha256Hasher::default()
-            .base58btc_encode_multihash(&entry_with_placeholder_without_proof)?;
+            .base58btc_encode_multihash_json_value(&entry_with_placeholder_without_proof)?;
         Ok(hash)
     }
 }
@@ -459,7 +449,7 @@ impl TryFrom<String> for TrustDidWebDidLog {
                                 let did_doc_value: JsonValue = obj["value"].to_owned();
                                 if !did_doc_value.is_null() {
                                     did_doc_json = did_doc_value.to_string();
-                                    did_doc_hash = match JcsSha256Hasher::default().encode_hex(&did_doc_value) {
+                                    did_doc_hash = match JcsSha256Hasher::default().encode_hex_json_value(&did_doc_value) {
                                         Ok(did_doc_hash_value) => did_doc_hash_value,
                                         Err(err) => return Err(DidResolverError::DeserializationFailed(
                                             format!("Deserialization of DID document failed due to: {err}")
@@ -506,7 +496,7 @@ impl TryFrom<String> for TrustDidWebDidLog {
                         }
                     };
 
-                    let proof = match DataIntegrityProof::from(entry[4].to_string()) {
+                    let proof = match DataIntegrityProof::from_json_string(entry[4].to_string()) {
                         Ok(pr) => pr,
                         Err(err) => return Err(DidResolverError::DeserializationFailed(format!(
                             "Failed to deserialize data integrity proof due to: {err}"

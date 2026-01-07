@@ -2,13 +2,19 @@
 
 use crate::ed25519::*;
 use crate::errors::DidSidekicksError;
+use crate::errors::DidSidekicksError::{
+    InvalidDataIntegrityProof, VCDataIntegrityProofGenerationError,
+    VCDataIntegrityProofTransformationError, VCDataIntegrityProofVerificationError,
+};
 use crate::jcs_sha256_hasher::JcsSha256Hasher;
+use crate::multibase::MultiBaseConvertible as _;
 use chrono::{serde::ts_seconds, DateTime, SecondsFormat, Utc};
 use core::ops::Deref as _;
-use hex;
+use hex::decode as hex_decode;
 use serde::{Deserialize, Serialize};
 use serde_json::{
-    json, Value::Array as JsonArray, Value::Null as JsonNull, Value::String as JsonString,
+    from_str as json_from_str, json, Value as JsonValue, Value::Array as JsonArray,
+    Value::Null as JsonNull, Value::String as JsonString,
 };
 
 #[derive(Clone, Debug)]
@@ -89,14 +95,58 @@ impl CryptoSuiteProofOptions {
         options
     }
 
-    /// The default constructor aligned with https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022, hence:
+    /// The only UniFFI-compliant (super-potent) non-empty constructor.
     ///
-    /// - proof_type: "DataIntegrityProof"
-    /// - crypto_suite: "eddsa-jcs-2022"
-    /// - created: \<current datetime\>
-    /// - proof_purpose: "authentication"
-    #[expect(clippy::single_call_fn, reason = "..")]
-    pub(crate) fn default() -> Self {
+    /// As nearly all arguments are optional - see [`Self::default()`] constructor for default values.
+    #[inline]
+    pub fn new_eddsa_jcs_2022(
+        created_dt_rfc3339: Option<String>,
+        verification_method: String,
+        proof_purpose: Option<String>,
+        context: Option<Vec<String>>,
+        challenge: Option<String>,
+    ) -> Result<Self, DidSidekicksError> {
+        let mut options = Self::default();
+        if let Some(created_dt) = created_dt_rfc3339 {
+            // Parses the supplied RFC 3339 date-and-time string
+            match DateTime::parse_from_rfc3339(&created_dt) {
+                Ok(created) => {
+                    options.created = created.to_utc();
+                }
+                Err(err) => {
+                    // According to https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022:
+                    // 3) If proofConfig.created is set to a value that is not a valid [XMLSCHEMA11-2] datetime,
+                    //    an error MUST be raised and SHOULD convey an error type of PROOF_GENERATION_ERROR.
+                    return Err(VCDataIntegrityProofGenerationError(format!("{err}")));
+                }
+            };
+        }
+
+        options.verification_method = verification_method;
+        if let Some(purpose) = proof_purpose {
+            options.proof_purpose = purpose;
+        }
+
+        options.context = context;
+        if let Some(ch) = challenge {
+            options.challenge = ch.into();
+        }
+
+        Ok(options)
+    }
+}
+
+impl Default for CryptoSuiteProofOptions {
+    /// The default constructor aligned with [`eddsa-jcs-2022`], hence:
+    ///
+    /// - `proof_type: "DataIntegrityProof"`
+    /// - `crypto_suite: "eddsa-jcs-2022"`
+    /// - `created: <current datetime>`
+    /// - `proof_purpose: "authentication"`
+    ///
+    /// [`eddsa-jcs-2022` proof-configuration]: https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022
+    #[inline]
+    fn default() -> Self {
         Self {
             proof_type: "DataIntegrityProof".to_owned(),
             crypto_suite: CryptoSuiteType::EddsaJcs2022,
@@ -109,8 +159,9 @@ impl CryptoSuiteProofOptions {
     }
 }
 
-// See https://www.w3.org/TR/vc-data-integrity/#dataintegrityproof
-// For EdDSA Cryptosuites v1.0 suites, see https://www.w3.org/TR/vc-di-eddsa/#dataintegrityproof
+/// See https://www.w3.org/TR/vc-data-integrity/#dataintegrityproof
+///
+/// For EdDSA Cryptosuites v1.0 suites, see https://www.w3.org/TR/vc-di-eddsa/#dataintegrityproof
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[expect(clippy::exhaustive_structs, reason = "..")]
 pub struct DataIntegrityProof {
@@ -135,6 +186,8 @@ pub struct DataIntegrityProof {
 }
 impl DataIntegrityProof {
     /// The non-empty parsing constructor featuring validation in terms of supported type/proofPurpose/cryptosuite
+    ///
+    /// UniFFI-compliant constructor
     #[inline]
     // TODO Ensure panic-safe indexing
     #[expect(clippy::indexing_slicing, reason = "see TODO")]
@@ -142,11 +195,11 @@ impl DataIntegrityProof {
         clippy::wildcard_enum_match_arm,
         reason = "wildcard match ignorable as no further JSON variants are possible"
     )]
-    pub fn from(json: String) -> Result<Self, DidSidekicksError> {
-        let value = match serde_json::from_str(&json) {
+    pub fn from_json_string(json: String) -> Result<Self, DidSidekicksError> {
+        let value = match json_from_str(&json) {
             Ok(JsonArray(entry)) => {
                 if entry.len() > 1 {
-                    return Err(DidSidekicksError::InvalidDataIntegrityProof(
+                    return Err(InvalidDataIntegrityProof(
                         "A single proof is currently supported.".to_owned(),
                     ));
                 }
@@ -154,19 +207,19 @@ impl DataIntegrityProof {
                 match entry.first() {
                     Some(first) => first.clone(),
                     None => {
-                        return Err(DidSidekicksError::InvalidDataIntegrityProof(
+                        return Err(InvalidDataIntegrityProof(
                             "Empty proof array detected.".to_owned(),
                         ))
                     }
                 }
             }
             Err(err) => {
-                return Err(DidSidekicksError::InvalidDataIntegrityProof(format!(
+                return Err(InvalidDataIntegrityProof(format!(
                     "Malformed proof format, expected single-element JSON array: {err}"
                 )))
             }
             _ => {
-                return Err(DidSidekicksError::InvalidDataIntegrityProof(
+                return Err(InvalidDataIntegrityProof(
                     "Malformed proof format, expected single-element JSON array".to_owned(),
                 ))
             }
@@ -175,14 +228,14 @@ impl DataIntegrityProof {
             proof_type: match value["type"].to_owned() {
                 JsonString(str) => {
                     if str != "DataIntegrityProof" {
-                        return Err(DidSidekicksError::InvalidDataIntegrityProof(
+                        return Err(InvalidDataIntegrityProof(
                             "Unsupported proof's type. Expected 'DataIntegrityProof'".to_owned(),
                         ));
                     }
                     str
                 }
                 _ => {
-                    return Err(DidSidekicksError::InvalidDataIntegrityProof(
+                    return Err(InvalidDataIntegrityProof(
                         "Missing proof's type".to_owned(),
                     ))
                 }
@@ -190,7 +243,7 @@ impl DataIntegrityProof {
             crypto_suite: match value["cryptosuite"].to_owned() {
                 JsonString(str) => {
                     if str != CryptoSuiteType::EddsaJcs2022.to_string().deref() {
-                        return Err(DidSidekicksError::InvalidDataIntegrityProof(format!(
+                        return Err(InvalidDataIntegrityProof(format!(
                             "Unsupported proof's cryptosuite. Expected '{}'",
                             CryptoSuiteType::EddsaJcs2022
                         )));
@@ -198,7 +251,7 @@ impl DataIntegrityProof {
                     str
                 }
                 _ => {
-                    return Err(DidSidekicksError::InvalidDataIntegrityProof(
+                    return Err(InvalidDataIntegrityProof(
                         "Missing proof's cryptosuite".to_owned(),
                     ))
                 }
@@ -207,18 +260,18 @@ impl DataIntegrityProof {
             created: match value["created"].to_owned() {
                 JsonString(str) => match DateTime::parse_from_rfc3339(&str) {
                     Ok(date) => date.to_utc(),
-                    Err(err) => return Err(DidSidekicksError::InvalidDataIntegrityProof(
+                    Err(err) => return Err(InvalidDataIntegrityProof(
                         format!("Invalid proof's creation datetime format: {err}"),
                     ))
                 },
-                _ =>  return Err(DidSidekicksError::InvalidDataIntegrityProof(
+                _ => return Err(InvalidDataIntegrityProof(
                     "Missing proof's creation datetime.".to_owned(),
                 )),
             },
             verification_method: match value["verificationMethod"].to_owned() {
                 JsonString(str) => {
                     if !str.starts_with("did:key:") {
-                        return Err(DidSidekicksError::InvalidDataIntegrityProof(
+                        return Err(InvalidDataIntegrityProof(
                             "Unsupported proof's verificationMethod. Expected prefix 'did:key:'"
                                 .to_owned(),
                         ));
@@ -226,7 +279,7 @@ impl DataIntegrityProof {
                     str
                 }
                 _ => {
-                    return Err(DidSidekicksError::InvalidDataIntegrityProof(
+                    return Err(InvalidDataIntegrityProof(
                         "Missing proof's verificationMethod".to_owned(),
                     ))
                 }
@@ -234,7 +287,7 @@ impl DataIntegrityProof {
             proof_purpose: match value["proofPurpose"].to_owned() {
                 JsonString(str) => {
                     if str != "authentication" && str != "assertionMethod" {
-                        return Err(DidSidekicksError::InvalidDataIntegrityProof(
+                        return Err(InvalidDataIntegrityProof(
                             "Unsupported proof's proofPurpose. Expected 'authentication' or 'assertionMethod'"
                                 .to_owned(),
                         ));
@@ -242,7 +295,7 @@ impl DataIntegrityProof {
                     str
                 }
                 _ => {
-                    return Err(DidSidekicksError::InvalidDataIntegrityProof(
+                    return Err(InvalidDataIntegrityProof(
                         "Missing proof's proofPurpose".to_owned(),
                     ))
                 }
@@ -256,7 +309,7 @@ impl DataIntegrityProof {
                                     acc.push(str);
                                     Ok(acc)
                                 }
-                                _ => Err(DidSidekicksError::InvalidDataIntegrityProof(
+                                _ => Err(InvalidDataIntegrityProof(
                                     "Invalid type of 'context' entry, expected a string."
                                         .to_owned(),
                                 )),
@@ -264,48 +317,49 @@ impl DataIntegrityProof {
                     )
                 }
                 JsonNull => None,
-                _ => return Err(DidSidekicksError::InvalidDataIntegrityProof(
+                _ => return Err(InvalidDataIntegrityProof(
                     "Invalid format of 'context' entry, expected array of strings.".to_owned(),
                 )),
             },
             challenge: match value["challenge"].to_owned() {
                 JsonString(str) => Some(str),
                 JsonNull => None,
-                _ => return Err(DidSidekicksError::InvalidDataIntegrityProof(
+                _ => return Err(InvalidDataIntegrityProof(
                     "Wrong format of proof's challenge parameter. Expected a challenge of type string.".to_owned(),
                 ))
             },
             proof_value: match value["proofValue"].to_owned() {
                 JsonString(str) => str,
-                JsonNull => return Err(DidSidekicksError::InvalidDataIntegrityProof(
+                JsonNull => return Err(InvalidDataIntegrityProof(
                     "Missing proofValue parameter. Expected a proofValue of type string.".to_owned(),
                 )),
-                _ => return Err(DidSidekicksError::InvalidDataIntegrityProof(
+                _ => return Err(InvalidDataIntegrityProof(
                     "Wrong format of proofValue parameter. Expected a proofValue of type string.".to_owned(),
                 ))
             },
         })
     }
 
-    /// Construct a serde_json::Value from this DataIntegrityProof
+    /// Converts this [`DataIntegrityProof`] to [`serde_json::Value`]
     #[inline]
     #[expect(clippy::indexing_slicing, reason = "panic-safe indexing")]
-    pub fn json_value(&self) -> Result<serde_json::Value, DidSidekicksError> {
-        let mut value = match serde_json::to_value(self) {
-            Ok(val) => val,
-            Err(err) => {
-                return Err(DidSidekicksError::SerializationFailed(format!(
-                    "Could not serialize proof: {err}"
-                )))
-            }
-        };
+    pub fn to_json_value(&self) -> JsonValue {
+        // CAUTION The type MUST implement the required trait (serde_derive::Serialize)
+        let mut value = json!(self);
 
         value["created"] =
-            serde_json::Value::String(self.created.to_rfc3339_opts(SecondsFormat::Secs, true));
-        Ok(value)
+            JsonValue::String(self.created.to_rfc3339_opts(SecondsFormat::Secs, true));
+
+        value
     }
 
-    /// Delivers first available update key
+    /// Delivers (`multibase` formatted public) update key, if any.
+    ///
+    /// # Errors
+    ///
+    /// [`InvalidDataIntegrityProof`] if `self.verification_method` meets at least one of the criteria:
+    /// - features no `did:key`
+    /// - is not `#`-delimited
     #[inline]
     #[expect(
         clippy::indexing_slicing,
@@ -316,14 +370,15 @@ impl DataIntegrityProof {
             let hash_separated = self.verification_method.to_owned().replace("did:key:", "");
             let update_key_split = hash_separated.split('#').collect::<Vec<&str>>();
             if update_key_split.is_empty() {
-                return Err(DidSidekicksError::InvalidDataIntegrityProof(
-                    "A proof's verificationMethod must be #-delimited".to_owned(),
+                return Err(InvalidDataIntegrityProof(
+                    "A proof's 'verificationMethod' must be #-delimited".to_owned(),
                 ));
             }
+
             Ok(update_key_split[0].to_owned())
         } else {
-            Err(DidSidekicksError::InvalidDataIntegrityProof(
-                format!("Unsupported proof's verificationMethod (only 'did:key' is currently supported): {}", self.verification_method)
+            Err(InvalidDataIntegrityProof(
+                format!("Unsupported proof's 'verificationMethod' (only 'did:key' is currently supported): {}", self.verification_method)
             ))
         }
     }
@@ -334,13 +389,14 @@ impl DataIntegrityProof {
 /// Function in this class are based on algorithm section in the vc-data-integrity spec
 /// https://www.w3.org/TR/vc-data-integrity/#algorithms
 pub trait VCDataIntegrity {
-    // See https://www.w3.org/TR/vc-data-integrity/#add-proof
-    fn add_proof(
+    /// As specified by https://www.w3.org/TR/vc-data-integrity/#add-proof
+    fn add_proof_to_json_value(
         &self,
-        unsecured_document: &serde_json::Value,
+        unsecured_data_document: &JsonValue, // map that contains no proof values
         options: &CryptoSuiteProofOptions,
-    ) -> Result<serde_json::Value, DidSidekicksError>;
-    // See https://www.w3.org/TR/vc-data-integrity/#verify-proof
+    ) -> Result<JsonValue, DidSidekicksError>;
+
+    /// As specified by https://www.w3.org/TR/vc-data-integrity/#verify-proof
     fn verify_proof(
         &self,
         proof: &DataIntegrityProof,
@@ -348,35 +404,108 @@ pub trait VCDataIntegrity {
     ) -> Result<(), DidSidekicksError>;
 }
 
-#[expect(clippy::exhaustive_structs, reason = "..")]
+/// The [`eddsa-jcs-2022`] cryptographic suite.
+///
+/// It takes an input document, canonicalizes the document using the JSON Canonicalization Scheme [`RFC8785`],
+/// and then cryptographically hashes and signs the output resulting in the production of a data integrity proof.
+/// 
+/// [`eddsa-jcs-2022`]: https://w3c.github.io/vc-di-eddsa/#eddsa-jcs-2022
+/// [`RFC8785`]: https://www.rfc-editor.org/rfc/rfc8785
 pub struct EddsaJcs2022Cryptosuite {
-    pub verifying_key: Option<Ed25519VerifyingKey>,
-    pub signing_key: Option<Ed25519SigningKey>,
+    verifying_key: Ed25519VerifyingKey,
+    signing_key: Option<Ed25519SigningKey>,
+    hasher: JcsSha256Hasher,
 }
 
-// NOTE Only https://www.w3.org/TR/vc-di-eddsa/#eddsa-jcs-2022 is currently supported
+impl EddsaJcs2022Cryptosuite {
+    /// The (UniFFI-compliant) signing-capable constructor.
+    #[inline]
+    pub fn from_signing_key(signing_key: &Ed25519SigningKey) -> Self {
+        Self {
+            verifying_key: signing_key.verifying_key(),
+            signing_key: Some(signing_key.to_owned()),
+            hasher: JcsSha256Hasher::default(),
+        }
+    }
+
+    /// The (UniFFI-compliant) verifying-capable constructor.
+    #[inline]
+    pub fn from_verifying_key(verifying_key: &Ed25519VerifyingKey) -> Self {
+        Self {
+            verifying_key: verifying_key.to_owned(),
+            signing_key: None,
+            hasher: JcsSha256Hasher::default(),
+        }
+    }
+
+    /// The UniFFI-compliant wrapper of [`Self::add_proof_to_json_value`]
+    #[inline]
+    pub fn add_proof(
+        &self,
+        unsecured_data_document: &str,
+        options: &CryptoSuiteProofOptions,
+    ) -> Result<String, DidSidekicksError> {
+        match json_from_str(unsecured_data_document) {
+            Ok(val) => Ok(self.add_proof_to_json_value(&val, options)?.to_string()),
+            Err(err) => Err(VCDataIntegrityProofTransformationError(format!(
+                "Failed to deserialize unsecured data document from a string of JSON text: {err}"
+            ))),
+        }
+    }
+
+    /// Being nothing but a wrapper of [`JcsSha256Hasher::encode_hex_json_value`],
+    /// this private helper is introduced for the sake of code condensation.
+    ///
+    /// # Errors
+    ///
+    /// [`VCDataIntegrityProofTransformationError`] if [`JcsSha256Hasher::encode_hex_json_value`] fails
+    #[inline]
+    fn encode_hex_json_value(&self, json: &JsonValue) -> Result<String, DidSidekicksError> {
+        self.hasher
+            .to_owned()
+            .encode_hex_json_value(json)
+            .map_err(|err| VCDataIntegrityProofTransformationError(format!("{err}")))
+    }
+}
+
 impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
-    // See https://www.w3.org/TR/vc-di-eddsa/#create-proof-eddsa-jcs-2022
+    /// As [specified](https://www.w3.org/TR/vc-di-eddsa/#create-proof-eddsa-jcs-2022).
+    ///
+    /// # Errors
+    ///
+    /// - [`VCDataIntegrityProofVerificationError`] w.r.t. https://www.w3.org/TR/vc-di-eddsa/#transformation-eddsa-jcs-2022
+    /// - [`VCDataIntegrityProofTransformationError`] w.r.t. https://www.w3.org/TR/vc-di-eddsa/#transformation-eddsa-jcs-2022:
+    ///
+    /// # Panics
+    ///
+    /// If this [`EddsaJcs2022Cryptosuite`] instance features no signing key (required for proof creation)
     #[inline]
     #[expect(clippy::indexing_slicing, reason = "panic-safe indexing")]
-    fn add_proof(
+    #[expect(clippy::panic, reason = "..")]
+    #[expect(clippy::panic_in_result_fn, reason = "..")]
+    #[expect(clippy::unwrap_used, reason = "panic-safe unwrap call")]
+    fn add_proof_to_json_value(
         &self,
-        unsecured_document: &serde_json::Value,
+        unsecured_data_document: &JsonValue, // map that contains no proof values
         options: &CryptoSuiteProofOptions,
-    ) -> Result<serde_json::Value, DidSidekicksError> {
-        // According to https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022:
-        // If proofConfig.type is not set to DataIntegrityProof or proofConfig.cryptosuite is not set to eddsa-jcs-2022,
-        // an error MUST be raised that SHOULD convey an error type of PROOF_GENERATION_ERROR.
+    ) -> Result<JsonValue, DidSidekicksError> {
+        if self.signing_key.is_none() {
+            panic!("the cryptosuite object features no signing key required for proof creation")
+        }
+
+        // According to https://www.w3.org/TR/vc-di-eddsa/#transformation-eddsa-jcs-2022:
+        // 1) If options.type is not set to the string DataIntegrityProof and options.cryptosuite is not set to the string eddsa-jcs-2022,
+        //    an error MUST be raised that SHOULD convey an error type of PROOF_VERIFICATION_ERROR.
+        if options.proof_type != "DataIntegrityProof" {
+            return Err(VCDataIntegrityProofVerificationError(
+                "Unsupported proof's type. Only 'DataIntegrityProof' is supported".to_owned(),
+            ));
+        }
         if !matches!(options.crypto_suite, CryptoSuiteType::EddsaJcs2022) {
-            return Err(DidSidekicksError::InvalidDataIntegrityProof(format!(
+            return Err(VCDataIntegrityProofVerificationError(format!(
                 "Unsupported proof's cryptosuite. Only '{}' is supported",
                 CryptoSuiteType::EddsaJcs2022
             )));
-        }
-        if options.proof_type != "DataIntegrityProof" {
-            return Err(DidSidekicksError::InvalidDataIntegrityProof(
-                "Unsupported proof's type. Only 'DataIntegrityProof' is supported".to_owned(),
-            ));
         }
 
         // See https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022
@@ -392,65 +521,52 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
             proof_without_proof_value["challenge"] = json!(challenge);
         }
 
+        // According to https://www.w3.org/TR/vc-di-eddsa/#create-proof-eddsa-jcs-2022:
+        // 2) If unsecuredDocument.@context is present, set proof.@context to unsecuredDocument.@context.
         if let Some(ctx) = options.context.to_owned() {
             proof_without_proof_value["@context"] = json!(ctx);
         }
 
-        // See https://www.w3.org/TR/vc-di-eddsa/#hashing-eddsa-jcs-2022
+        // According to https://www.w3.org/TR/vc-di-eddsa/#hashing-eddsa-jcs-2022:
         // 1) Let transformedDocumentHash be the result of applying the SHA-256 (SHA-2 with 256-bit output)
-        //    cryptographic hashing algorithm [RFC6234] to the transformedDocument. transformedDocumentHash will be exactly 32 bytes in size.
-        let doc_hash = match JcsSha256Hasher::default().encode_hex(unsecured_document) {
-            Ok(doc_hash) => doc_hash,
-            Err(err) => {
-                return Err(DidSidekicksError::InvalidDataIntegrityProof(format!(
-                    "Could not serialize document for hash generation: {err}"
-                )))
-            }
-        };
-
-        // See https://www.w3.org/TR/vc-di-eddsa/#hashing-eddsa-jcs-2022
+        //    cryptographic hashing algorithm [RFC6234] to the transformedDocument.transformedDocumentHash will be exactly 32 bytes in size.
         // 2) Let proofConfigHash be the result of applying the SHA-256 (SHA-2 with 256-bit output)
-        //    cryptographic hashing algorithm [RFC6234] to the canonicalProofConfig. proofConfigHash will be exactly 32 bytes in size.
-        let proof_hash = match JcsSha256Hasher::default().encode_hex(&proof_without_proof_value) {
-            Ok(proof_hash) => proof_hash,
-            Err(err) => {
-                return Err(DidSidekicksError::InvalidDataIntegrityProof(format!(
-                    "Could not serialize proof: {err}"
-                )))
-            }
-        };
-
-        // See https://www.w3.org/TR/vc-di-eddsa/#hashing-eddsa-jcs-2022
+        //    cryptographic hashing algorithm [RFC6234] to the canonicalProofConfig.proofConfigHash will be exactly 32 bytes in size.
         // 3) Let hashData be the result of joining proofConfigHash (the first hash) with transformedDocumentHash (the second hash).
-        // CAUTION Since it's actually hex-encoded at this point, and raw bytes are required
-        let decoded_hex_data = match hex::decode(format!("{proof_hash}{doc_hash}")) {
-            Ok(hex_data) => hex_data,
-            Err(err) => {
-                return Err(DidSidekicksError::InvalidDataIntegrityProof(format!(
-                    "Unable to decode created hash: {err}"
-                )))
-            }
-        };
+        //
+        // According to https://www.w3.org/TR/vc-di-eddsa/#proof-serialization-eddsa-jcs-2022:
+        // 2) Let proofBytes be the result of applying the Edwards-Curve Digital Signature Algorithm (EdDSA) [RFC8032],
+        //    using the Ed25519 variant (Pure EdDSA), with hashData as the data to be signed using the private key specified by privateKeyBytes.
+        //    proofBytes will be exactly 64 bytes in size.
+        proof_without_proof_value["proofValue"] = JsonString(
+            self.signing_key
+                .to_owned() // move occurs because the underlying type does not implement the `Copy` trait
+                .unwrap() // at this point, it is panic-safe unwrap call
+                .sign_bytes(
+                    // raw bytes are required here (which hex_decode delivers)
+                    &hex_decode(format!(
+                        "{}{}",
+                        self.encode_hex_json_value(&proof_without_proof_value)?, // "proofConfigHash"
+                        self.encode_hex_json_value(unsecured_data_document)?, // "transformedDocumentHash"
+                    ))
+                    .map_err(|err| panic!("{err}"))?, // at this point, both "proofConfigHash" and "transformedDocumentHash" MUST be hex-encoded already
+                )
+                .to_multibase(),
+        );
 
-        let signature = match self.signing_key.to_owned() {
-            Some(signing_key) => signing_key.sign_bytes(&decoded_hex_data),
-            None => return Err(DidSidekicksError::InvalidDataIntegrityProof(
-                "Invalid eddsa cryptosuite. Signing key is missing but required for proof creation"
-                    .to_owned(),
-            )),
-        };
-        //let signature_hex = hex::encode(signature.signature.to_bytes()); // checkpoint
-
-        let proof_value = signature.to_multibase();
-        proof_without_proof_value["proofValue"] = JsonString(proof_value);
-        let mut secured_document = unsecured_document.clone();
+        let mut secured_document = unsecured_data_document.to_owned();
         secured_document["proof"] = json!([proof_without_proof_value]);
+
         Ok(secured_document)
     }
 
-    // See https://www.w3.org/TR/vc-di-eddsa/#proof-verification-eddsa-jcs-2022
-    // See https://www.w3.org/TR/vc-di-eddsa/#verify-proof-eddsa-jcs-2022
-
+    /// As [specified](https://www.w3.org/TR/vc-di-eddsa/#verify-proof-eddsa-jcs-2022).
+    ///
+    /// # Errors
+    ///
+    /// - [`VCDataIntegrityProofTransformationError`] w.r.t. https://www.w3.org/TR/vc-di-eddsa/#transformation-eddsa-jcs-2022:
+    /// - [`DidSidekicksError::KeySignatureError`] if verification of a signature on a hex message
+    ///   with this verification key fails (see [`Ed25519VerifyingKey::verify_strict_from_hex`])
     #[inline]
     #[expect(clippy::indexing_slicing, reason = "panic-safe indexing")]
     fn verify_proof(
@@ -468,6 +584,7 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
             "verificationMethod": proof.verification_method,
             "proofPurpose": proof.proof_purpose,
         });
+
         if let Some(challenge) = proof.challenge.to_owned() {
             proof_without_proof_value["challenge"] = json!(challenge) // EIDSYS-429
         }
@@ -476,37 +593,28 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
             proof_without_proof_value["@context"] = json!(ctx);
         }
 
-        // See https://www.w3.org/TR/vc-di-eddsa/#hashing-eddsa-jcs-2022
+        // According to https://www.w3.org/TR/vc-di-eddsa/#proof-verification-eddsa-jcs-2022:
+        // 3) Let verificationResult be the result of applying the verification algorithm for the
+        //    Edwards-Curve Digital Signature Algorithm (EdDSA) [RFC8032], using the Ed25519 variant (Pure EdDSA),
+        //    with hashData as the data to be verified against the proofBytes using the public key specified by publicKeyBytes.
+
+        // According to https://www.w3.org/TR/vc-di-eddsa/#hashing-eddsa-jcs-2022:
         // 2) Let proofConfigHash be the result of applying the SHA-256 (SHA-2 with 256-bit output)
         //    cryptographic hashing algorithm [RFC6234] to the canonicalProofConfig. proofConfigHash will be exactly 32 bytes in size.
-        let proof_hash = match JcsSha256Hasher::default().encode_hex(&proof_without_proof_value) {
-            Ok(proof_hash) => proof_hash,
-            Err(err) => {
-                return Err(DidSidekicksError::InvalidDataIntegrityProof(format!(
-                    "Could not serialize proof: {err}"
-                )))
-            }
-        };
-
-        let signature = Ed25519Signature::from_multibase(proof.proof_value.as_str())?;
-
-        match self.verifying_key.to_owned() {
-            Some(verifying_key) => {
-                let hash_data_decoded: [u8; 64] = match hex::FromHex::from_hex(format!("{proof_hash}{doc_hash}")) {
-                    Ok(decoded_hash) => decoded_hash,
-                    Err(_) => return Err(DidSidekicksError::InvalidDataIntegrityProof(
-                        "Cannot decode hash value from hex.".to_owned()
-                    ))
-                };
-                // Strictly verify a signature on a message with this keypair's public key.
-                // It may respond with: "signature error: Verification equation was not satisfied"
-                verifying_key.verifying_key.verify_strict(&hash_data_decoded, &signature.signature)
-                    .map_err(|err| DidSidekicksError::InvalidDataIntegrityProof(format!("{err}")))
-            }
-            None => Err(DidSidekicksError::InvalidDataIntegrityProof(
-                "Invalid eddsa cryptosuite. Verifying key is missing but required for proof verification".to_owned()
-            ))
-        }
+        // 3) Let hashData be the result of joining proofConfigHash (the first hash) with transformedDocumentHash (the second hash).
+        //
+        // Strictly verify a signature on a message with this keypair's public key.
+        // It may respond with: "signature error: Verification equation was not satisfied"
+        self.verifying_key.verify_strict_from_hex(
+            &format!(
+                "{}{}",
+                self.encode_hex_json_value(&proof_without_proof_value)?, // "proofConfigHash"
+                doc_hash                                                 // "transformedDocumentHash"
+            ),
+            // REMINDER A "proof_value" (from DataIntegrityProof) is nothing but a multibase-formatted Ed25519 signature
+            &Ed25519Signature::from_multibase(proof.proof_value.as_str())
+                .map_err(|err| VCDataIntegrityProofTransformationError(format!("{err}")))?,
+        )
     }
 }
 
@@ -520,14 +628,14 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
     reason = "panic-safe as long as test case setup is correct"
 )]
 mod test {
-    use crate::ed25519::{Ed25519SigningKey, Ed25519VerifyingKey, MultiBaseConverter as _};
+    use crate::ed25519::Ed25519SigningKey;
     use crate::errors::DidSidekicksErrorKind;
     use crate::jcs_sha256_hasher::JcsSha256Hasher;
+    use crate::multibase::MultiBaseConvertible as _;
     use crate::test::assert_error;
     use crate::vc_data_integrity::{
         CryptoSuiteProofOptions, DataIntegrityProof, EddsaJcs2022Cryptosuite, VCDataIntegrity as _,
     };
-    use chrono::DateTime;
     use rstest::rstest;
     use serde_json::json;
 
@@ -584,17 +692,12 @@ mod test {
     #[case("[{\"type\":\"DataIntegrityProof\", \"cryptosuite\":\"eddsa-jcs-2022\", \"created\":\"2012-12-12T12:12:12Z\", \"verificationMethod\": \"did:key:123\", \"proofPurpose\":\"authentication\", \"challenge\":\"1-hash\", \"proofValue\":5}]",
         "Wrong format of proofValue parameter"
     )]
-    fn test_invalid_proof_parsing(
-        #[case] input_str: String,
-        #[case] error_string: &str,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    fn test_invalid_proof_parsing(#[case] input_str: String, #[case] error_string: &str) {
         assert_error(
-            DataIntegrityProof::from(input_str),
+            DataIntegrityProof::from_json_string(input_str),
             DidSidekicksErrorKind::InvalidIntegrityProof,
             error_string,
-        );
-
-        Ok(())
+        )
     }
 
     #[rstest]
@@ -619,42 +722,27 @@ mod test {
             }
         );
 
-        JcsSha256Hasher::default()
-            .base58btc_encode_multihash(&credentials_without_proof_obj)
-            .unwrap(); // SCID
-
-        // From https://www.w3.org/TR/vc-di-eddsa/#example-proof-options-document-1
-        let options = CryptoSuiteProofOptions::new(
-            None,
-            Some(DateTime::parse_from_rfc3339("2023-02-24T23:36:38Z").unwrap().to_utc()),
-            "did:key:z6MkrJVnaZkeFzdQyMZu1cgjg7k1pZZ6pvBQ7XJPt4swbTQ2#z6MkrJVnaZkeFzdQyMZu1cgjg7k1pZZ6pvBQ7XJPt4swbTQ2".to_owned(),
-            Some("assertionMethod".to_owned()),
-            Some(vec![
-                "https://www.w3.org/ns/credentials/v2".to_owned(),
-                "https://www.w3.org/ns/credentials/examples/v2".to_owned(),
-            ]),
-            None,
+        // From https://www.w3.org/TR/vc-di-eddsa/#example-private-and-public-keys-for-signature-1
+        let suite = EddsaJcs2022Cryptosuite::from_signing_key(
+            &Ed25519SigningKey::from_multibase("z3u2en7t5LR2WtQH5PfFqMqwVHBeXouLzo6haApm8XHqvjxq")
+                .unwrap(),
         );
 
-        // From https://www.w3.org/TR/vc-di-eddsa/#example-private-and-public-keys-for-signature-1
-        let suite = EddsaJcs2022Cryptosuite {
-            verifying_key: Some(
-                Ed25519VerifyingKey::from_multibase(
-                    "z6MkrJVnaZkeFzdQyMZu1cgjg7k1pZZ6pvBQ7XJPt4swbTQ2",
-                )
-                .unwrap(),
-            ),
-            signing_key: Some(
-                Ed25519SigningKey::from_multibase(
-                    "z3u2en7t5LR2WtQH5PfFqMqwVHBeXouLzo6haApm8XHqvjxq",
-                )
-                .unwrap(),
-            ),
-        };
-
         let secured_document = suite
-            .add_proof(&credentials_without_proof_obj, &options)
-            .unwrap();
+            .add_proof_to_json_value(
+                &credentials_without_proof_obj,
+                // From https://www.w3.org/TR/vc-di-eddsa/#example-proof-options-document-1
+                &CryptoSuiteProofOptions::new_eddsa_jcs_2022(
+                    Some("2023-02-24T23:36:38Z".into()),
+                    "did:key:z6MkrJVnaZkeFzdQyMZu1cgjg7k1pZZ6pvBQ7XJPt4swbTQ2#z6MkrJVnaZkeFzdQyMZu1cgjg7k1pZZ6pvBQ7XJPt4swbTQ2".to_owned(),
+                    Some("assertionMethod".to_owned()),
+                    Some(vec![
+                        "https://www.w3.org/ns/credentials/v2".to_owned(),
+                        "https://www.w3.org/ns/credentials/examples/v2".to_owned(),
+                    ]),
+                  None, // no challenge in this example
+                ).unwrap()
+            ).unwrap();
 
         assert!(
             !secured_document.is_null(),
@@ -669,7 +757,7 @@ mod test {
         assert!(proof_value.to_string().contains("z2HnFSSPPBzR36zdDgK8PbEHeXbR56YF24jwMpt3R1eHXQzJDMWS93FCzpvJpwTWd3GAVFuUfjoJdcnTMuVor51aX"));
 
         let doc_hash = JcsSha256Hasher::default()
-            .encode_hex(&credentials_without_proof_obj)
+            .encode_hex_json_value(&credentials_without_proof_obj)
             .unwrap();
         // From https://www.w3.org/TR/vc-di-eddsa/#example-hash-of-canonical-credential-without-proof-hex-0
         assert_eq!(
@@ -678,10 +766,14 @@ mod test {
         );
 
         // sanity check
-        let proof_as_string = serde_json::to_string(proof).unwrap();
-        let data_integrity_proof = DataIntegrityProof::from(proof_as_string).unwrap();
         assert!(
-            suite.verify_proof(&data_integrity_proof, &doc_hash).is_ok(),
+            suite
+                .verify_proof(
+                    &DataIntegrityProof::from_json_string(serde_json::to_string(proof).unwrap())
+                        .unwrap(),
+                    &doc_hash
+                )
+                .is_ok(),
             "Sanity check failed"
         );
     }
@@ -708,46 +800,33 @@ mod test {
             }
         );
 
-        let scid = JcsSha256Hasher::default()
-            .base58btc_encode_multihash(&credentials_without_proof_obj)
-            .unwrap();
-
-        // From https://www.w3.org/TR/vc-di-eddsa/#example-proof-options-document-1
-        let options = CryptoSuiteProofOptions::new(
-            None,
-            Some(DateTime::parse_from_rfc3339("2023-02-24T23:36:38Z").unwrap().to_utc()),
-            "did:key:z6MkrJVnaZkeFzdQyMZu1cgjg7k1pZZ6pvBQ7XJPt4swbTQ2#z6MkrJVnaZkeFzdQyMZu1cgjg7k1pZZ6pvBQ7XJPt4swbTQ2".to_owned(),
-            Some("assertionMethod".to_owned()),
-            Some(vec![
-                "https://www.w3.org/ns/credentials/v2".to_owned(),
-                "https://www.w3.org/ns/credentials/examples/v2".to_owned(),
-            ]),
-            Some(format!("1-{}", scid)),
+        // From https://www.w3.org/TR/vc-di-eddsa/#example-private-and-public-keys-for-signature-1
+        let suite = EddsaJcs2022Cryptosuite::from_signing_key(
+            &Ed25519SigningKey::from_multibase("z3u2en7t5LR2WtQH5PfFqMqwVHBeXouLzo6haApm8XHqvjxq")
+                .unwrap(),
         );
 
-        // From https://www.w3.org/TR/vc-di-eddsa/#example-private-and-public-keys-for-signature-1
-        let suite = EddsaJcs2022Cryptosuite {
-            verifying_key: Some(
-                Ed25519VerifyingKey::from_multibase(
-                    "z6MkrJVnaZkeFzdQyMZu1cgjg7k1pZZ6pvBQ7XJPt4swbTQ2",
-                )
-                .unwrap(),
-            ),
-            signing_key: Some(
-                Ed25519SigningKey::from_multibase(
-                    "z3u2en7t5LR2WtQH5PfFqMqwVHBeXouLzo6haApm8XHqvjxq",
-                )
-                .unwrap(),
-            ),
-        };
-
         let secured_document = suite
-            .add_proof(&credentials_without_proof_obj, &options)
-            .unwrap();
+            .add_proof_to_json_value(
+                &credentials_without_proof_obj,
+                // From https://www.w3.org/TR/vc-di-eddsa/#example-proof-options-document-1
+                &CryptoSuiteProofOptions::new_eddsa_jcs_2022(
+                    Some("2023-02-24T23:36:38Z".into()),
+                    "did:key:z6MkrJVnaZkeFzdQyMZu1cgjg7k1pZZ6pvBQ7XJPt4swbTQ2#z6MkrJVnaZkeFzdQyMZu1cgjg7k1pZZ6pvBQ7XJPt4swbTQ2".to_owned(),
+                    Some("assertionMethod".to_owned()),
+                    Some(vec![
+                        "https://www.w3.org/ns/credentials/v2".to_owned(),
+                        "https://www.w3.org/ns/credentials/examples/v2".to_owned(),
+                    ]),
+                    Some(format!("1-{}", JcsSha256Hasher::default()
+                        .base58btc_encode_multihash_json_value(&credentials_without_proof_obj).unwrap()
+                    )),
+                ).unwrap()
+            ).unwrap();
 
         assert!(
             !secured_document.is_null(),
-            "'add_proof' method returned Value::Null"
+            "'add_proof_json_value' method returned Value::Null"
         );
         let proof = &secured_document["proof"];
         assert!(proof.is_array(), "'proof' must be a JSON array");
@@ -760,7 +839,7 @@ mod test {
         assert!(proof_value.to_string().contains("z3swhrb2DFocc562PATcKiv8YtjUzxLdfr4dhb9DidvG2BNkJqAXe65bsEMiNJdGKDdnYxiBa7cKXXw4cSKCvMcfm"));
 
         let doc_hash = JcsSha256Hasher::default()
-            .encode_hex(&credentials_without_proof_obj)
+            .encode_hex_json_value(&credentials_without_proof_obj)
             .unwrap();
         // From https://www.w3.org/TR/vc-di-eddsa/#example-hash-of-canonical-credential-without-proof-hex-0
         assert_eq!(
@@ -769,10 +848,14 @@ mod test {
         );
 
         // sanity check
-        let proof_as_string = serde_json::to_string(proof).unwrap();
-        let data_integrity_proof = DataIntegrityProof::from(proof_as_string).unwrap();
         assert!(
-            suite.verify_proof(&data_integrity_proof, &doc_hash).is_ok(),
+            suite
+                .verify_proof(
+                    &DataIntegrityProof::from_json_string(serde_json::to_string(proof).unwrap())
+                        .unwrap(),
+                    &doc_hash
+                )
+                .is_ok(),
             "Sanity check failed"
         );
     }

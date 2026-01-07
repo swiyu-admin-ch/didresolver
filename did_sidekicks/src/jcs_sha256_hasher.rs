@@ -1,34 +1,54 @@
 // SPDX-License-Identifier: MIT
 
+use crate::errors::DidSidekicksError;
+use crate::errors::DidSidekicksError::JscHashingFailed;
 use bs58::{encode as base58_encode, Alphabet as Alphabet58};
 use hex;
 use hex::ToHex as _;
-//use serde::{Deserialize, Serialize};
 // CAUTION Beware that using the "serde_jcs" crate here may cause
 //         "not yet implemented: Handle number str (u128/i128)" error
 //         in case of numeric json properties, e.g. "witnessThreshold".
-use serde_json::error::Error as JsonError;
+use serde_json::{from_str as json_from_str, Value as JsonValue};
 use serde_json_canonicalizer::to_string as jcs_to_string;
 use sha2::{Digest as _, Sha256};
 
-/// A helper capable of SHA2-256 hashing of canonical JSON structures.
-//#[derive(Default, Clone)]
+/// A [`SHA2`] (SHA-256) hasher with [`RFC-8785`] in mind.
+///
+/// It is capable of hashing any JSON structure w.r.t. JSON Canonicalization Scheme (JCS) [`RFC-8785`].
+///
+/// [`SHA2`]: https://en.wikipedia.org/wiki/SHA-2
+/// [`RFC-8785`]: https://datatracker.ietf.org/doc/html/rfc8785
+#[derive(Clone)]
 pub struct JcsSha256Hasher {
     hasher: Sha256,
 }
 impl JcsSha256Hasher {
+    /// The UniFFI-compliant wrapper of [`Self::encode_hex_json_value`] method
+    #[inline]
+    pub fn encode_hex(&self, json: &str) -> Result<String, DidSidekicksError> {
+        let json_value: JsonValue =
+            json_from_str(json).map_err(|err| JscHashingFailed(format!("{err}")))?;
+
+        (Self {
+            hasher: self.hasher.to_owned(),
+        })
+        .encode_hex_json_value(&json_value)
+        .map_err(|err| JscHashingFailed(format!("{err}")))
+    }
+
     /// Serialize the given data structure as a JCS UTF-8 string and calculate SHA2-256 hash out of it.
     /// The hash encoded as hex strict representation is returned. Lower case letters are used (e.g. f9b4ca)
     ///
     /// # Errors
     ///
-    /// Serialization can fail if `T`'s implementation of `Serialize` decides to
-    /// fail, or if `T` contains a map with non-string keys.
+    /// [`JscHashingFailed`] if serialization fails due to:
+    /// - `T`'s implementation of `Serialize` decides to fail, or
+    /// - `T` contains a map with non-string keys.
     #[inline]
-    pub fn encode_hex(&mut self, json: &serde_json::Value) -> Result<String, JsonError> {
+    pub fn encode_hex_json_value(&mut self, json: &JsonValue) -> Result<String, DidSidekicksError> {
         self.hasher.reset();
-        let jcs_string = jcs_to_string(json)?;
-        self.hasher.update(jcs_string);
+        self.hasher
+            .update(jcs_to_string(json).map_err(|err| JscHashingFailed(format!("{err}")))?);
         Ok(self.hasher.clone().finalize().encode_hex())
     }
 
@@ -39,12 +59,11 @@ impl JcsSha256Hasher {
         clippy::unseparated_literal_suffix,
         reason = "to prevent clippy::separated_literal_suffix warning"
     )]
-    //#[expect(clippy::separated_literal_suffix, reason = "to prevent clippy::unseparated_literal_suffix warning")]
     #[expect(clippy::as_conversions, reason = "..")]
-    pub fn encode_multihash(&mut self, str: String) -> Vec<u8> {
+    fn encode_multihash(&mut self, str: String) -> Vec<u8> {
         self.hasher.reset();
         self.hasher.update(str);
-        let digest = self.hasher.clone().finalize();
+        let digest = self.hasher.to_owned().finalize();
 
         // According to https://identity.foundation/trustdidweb/v0.3/#didtdw-version-changelog:
         //              Use multihash in the SCID to differentiate the different hash function outputs.
@@ -62,17 +81,36 @@ impl JcsSha256Hasher {
         [multihash_header, digest.as_slice()].concat()
     }
 
+    /// The UniFFI-compliant wrapper of [`Self::base58btc_encode_multihash_json_value`] method
+    #[inline]
+    pub fn base58btc_encode_multihash(&self, json: &str) -> Result<String, DidSidekicksError> {
+        let json_value: JsonValue = json_from_str(json).map_err(|err| {
+            JscHashingFailed(format!(
+                "Failed to base58btc-encode SHA2-256 multihash of canonical JSON UTF-8 string: {err}"
+            ))
+        })?;
+
+        (Self {
+            hasher: self.hasher.to_owned(),
+        })
+        .base58btc_encode_multihash_json_value(&json_value)
+        .map_err(|err| {
+            JscHashingFailed(format!(
+                "Failed to base58btc-encode SHA2-256 multihash of canonical JSON UTF-8 string: {err}"
+            ))
+        })
+    }
+
     /// Serialize the given data structure as a JCS UTF-8 string and calculate SHA2-256 multihash out of it.
     /// The multihash encoded in base58btc format is returned
     #[inline]
-    pub fn base58btc_encode_multihash(
+    pub fn base58btc_encode_multihash_json_value(
         &mut self,
-        json: &serde_json::Value,
+        json_value: &JsonValue,
     ) -> serde_json::Result<String> {
-        let canonical = jcs_to_string(json)?;
-
         // WORKAROUND (":ff" -> ":") in case of numeric json properties (e.g. witnessThreshold)
-        let multihash_sha256 = self.encode_multihash(canonical.replace(":ff", ":"));
+        let multihash_sha256 =
+            self.encode_multihash(jcs_to_string(json_value)?.replace(":ff", ":"));
 
         //
         // Since v0.3 (https://identity.foundation/trustdidweb/v0.3/#didtdw-version-changelog):
@@ -80,10 +118,9 @@ impl JcsSha256Hasher {
         // More here: https://identity.foundation/trustdidweb/v0.3/#generate-scid
         //            To generate the required [[ref: SCID]] for a did:tdw DID, the DID Controller MUST execute the following function:
         //            base58btc(multihash(JCS(preliminary log entry with placeholders), <hash algorithm>))
-        let encoded = base58_encode(multihash_sha256)
+        Ok(base58_encode(multihash_sha256)
             .with_alphabet(Alphabet58::BITCOIN) // it is the default alphabet, but still (to ensure spec conformity)
-            .into_string();
-        Ok(encoded)
+            .into_string())
     }
 
     /// This helper calculates the hash string as `base58btc(multihash(multikey))`, where:
@@ -106,7 +143,6 @@ impl JcsSha256Hasher {
     }
 }
 
-/// The default constructor featuring a SHA2-256 hasher instance.
 impl Default for JcsSha256Hasher {
     #[inline]
     fn default() -> Self {
