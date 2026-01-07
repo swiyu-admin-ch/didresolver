@@ -12,10 +12,12 @@ use serde_json::{from_str as json_from_str, Value as JsonValue};
 use serde_json_canonicalizer::to_string as jcs_to_string;
 use sha2::{Digest as _, Sha256};
 
-/// A [`SHA2`](https://en.wikipedia.org/wiki/SHA-2) (SHA-256) hasher with [`RFC-8785`](https://datatracker.ietf.org/doc/html/rfc8785) in mind.
+/// A [`SHA2`] (SHA-256) hasher with [`RFC-8785`] in mind.
 ///
-/// It is capable of hashing any JSON structure
-/// w.r.t. JSON Canonicalization Scheme (JCS) [`RFC-8785`](https://datatracker.ietf.org/doc/html/rfc8785).
+/// It is capable of hashing any JSON structure w.r.t. JSON Canonicalization Scheme (JCS) [`RFC-8785`].
+///
+/// [`SHA2`]: https://en.wikipedia.org/wiki/SHA-2
+/// [`RFC-8785`]: https://datatracker.ietf.org/doc/html/rfc8785
 #[derive(Clone)]
 pub struct JcsSha256Hasher {
     hasher: Sha256,

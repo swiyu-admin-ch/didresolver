@@ -198,9 +198,7 @@ interface DidLogEntryValidator {
 /// signature, and does not necessarily represent well-formed field or curve
 /// elements.
 ///
-/// Furthermore, the type supports (de)serialization w.r.t [Multibase Data Format].
-///
-/// [Multibase Data Format]: https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html
+/// Furthermore, the type supports (de)serialization w.r.t `Multibase Data Format` (https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html).
 interface Ed25519Signature {
     /// The type constructor from a multibase-encoded value.
     [Name=from_multibase, Throws=DidSidekicksError]
@@ -209,28 +207,23 @@ interface Ed25519Signature {
     string to_multibase();
 };
 
-/// The type represents Ed25519 secret key as defined in [RFC8032 § 5.1.5]:
+/// The type represents Ed25519 secret key as defined in `RFC8032 § 5.1.5` (https://www.rfc-editor.org/rfc/rfc8032#section-5.1.5):
 ///
 /// > The private key is 32 octets (256 bits, corresponding to b) of
 /// > cryptographically secure random data.
 ///
-/// Furthermore, the type supports (de)serialization w.r.t [Multibase Data Format].
-///
-/// [RFC8032 § 5.1.5]: https://www.rfc-editor.org/rfc/rfc8032#section-5.1.5
-/// [Multibase Data Format]: https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html
+/// Furthermore, the type supports (de)serialization w.r.t `Multibase Data Format` (https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html).
 interface Ed25519SigningKey {
     /// Generate an Ed25519 signing key as defined in [RFC8032 § 5.1.5].
     ///
     /// [RFC8032 § 5.1.5]: https://www.rfc-editor.org/rfc/rfc8032#section-5.1.5
     [Name=generate]
     constructor();
-    /// The type constructor from a multibase-encoded value, as specified by [Multikey]:
+    /// The type constructor from a multibase-encoded value, as specified by `Multikey` (https://www.w3.org/TR/controller-document/#Multikey):
     ///
     /// The encoding of an Ed25519 secret key MUST start with the two-byte prefix 0x8026 (the varint expression of 0x1300),
     /// followed by the 32-byte secret key data. The resulting 34-byte value MUST then be encoded using the base-58-btc alphabet,
     /// and then prepended with the base-58-btc Multibase header (z).
-    ///
-    /// [Multikey]: https://www.w3.org/TR/controller-document/#Multikey
     [Name=from_multibase, Throws=DidSidekicksError]
     constructor([ByRef] string multibase);
     /// Deserialize PKCS#8-encoded private key from PEM.
@@ -242,13 +235,11 @@ interface Ed25519SigningKey {
     /// Write ASN.1 DER-encoded PKCS#8 private key to the given path.
     [Throws=DidSidekicksError]
     void write_pkcs8_pem_file([ByRef] string pkcs8_pem_file);
-    /// The multibase-encoding method, as specified by [Multikey]:
+    /// The multibase-encoding method, as specified by `Multikey` (https://www.w3.org/TR/controller-document/#Multikey):
     ///
     /// The encoding of an Ed25519 secret key MUST start with the two-byte prefix 0x8026 (the varint expression of 0x1300),
     /// followed by the 32-byte secret key data. The resulting 34-byte value MUST then be encoded using the base-58-btc alphabet,
     /// and then prepended with the base-58-btc Multibase header (z).
-    ///
-    /// [Multikey]: https://www.w3.org/TR/controller-document/#Multikey
     string to_multibase();
     /// Sign the given message and return a digital signature.
     Ed25519Signature sign([ByRef] string message);
@@ -256,21 +247,16 @@ interface Ed25519SigningKey {
     Ed25519VerifyingKey get_verifying_key();
 };
 
-/// The type represents an Ed25519 public key as defined in [RFC8032 § 5.1.5].
+/// The type represents an Ed25519 public key as defined in `RFC8032 § 5.1.5` (https://www.rfc-editor.org/rfc/rfc8032#section-5.1.5).
 ///
-/// Furthermore, the type supports (de)serialization w.r.t [Multibase Data Format].
-///
-/// [RFC8032 § 5.1.5]: https://www.rfc-editor.org/rfc/rfc8032#section-5.1.5
-/// [Multibase Data Format]: https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html
+/// Furthermore, the type supports (de)serialization w.r.t `Multibase Data Format` (https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html).
 interface Ed25519VerifyingKey {
-    /// The type constructor from a multibase-encoded value, as specified by [Multikey]:
+    /// The type constructor from a multibase-encoded value, as specified by `Multikey` (https://www.w3.org/TR/controller-document/#Multikey):
     ///
     /// The encoding of an Ed25519 public key MUST start with the two-byte prefix 0xed01 (the varint expression of 0xed),
     /// followed by the 32-byte public key data.
     /// The resulting 34-byte value MUST then be encoded using the base-58-btc alphabet,
     /// and then prepended with the base-58-btc Multibase header (z).
-    ///
-    /// [Multikey]: https://www.w3.org/TR/controller-document/#Multikey
     [Name=from_multibase, Throws=DidSidekicksError]
     constructor([ByRef] string multibase);
     /// Deserialize PKCS#8-encoded public key from PEM.
@@ -282,14 +268,12 @@ interface Ed25519VerifyingKey {
     /// Write ASN.1 DER-encoded public key to the given path.
     [Throws=DidSidekicksError]
     void write_public_key_pem_file([ByRef] string public_key_pem_file);
-    /// The multibase-encoding method, as specified by [Multikey]:
+    /// The multibase-encoding method, as specified by `Multikey` (https://www.w3.org/TR/controller-document/#Multikey):
     ///
     /// The encoding of an Ed25519 public key MUST start with the two-byte prefix 0xed01 (the varint expression of 0xed),
     /// followed by the 32-byte public key data.
     /// The resulting 34-byte value MUST then be encoded using the base-58-btc alphabet,
     /// and then prepended with the base-58-btc Multibase header (z).
-    ///
-    /// [Multikey]: https://www.w3.org/TR/controller-document/#Multikey
     string to_multibase();
     /// Strictly verify a signature on a message with this public key.
     [Throws=DidSidekicksError]
@@ -299,34 +283,83 @@ interface Ed25519VerifyingKey {
     void verify_strict_from_hex([ByRef] string message_hex, [ByRef] Ed25519Signature signature);
 };
 
+/// Represents a general design pattern, a cryptographic suite type called a `DataIntegrityProof`,
+/// which reduces the burden of writing and implementing cryptographic suites through the reuse of design primitives and source code,
+/// as specified by https://www.w3.org/TR/vc-data-integrity/#dataintegrityproof
+///
+/// For EdDSA Cryptosuites v1.0 suites, see https://www.w3.org/TR/vc-di-eddsa/#dataintegrityproof
 interface DataIntegrityProof {
+    /// The non-empty parsing constructor featuring validation in terms of supported type/proofPurpose/cryptosuite
     [Name=from_json_string, Throws=DidSidekicksError]
     constructor(string json);
 };
 
+// Represents all required inputs to a proof hashing algorithm, as specified by https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022
 interface CryptoSuiteProofOptions {
+    /// The default constructor aligned with the `eddsa-jcs-2022` suite (https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022), hence:
+    ///
+    /// - `proof_type: "DataIntegrityProof"`
+    ///
+    /// - `crypto_suite: "eddsa-jcs-2022"`
+    ///
+    /// - `created: <current datetime>`
+    ///
+    /// - `proof_purpose: "authentication"`
     [Name=default]
     constructor();
+    /// The super-potent non-empty constructor.
+    ///
+    /// As nearly all arguments are optional - see the default constructor for default values.
     [Name=new_eddsa_jcs_2022, Throws=DidSidekicksError]
     constructor(string? created_dt_rfc3339, string verification_method, string? proof_purpose, sequence<string>? context, string? challenge);
 };
 
-interface JcsSha256Hasher {
-    [Name=default]
-    constructor();
-    [Throws=DidSidekicksError]
-    string encode_hex([ByRef] string json);
-    [Throws=DidSidekicksError]
-    string base58btc_encode_multihash([ByRef] string json);
-};
-
+/// Represents the `eddsa-jcs-2022` cryptographic suite, as specified by https://w3c.github.io/vc-di-eddsa/#eddsa-jcs-2022.
+///
+/// It takes an input document, canonicalizes the document using the JSON Canonicalization Scheme `RFC8785` (https://www.rfc-editor.org/rfc/rfc8785),
+/// and then cryptographically hashes and signs the output resulting in the creation of a data integrity proof.
 interface EddsaJcs2022Cryptosuite {
+    /// The signing-capable constructor.
     [Name=from_signing_key]
     constructor([ByRef] Ed25519SigningKey signing_key);
+    /// The verifying-capable constructor.
     [Name=from_verifying_key]
     constructor([ByRef] Ed25519VerifyingKey verifying_key);
+    /// Create a data integrity proof given an unsecured data document, as specified by https://www.w3.org/TR/vc-di-eddsa/#create-proof-eddsa-jcs-2022.
+    ///
+    /// The `VCDataIntegrityProofVerificationError` error code denotes a failure w.r.t. https://www.w3.org/TR/vc-di-eddsa/#transformation-eddsa-jcs-2022.
+    ///
+    /// The `VCDataIntegrityProofTransformationError` error code denotes a failure w.r.t. https://www.w3.org/TR/vc-di-eddsa/#transformation-eddsa-jcs-2022.
+    ///
+    /// A runtime error occurs in case this `EddsaJcs2022Cryptosuite` instance features no signing key (required for proof creation).
     [Throws=DidSidekicksError]
     string add_proof([ByRef] string unsecured_document, [ByRef] CryptoSuiteProofOptions options);
+    /// Verify a data integrity proof given an secured data document, as specified by https://www.w3.org/TR/vc-di-eddsa/#verify-proof-eddsa-jcs-2022.
+    ///
+    /// The `VCDataIntegrityProofTransformationError` error code denotes a failure w.r.t. https://www.w3.org/TR/vc-di-eddsa/#transformation-eddsa-jcs-2022
+    ///
+    /// The `KeySignatureError` error code indicates if verification of a signature on a hex message with this verification key fails.
     [Throws=DidSidekicksError]
     void verify_proof([ByRef] DataIntegrityProof proof, [ByRef] string doc_hash);
+};
+
+/// A `SHA2` (SHA-256) (https://en.wikipedia.org/wiki/SHA-2) hasher with `RFC-8785` (https://datatracker.ietf.org/doc/html/rfc8785) in mind.
+///
+/// It is capable of hashing any JSON structure w.r.t. `RFC-8785` (JSON Canonicalization Scheme - JCS).
+interface JcsSha256Hasher {
+    /// The default constructor.
+    [Name=default]
+    constructor();
+    /// Serialize the given data structure as a JCS UTF-8 string and calculate SHA2-256 hash out of it.
+    ///
+    /// The hash encoded as hex strict representation is returned. Lower case letters are used (e.g. f9b4ca).
+    ///
+    /// The `JscHashingFailed` error code denotes serialization failure.
+    [Throws=DidSidekicksError]
+    string encode_hex([ByRef] string json);
+    /// Serialize the given data structure as a JCS UTF-8 string and calculate SHA2-256 multihash out of it.
+    ///
+    /// The multihash encoded in `base58btc` format is returned.
+    [Throws=DidSidekicksError]
+    string base58btc_encode_multihash([ByRef] string json);
 };

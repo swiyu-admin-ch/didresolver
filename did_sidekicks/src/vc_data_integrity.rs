@@ -137,13 +137,14 @@ impl CryptoSuiteProofOptions {
 }
 
 impl Default for CryptoSuiteProofOptions {
-    /// The default constructor aligned with
-    /// [`eddsa-jcs-2022` proof-configuration](https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022), hence:
+    /// The default constructor aligned with [`eddsa-jcs-2022`], hence:
     ///
     /// - `proof_type: "DataIntegrityProof"`
     /// - `crypto_suite: "eddsa-jcs-2022"`
     /// - `created: <current datetime>`
     /// - `proof_purpose: "authentication"`
+    ///
+    /// [`eddsa-jcs-2022` proof-configuration]: https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022
     #[inline]
     fn default() -> Self {
         Self {
@@ -403,11 +404,13 @@ pub trait VCDataIntegrity {
     ) -> Result<(), DidSidekicksError>;
 }
 
-/// The [`eddsa-jcs-2022`](https://w3c.github.io/vc-di-eddsa/#eddsa-jcs-2022) cryptographic suit.
+/// The [`eddsa-jcs-2022`] cryptographic suite.
 ///
-/// It takes an input document, canonicalizes the document using the
-/// JSON Canonicalization Scheme [`RFC8785`](https://www.rfc-editor.org/rfc/rfc8785),
+/// It takes an input document, canonicalizes the document using the JSON Canonicalization Scheme [`RFC8785`],
 /// and then cryptographically hashes and signs the output resulting in the production of a data integrity proof.
+/// 
+/// [`eddsa-jcs-2022`]: https://w3c.github.io/vc-di-eddsa/#eddsa-jcs-2022
+/// [`RFC8785`]: https://www.rfc-editor.org/rfc/rfc8785
 pub struct EddsaJcs2022Cryptosuite {
     verifying_key: Ed25519VerifyingKey,
     signing_key: Option<Ed25519SigningKey>,
