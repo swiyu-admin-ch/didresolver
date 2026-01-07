@@ -4,7 +4,7 @@ resolver = "3"
 
 [workspace.package]
 #name = "didresolver"
-version = "2.4.0"
+version = "2.5.0"
 edition = "2021"
 description = "DID resolver for DID methods did:tdw and did:webvh"
 authors = ["Vladica Stojic", "Marcel Pfeuti", "Frithjof Hoppe", "Jonas Niestroj"]
