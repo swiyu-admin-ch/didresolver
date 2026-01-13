@@ -22,6 +22,8 @@ enum DidSidekicksError {
     "SerializationFailed",
     /// The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation.
     "DeserializationFailed",
+    /// Failed to create type a from hex-encoded string.
+    "HexConversionFailed",
     /// Invalid DID document.
     "InvalidDidDocument",
     /// Invalid DID log integration proof.
@@ -38,8 +40,8 @@ enum DidSidekicksError {
     "KeySignatureError",
     /// Failed to load key.
     "KeyDeserializationFailed",
-    /// Failed to convert key from multibase format
-    "MultibaseKeyConversionFailed",
+    /// Failed to convert type from a multibase-encoded string.
+    "MultibaseConversionFailed",
     /// Non-existing key referenced in the DID document.
     "NonExistingKeyReferenced",
     /// A request to generate a proof failed, as specified by https://www.w3.org/TR/vc-data-integrity/#processing-errors
@@ -198,11 +200,26 @@ interface DidLogEntryValidator {
 /// signature, and does not necessarily represent well-formed field or curve
 /// elements.
 ///
-/// Furthermore, the type supports (de)serialization w.r.t `Multibase Data Format` (https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html).
+/// Furthermore, the type supports (de)serialization w.r.t `The Multibase Data Format` (https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html).
 interface Ed25519Signature {
+    /// Parse an Ed25519 signature from a byte hex-encoded string.
+    ///
+    /// The `HexConversionFailed` error code denotes either:
+    ///
+    /// - a malformed hex-encoded input or
+    ///
+    /// - a properly hex-encoded input represents no 64-bytes slice
+    [Name=from_hex, Throws=DidSidekicksError]
+    constructor([ByRef] string hex_encoded);
     /// The type constructor from a multibase-encoded value.
+    ///
+    /// The `MultibaseConversionFailed` error code denotes that a supplied string value is not multibase-encoded as specified by
+    /// `The Multibase Data Format` (https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html)
     [Name=from_multibase, Throws=DidSidekicksError]
     constructor([ByRef] string multibase);
+    /// Encode the hex strict representing this signature.
+    /// Lower case letters are used (e.g. f9b4ca)
+    string to_hex();
     /// The multibase-encoding method.
     string to_multibase();
 };
@@ -212,7 +229,7 @@ interface Ed25519Signature {
 /// > The private key is 32 octets (256 bits, corresponding to b) of
 /// > cryptographically secure random data.
 ///
-/// Furthermore, the type supports (de)serialization w.r.t `Multibase Data Format` (https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html).
+/// Furthermore, the type supports (de)serialization w.r.t `The Multibase Data Format` (https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html).
 interface Ed25519SigningKey {
     /// Generate an Ed25519 signing key as defined in [RFC8032 § 5.1.5].
     ///
@@ -224,6 +241,9 @@ interface Ed25519SigningKey {
     /// The encoding of an Ed25519 secret key MUST start with the two-byte prefix 0x8026 (the varint expression of 0x1300),
     /// followed by the 32-byte secret key data. The resulting 34-byte value MUST then be encoded using the base-58-btc alphabet,
     /// and then prepended with the base-58-btc Multibase header (z).
+    ///
+    /// The `MultibaseConversionFailed` error code denotes that a supplied string value is not multibase-encoded as specified by
+    /// `The Multibase Data Format` (https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html)
     [Name=from_multibase, Throws=DidSidekicksError]
     constructor([ByRef] string multibase);
     /// Deserialize PKCS#8-encoded private key from PEM.
@@ -243,6 +263,11 @@ interface Ed25519SigningKey {
     string to_multibase();
     /// Sign the given message and return a digital signature.
     Ed25519Signature sign([ByRef] string message);
+    /// Sign the given hex-encoded message and return a digital signature.
+    ///
+    /// The `KeySignatureError` error code denotes a malformed hex-encoded message.
+    [Throws=DidSidekicksError]
+    Ed25519Signature sign_hex([ByRef] string message);
     /// Get the `Ed25519VerifyingKey` for this `Ed25519SigningKey`.
     Ed25519VerifyingKey get_verifying_key();
 };
@@ -257,6 +282,9 @@ interface Ed25519VerifyingKey {
     /// followed by the 32-byte public key data.
     /// The resulting 34-byte value MUST then be encoded using the base-58-btc alphabet,
     /// and then prepended with the base-58-btc Multibase header (z).
+    ///
+    /// The `MultibaseConversionFailed` error code denotes that a supplied string value is not multibase-encoded as specified by
+    /// `The Multibase Data Format` (https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html)
     [Name=from_multibase, Throws=DidSidekicksError]
     constructor([ByRef] string multibase);
     /// Deserialize PKCS#8-encoded public key from PEM.
@@ -296,7 +324,7 @@ interface DataIntegrityProof {
 
 // Represents all required inputs to a proof hashing algorithm, as specified by https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022
 interface CryptoSuiteProofOptions {
-    /// The default constructor aligned with the `eddsa-jcs-2022` suite (https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022), hence:
+    /// The empty (default) constructor aligned with the `eddsa-jcs-2022` suite (https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022), hence:
     ///
     /// - `proof_type: "DataIntegrityProof"`
     ///
@@ -305,7 +333,7 @@ interface CryptoSuiteProofOptions {
     /// - `created: <current datetime>`
     ///
     /// - `proof_purpose: "authentication"`
-    [Name=default]
+    [Name=build]
     constructor();
     /// The super-potent non-empty constructor.
     ///
@@ -347,8 +375,8 @@ interface EddsaJcs2022Cryptosuite {
 ///
 /// It is capable of hashing any JSON structure w.r.t. `RFC-8785` (JSON Canonicalization Scheme - JCS).
 interface JcsSha256Hasher {
-    /// The default constructor.
-    [Name=default]
+    /// The empty (default) constructor.
+    [Name=build]
     constructor();
     /// Serialize the given data structure as a JCS UTF-8 string and calculate SHA2-256 hash out of it.
     ///

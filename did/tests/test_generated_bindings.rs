@@ -3,7 +3,8 @@
 uniffi::build_foreign_language_testcases!(
     // Enable accordingly
     //"tests/bindings/test_didresolver.kts",
-    //"tests/bindings/test_did_sidekicks.kts",
+    //"tests/bindings/test_did_sidekicks_ed25519.kts",
+    //"tests/bindings/test_did_sidekicks_vc_data_integrity.kts",
     //"tests/bindings/test_didresolver.swift",
     //"tests/bindings/test_didresolver.py"
 );

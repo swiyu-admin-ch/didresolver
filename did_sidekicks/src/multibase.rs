@@ -21,6 +21,11 @@ pub trait MultiBaseConvertible {
     /// The multibase-encoding method.
     fn to_multibase(&self) -> String;
     /// The type constructor from a multibase-encoded value.
+    ///
+    /// # Errors
+    ///
+    /// If a supplied string value is not multibase-encoded as specified by
+    /// [The Multibase Data Format](https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html)
     fn from_multibase(multibase: &str) -> Result<Self, DidSidekicksError>
     where
         Self: Sized;

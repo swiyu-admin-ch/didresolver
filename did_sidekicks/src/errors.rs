@@ -16,6 +16,9 @@ pub enum DidSidekicksError {
     #[error("the supplied DID document is invalid or contains an argument which isn't part of the DID specification/recommendation: {0}"
     )]
     DeserializationFailed(String),
+    /// Failed to create type a from hex-encoded string
+    #[error("failed to create type from a hex-encoded string: {0}")]
+    HexConversionFailed(String),
     /// Invalid DID document
     #[error("invalid DID document: {0}")]
     InvalidDidDocument(String),
@@ -40,9 +43,9 @@ pub enum DidSidekicksError {
     /// Failure of a signature to satisfy the verification equation
     #[error("failure of a signature to satisfy the verification equation: {0}")]
     KeySignatureError(String),
-    /// Failed to convert key from multibase format
-    #[error("failed to convert key from multibase format: {0}")]
-    MultibaseKeyConversionFailed(String),
+    /// Failed to convert type from a multibase-encoded format
+    #[error("failed to convert type from a multibase-encoded format: {0}")]
+    MultibaseConversionFailed(String),
     /// Non-existing key referenced in the DID document
     #[error("non-existing key referenced in the DID document: {0}")]
     NonExistingKeyReferenced(String),
@@ -72,6 +75,7 @@ impl DidSidekicksError {
         match *self {
             Self::SerializationFailed(_) => DidSidekicksErrorKind::SerializationFailed,
             Self::DeserializationFailed(_) => DidSidekicksErrorKind::DeserializationFailed,
+            Self::HexConversionFailed(_) => DidSidekicksErrorKind::HexConversionFailed,
             Self::InvalidDidDocument(_) => DidSidekicksErrorKind::InvalidDidDocument,
             Self::InvalidDataIntegrityProof(_) => DidSidekicksErrorKind::InvalidIntegrityProof,
             Self::InvalidDidMethodParameter(_) => DidSidekicksErrorKind::InvalidDidMethodParameter,
@@ -80,9 +84,7 @@ impl DidSidekicksError {
             Self::KeySerializationFailed(_) => DidSidekicksErrorKind::KeySerializationFailed,
             Self::KeySignatureError(_) => DidSidekicksErrorKind::KeySignatureError,
             Self::KeyDeserializationFailed(_) => DidSidekicksErrorKind::KeyDeserializationFailed,
-            Self::MultibaseKeyConversionFailed(_) => {
-                DidSidekicksErrorKind::MultibaseKeyConversionFailed
-            }
+            Self::MultibaseConversionFailed(_) => DidSidekicksErrorKind::MultibaseConversionFailed,
             Self::NonExistingKeyReferenced(_) => DidSidekicksErrorKind::NonExistingKeyReferenced,
             Self::VCDataIntegrityProofGenerationError(_) => {
                 DidSidekicksErrorKind::VCDataIntegrityProofGenerationError
@@ -92,11 +94,10 @@ impl DidSidekicksError {
             }
             Self::VCDataIntegrityProofTransformationError(_) => {
                 DidSidekicksErrorKind::VCDataIntegrityProofTransformationError
-            }
-            /*
-            Self::VCDataIntegrityInvalidDomainError(_) => DidSidekicksErrorKind::VCDataIntegrityInvalidDomainError,
-            Self::VCDataIntegrityInvalidChallengeError(_) => DidSidekicksErrorKind::VCDataIntegrityInvalidChallengeError,
-             */
+            } /*
+              Self::VCDataIntegrityInvalidDomainError(_) => DidSidekicksErrorKind::VCDataIntegrityInvalidDomainError,
+              Self::VCDataIntegrityInvalidChallengeError(_) => DidSidekicksErrorKind::VCDataIntegrityInvalidChallengeError,
+               */
         }
     }
 }
@@ -112,6 +113,7 @@ impl DidSidekicksError {
 pub enum DidSidekicksErrorKind {
     SerializationFailed,
     DeserializationFailed,
+    HexConversionFailed,
     InvalidDidDocument,
     InvalidIntegrityProof,
     InvalidDidMethodParameter,
@@ -120,7 +122,7 @@ pub enum DidSidekicksErrorKind {
     KeySerializationFailed,
     KeySignatureError,
     KeyDeserializationFailed,
-    MultibaseKeyConversionFailed,
+    MultibaseConversionFailed,
     NonExistingKeyReferenced,
     VCDataIntegrityProofGenerationError,
     VCDataIntegrityProofVerificationError,

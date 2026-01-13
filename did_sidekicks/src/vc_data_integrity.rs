@@ -10,7 +10,6 @@ use crate::jcs_sha256_hasher::JcsSha256Hasher;
 use crate::multibase::MultiBaseConvertible as _;
 use chrono::{serde::ts_seconds, DateTime, SecondsFormat, Utc};
 use core::ops::Deref as _;
-use hex::decode as hex_decode;
 use serde::{Deserialize, Serialize};
 use serde_json::{
     from_str as json_from_str, json, Value as JsonValue, Value::Array as JsonArray,
@@ -63,6 +62,19 @@ pub struct CryptoSuiteProofOptions {
 }
 
 impl CryptoSuiteProofOptions {
+    /// The UniFFI-compliant empty (default) constructor, aligned with [`eddsa-jcs-2022`], hence:
+    ///
+    /// - `proof_type: "DataIntegrityProof"`
+    /// - `crypto_suite: "eddsa-jcs-2022"`
+    /// - `created: <current datetime>`
+    /// - `proof_purpose: "authentication"`
+    ///
+    /// [`eddsa-jcs-2022` proof-configuration]: https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022
+    #[inline]
+    pub fn build() -> Self {
+        Self::default()
+    }
+
     /// The only (super-potent) non-empty constructor.
     ///
     /// As nearly all arguments are optional, see [`Self::default()`] constructor for default values.
@@ -408,7 +420,7 @@ pub trait VCDataIntegrity {
 ///
 /// It takes an input document, canonicalizes the document using the JSON Canonicalization Scheme [`RFC8785`],
 /// and then cryptographically hashes and signs the output resulting in the production of a data integrity proof.
-/// 
+///
 /// [`eddsa-jcs-2022`]: https://w3c.github.io/vc-di-eddsa/#eddsa-jcs-2022
 /// [`RFC8785`]: https://www.rfc-editor.org/rfc/rfc8785
 pub struct EddsaJcs2022Cryptosuite {
@@ -542,15 +554,12 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
             self.signing_key
                 .to_owned() // move occurs because the underlying type does not implement the `Copy` trait
                 .unwrap() // at this point, it is panic-safe unwrap call
-                .sign_bytes(
-                    // raw bytes are required here (which hex_decode delivers)
-                    &hex_decode(format!(
-                        "{}{}",
-                        self.encode_hex_json_value(&proof_without_proof_value)?, // "proofConfigHash"
-                        self.encode_hex_json_value(unsecured_data_document)?, // "transformedDocumentHash"
-                    ))
-                    .map_err(|err| panic!("{err}"))?, // at this point, both "proofConfigHash" and "transformedDocumentHash" MUST be hex-encoded already
-                )
+                .sign_hex_str(&format!(
+                    "{}{}",
+                    self.encode_hex_json_value(&proof_without_proof_value)?, // "proofConfigHash"
+                    self.encode_hex_json_value(unsecured_data_document)?, // "transformedDocumentHash"
+                ))
+                .map_err(|err| panic!("{err}"))? // at this point, both "proofConfigHash" and "transformedDocumentHash" MUST be hex-encoded already // at this point, both "proofConfigHash" and "transformedDocumentHash" MUST be hex-encoded already
                 .to_multibase(),
         );
 

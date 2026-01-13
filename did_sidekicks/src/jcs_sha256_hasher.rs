@@ -23,6 +23,12 @@ pub struct JcsSha256Hasher {
     hasher: Sha256,
 }
 impl JcsSha256Hasher {
+    /// The UniFFI-compliant empty (default) constructor
+    #[inline]
+    pub fn build() -> Self {
+        Self::default()
+    }
+
     /// The UniFFI-compliant wrapper of [`Self::encode_hex_json_value`] method
     #[inline]
     pub fn encode_hex(&self, json: &str) -> Result<String, DidSidekicksError> {

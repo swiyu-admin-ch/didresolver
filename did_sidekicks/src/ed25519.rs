@@ -5,8 +5,8 @@ use std::sync::Arc;
 
 use crate::errors::DidSidekicksError;
 use crate::errors::DidSidekicksError::{
-    KeyDeserializationFailed, KeySerializationFailed, KeySignatureError,
-    MultibaseKeyConversionFailed,
+    HexConversionFailed, KeyDeserializationFailed, KeySerializationFailed, KeySignatureError,
+    MultibaseConversionFailed,
 };
 use crate::multibase::{MultiBaseConvertible, MultibaseEncoderDecoder};
 use ed25519_dalek::{
@@ -17,6 +17,7 @@ use ed25519_dalek::{
     Signature, Signer as _, SigningKey, VerifyingKey, PUBLIC_KEY_LENGTH, SECRET_KEY_LENGTH,
     SIGNATURE_LENGTH,
 };
+use hex::decode as hex_decode;
 use hex::FromHex as from_hex;
 use rand::rngs::OsRng;
 
@@ -33,6 +34,44 @@ use rand::rngs::OsRng;
 pub struct Ed25519Signature {
     signature: Signature,
 }
+
+impl Ed25519Signature {
+    /// Parse an Ed25519 signature from a byte hex-encoded string.
+    ///
+    /// UniFFI-compliant constructor.
+    ///
+    /// # Errors
+    ///
+    /// [`HexConversionFailed`] if supplied `hex_encoded` string:
+    /// - is malformed
+    /// - is not malformed, but also not a 64-bytes slice
+    #[inline]
+    pub fn from_hex(hex_encoded: &str) -> Result<Self, DidSidekicksError> {
+        Ok(Self {
+            signature: Signature::from_slice(
+                hex::decode(hex_encoded)
+                    .map_err(|err| HexConversionFailed(format!("{err}")))?
+                    .as_slice(),
+            )
+            .map_err(|err| {
+                HexConversionFailed(format!(
+                    "The hex-encoded value is not a 64-bytes slice: {err}"
+                ))
+            })?,
+        })
+    }
+
+    /// Encode the hex strict representing this signature's bytes.
+    ///
+    /// Lower case letters are used (e.g. f9b4ca).
+    ///
+    /// UniFFI-compliant method
+    #[inline]
+    pub fn to_hex(&self) -> String {
+        hex::encode(self.signature.to_bytes())
+    }
+}
+
 impl MultiBaseConvertible for Ed25519Signature {
     #[inline]
     fn to_multibase(&self) -> String {
@@ -45,7 +84,7 @@ impl MultiBaseConvertible for Ed25519Signature {
         let mut signature_bytes: [u8; SIGNATURE_LENGTH] = [0; SIGNATURE_LENGTH];
         match MultibaseEncoderDecoder::default().decode_base58_onto(multibase, &mut signature_bytes)
         {
-            Err(err) => Err(MultibaseKeyConversionFailed(format!("{err}"))),
+            Err(err) => Err(MultibaseConversionFailed(format!("{err}"))),
             Ok(_) => Ok(Self {
                 signature: Signature::from_bytes(&signature_bytes),
             }),
@@ -102,7 +141,7 @@ impl MultiBaseConvertible for Ed25519SigningKey {
         if let Err(err) =
             MultibaseEncoderDecoder::default().decode_base58_onto(multibase, &mut signing_key_buff)
         {
-            return Err(MultibaseKeyConversionFailed(format!("{err}")));
+            return Err(MultibaseConversionFailed(format!("{err}")));
         }
 
         let mut signing_key: [u8; SECRET_KEY_LENGTH] = [0; SECRET_KEY_LENGTH];
@@ -169,6 +208,30 @@ impl Ed25519SigningKey {
     #[inline]
     pub fn sign(&self, message: &str) -> Arc<Ed25519Signature> {
         self.sign_bytes(message.as_bytes()).into()
+    }
+
+    /// The UniFFI-compliant version of [`Self::sign_hex_str`]
+    #[inline]
+    pub fn sign_hex(&self, message_hex: &str) -> Result<Arc<Ed25519Signature>, DidSidekicksError> {
+        Ok(Arc::new(self.sign_hex_str(message_hex)?))
+    }
+
+    /// Sign the given hex-encoded message and return a digital signature.
+    ///
+    /// Basically, calling the method is the same as calling [`Self::sign_bytes`],
+    /// but with previous decoding from a hex string.
+    ///
+    /// # Errors
+    ///
+    /// [`HexConversionFailed`] if:
+    /// - `message_hex` is not properly hex-encoded, hence malformed
+    #[inline]
+    pub fn sign_hex_str(&self, message_hex: &str) -> Result<Ed25519Signature, DidSidekicksError> {
+        Ok(self.sign_bytes(
+            hex_decode(message_hex)
+                .map_err(|err| HexConversionFailed(format!("{err}")))?
+                .as_slice(),
+        ))
     }
 
     /// Sign the given message and return a digital signature.
@@ -245,7 +308,7 @@ impl MultiBaseConvertible for Ed25519VerifyingKey {
         if let Err(err) = MultibaseEncoderDecoder::default()
             .decode_base58_onto(multibase, &mut verifying_key_buff)
         {
-            return Err(MultibaseKeyConversionFailed(format!("{err}")));
+            return Err(MultibaseConversionFailed(format!("{err}")));
         }
 
         let mut verifying_key: [u8; PUBLIC_KEY_LENGTH] = [0; PUBLIC_KEY_LENGTH];
@@ -253,7 +316,7 @@ impl MultiBaseConvertible for Ed25519VerifyingKey {
 
         VerifyingKey::from_bytes(&verifying_key).map_or_else(
             |_| {
-                Err(MultibaseKeyConversionFailed(format!(
+                Err(MultibaseConversionFailed(format!(
                     "{multibase} is an invalid ed25519 verifying key"
                 )))
             },
@@ -467,6 +530,38 @@ mod tests {
         assert!(verifying_key_test_vector
             .verify_strict(message, &signature)
             .is_ok());
+    }
+
+    #[rstest]
+    fn test_ed25519_sign_hex_str_using_test_vectors(
+        signing_key_test_vector: &Ed25519SigningKey,
+        //verifying_key_test_vector: &Ed25519VerifyingKey,
+    ) {
+        // From https://www.w3.org/TR/vc-di-eddsa/#example-signature-of-combined-hashes-hex-1
+        assert_eq!("407cd12654b33d718ecbb99179a1506daaa849450bf3fc523cce3e1c96f8b80351da3f253d725c6f00b07c9e5448d50b3ef78012b9ab54255116d069c6dd2808",
+                   signing_key_test_vector
+                       // From https://www.w3.org/TR/vc-di-eddsa/#example-combine-hashes-of-proof-options-and-credential-hex-1
+                       .sign_hex_str("66ab154f5c2890a140cb8388a22a160454f80575f6eae09e5a097cabe539a1db59b7cb6251b8991add1ce0bc83107e3db9dbbab5bd2c28f687db1a03abc92f19") // MUT
+                       .unwrap()
+                       .to_hex());
+    }
+
+    #[rstest]
+    fn test_ed25519_signature_from_hex() {
+        // From https://www.w3.org/TR/vc-di-eddsa/#example-signature-of-combined-hashes-hex-1
+        assert_eq!("407cd12654b33d718ecbb99179a1506daaa849450bf3fc523cce3e1c96f8b80351da3f253d725c6f00b07c9e5448d50b3ef78012b9ab54255116d069c6dd2808",
+            Ed25519Signature::from_hex("407cd12654b33d718ecbb99179a1506daaa849450bf3fc523cce3e1c96f8b80351da3f253d725c6f00b07c9e5448d50b3ef78012b9ab54255116d069c6dd2808")
+            .unwrap().to_hex(),
+        );
+    }
+
+    #[rstest]
+    fn test_ed25519_signature_from_multibase() {
+        // From https://www.w3.org/TR/vc-di-eddsa/#example-signature-of-combined-hashes-hex-1
+        assert_eq!("z2HnFSSPPBzR36zdDgK8PbEHeXbR56YF24jwMpt3R1eHXQzJDMWS93FCzpvJpwTWd3GAVFuUfjoJdcnTMuVor51aX",
+            Ed25519Signature::from_multibase("z2HnFSSPPBzR36zdDgK8PbEHeXbR56YF24jwMpt3R1eHXQzJDMWS93FCzpvJpwTWd3GAVFuUfjoJdcnTMuVor51aX")
+            .unwrap().to_multibase(),
+        );
     }
 
     #[rstest]

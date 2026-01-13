@@ -6,6 +6,8 @@ import java.net.URI
 import java.net.URISyntaxException
 import javax.net.ssl.HttpsURLConnection
 
+// Execute these tests by running: cargo test uniffi_foreign_language_testcase_test_didresolver_kts
+
 var did = ""
 
 var didObj: Did? = null
@@ -103,6 +105,7 @@ private fun assertDidDoc(didDoc: DidDoc?) {
     assert(jwk?.kid == kid)
 
     val didDocJson = didDoc?.toJson()
+    //println(didDocJson)
     assert(didDocJson != null)
     assert(didDocJson is String)
     assert(didDocJson?.length != 0)
