@@ -157,8 +157,8 @@ pub struct DidDoc {
     // - https://jira.bit.admin.ch/browse/EIDSYS-352
     // - https://confluence.bit.admin.ch/display/EIDTEAM/DID+Doc+Conformity+Check
     // It is kept for the sake of backward compatibility only.
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub controller: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub controller: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub deactivated: Option<bool>,
 }
@@ -219,13 +219,8 @@ pub struct DidDocNormalized {
 impl DidDocNormalized {
     #[inline]
     pub fn to_did_doc(&self) -> Result<DidDoc, DidSidekicksError> {
-        let controller = self
-            .controller
-            .clone()
-            .map_or_else(Vec::new, |ctrl| vec![ctrl]);
-
         let mut did_doc = DidDoc {
-            context: self.context.clone(), // vec![],
+            context: self.context.to_owned(), // vec![],
             id: self.id.clone(),
             verification_method: self.verification_method.clone(),
             authentication: vec![],
@@ -233,8 +228,7 @@ impl DidDocNormalized {
             capability_delegation: vec![],
             assertion_method: vec![],
             key_agreement: vec![],
-            //controller: self.controller.clone(),
-            controller,
+            controller: self.controller.to_owned(),
             deactivated: self.deactivated,
         };
         if !self.authentication.is_empty() {
@@ -300,6 +294,31 @@ impl DidDocNormalized {
         }
         Ok(did_doc)
     }
+
+    /// The deserialization-based constructor. It attempts to deserialize an instance of type [`DidDocNormalized`] from a string of JSON text.
+    ///
+    /// # Errors
+    ///
+    /// The [`DidSidekicksError::DeserializationFailed`] error code denotes a deserialization failure:
+    /// - if the structure of the input does not match the structure expected by [`DidDocNormalized`].
+    #[inline]
+    pub fn from_json(json_content: &str) -> Result<Self, DidSidekicksError> {
+        serde_json::from_str(json_content)
+            .map_err(|err| DidSidekicksError::DeserializationFailed(err.to_string()))
+    }
+
+    /// Serializes this [`DidDocNormalized`] object as a [`String`] of JSON.
+    ///
+    /// # Errors
+    ///
+    /// The [`DidSidekicksError::SerializationFailed`] error code denotes a serialization failure:
+    /// - if [`DidDocNormalized`]'s implementation of [`Serialize`] decides to fail, or
+    /// - if [`DidDocNormalized`] contains a map with non-string keys.
+    #[inline]
+    pub fn to_json(&self) -> Result<String, DidSidekicksError> {
+        serde_json::to_string(&self)
+            .map_err(|err| DidSidekicksError::SerializationFailed(err.to_string()))
+    }
 }
 
 /// A simple container for both [`DidDoc`] and the related collection of [`DidMethodParameter`] objects.
@@ -346,8 +365,8 @@ impl DidDoc {
     }
 
     #[inline]
-    pub fn get_controller(&self) -> Vec<String> {
-        self.controller.clone()
+    pub fn get_controller(&self) -> Option<String> {
+        self.controller.to_owned()
     }
 
     #[inline]
@@ -359,7 +378,8 @@ impl DidDoc {
     ///
     /// # Errors
     ///
-    /// The conversion can fail if the structure of the input does not match the structure expected by [`DidDoc`].
+    /// The [`DidSidekicksError::DeserializationFailed`] error code denotes a deserialization failure:
+    /// - if the structure of the input does not match the structure expected by [`DidDoc`].
     #[inline]
     pub fn from_json(json_content: &str) -> Result<Self, DidSidekicksError> {
         serde_json::from_str(json_content)
@@ -372,12 +392,41 @@ impl DidDoc {
     ///
     /// # Errors
     ///
-    /// Serialization can fail if [`DidDoc`]'s implementation of [`Serialize`] decides to fail,
-    /// or if [`DidDoc`] contains a map with non-string keys.
+    /// The [`DidSidekicksError::SerializationFailed`] error code denotes a serialization failure:
+    /// - if [`DidDoc`]'s implementation of [`Serialize`] decides to fail, or
+    /// - if [`DidDoc`] contains a map with non-string keys.
     #[inline]
     pub fn to_json(&self) -> Result<String, DidSidekicksError> {
-        serde_json::to_string(&self)
-            .map_err(|err| DidSidekicksError::SerializationFailed(err.to_string()))
+        // Normalization due to DID log JSON schema compliance
+        serde_json::to_string(&DidDocNormalized {
+            context: self.context.to_owned(),
+            id: self.id.to_owned(),
+            verification_method: self.verification_method.to_owned(),
+            authentication: self
+                .authentication
+                .iter()
+                .map(|x| x.id.to_owned())
+                .collect(),
+            capability_invocation: self
+                .capability_invocation
+                .iter()
+                .map(|x| x.id.to_owned())
+                .collect(),
+            capability_delegation: self
+                .capability_delegation
+                .iter()
+                .map(|x| x.id.to_owned())
+                .collect(),
+            assertion_method: self
+                .assertion_method
+                .iter()
+                .map(|x| x.id.to_owned())
+                .collect(),
+            key_agreement: self.key_agreement.iter().map(|x| x.id.to_owned()).collect(),
+            controller: self.controller.to_owned(),
+            deactivated: self.deactivated.to_owned(),
+        })
+        .map_err(|err| DidSidekicksError::SerializationFailed(err.to_string()))
     }
 
     /// Returns a cryptographic public key ([`Jwk`]) referenced by the supplied `key_id`, if any.

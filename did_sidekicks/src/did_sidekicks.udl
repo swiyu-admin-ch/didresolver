@@ -135,6 +135,12 @@ interface DidDoc {
     [Name=from_json, Throws=DidSidekicksError]
     constructor([ByRef] string json_content);
     /// Serializes this `DidDoc` object as a `String` of JSON.
+    ///
+    /// The `SerializationFailed` error code denotes a serialization failure:
+    ///
+    /// - if `DidDoc`'s implementation of [`Serialize`] decides to fail, or
+    ///
+    /// - if `DidDoc` contains a map with non-string keys.
     [Throws=DidSidekicksError]
     string to_json();
     sequence<string> get_context();
@@ -144,7 +150,7 @@ interface DidDoc {
     sequence<VerificationMethod> get_capability_invocation();
     sequence<VerificationMethod> get_capability_delegation();
     sequence<VerificationMethod> get_assertion_method();
-    sequence<string> get_controller();
+    string? get_controller();
     boolean get_deactivated();
     /// Returns a cryptographic public key (`Jwk`) referenced by the supplied `key_id`, if any.
     /// The key lookup is always done across all verification methods (`verificationMethod`) and
@@ -267,7 +273,7 @@ interface Ed25519SigningKey {
     ///
     /// The `KeySignatureError` error code denotes a malformed hex-encoded message.
     [Throws=DidSidekicksError]
-    Ed25519Signature sign_hex([ByRef] string message);
+    Ed25519Signature sign_hex([ByRef] string message_hex);
     /// Get the `Ed25519VerifyingKey` for this `Ed25519SigningKey`.
     Ed25519VerifyingKey get_verifying_key();
 };

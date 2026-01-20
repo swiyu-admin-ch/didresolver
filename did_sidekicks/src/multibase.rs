@@ -61,6 +61,12 @@ impl Default for MultibaseEncoderDecoder {
 }
 
 impl MultibaseEncoderDecoder {
+    /// The UniFFI-compliant default constructor featuring [`MultibaseAlgorithm::Base58btc`] algorithm.
+    #[inline]
+    fn build() -> Self {
+        Self::default()
+    }
+
     /// Encode bytes into a new owned string using the alphabet supplied earlier.
     #[inline]
     #[expect(clippy::panic, reason = "sanity guard")]
