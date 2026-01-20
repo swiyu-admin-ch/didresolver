@@ -320,7 +320,7 @@ mod test {
         assert_eq!(did_doc_obj_v1.id, webvh_v1.get_did());
         assert!(!did_doc_obj_v1.verification_method.is_empty());
         assert!(!did_doc_obj_v1.authentication.is_empty());
-        assert!(did_doc_obj_v1.controller.is_empty());
+        assert!(did_doc_obj_v1.controller.is_none());
     }
 
     /* TODO implement the test case using proper input

@@ -21,7 +21,7 @@ impl DidLogEntryKeyword {
 
     /// The factory method required to register this custom keyword validator using `jsonschema::ValidationOptions::with_keyword`.
     #[inline]
-    #[expect(clippy::result_large_err, reason = "..")] // "the `Err`-variant is at least 224 bytes" (default: 128)
+    //#[expect(clippy::result_large_err, reason = "..")] // "the `Err`-variant is at least 224 bytes" (default: 128)
     #[expect(clippy::single_char_lifetime_names, reason = "for the sake of brevity")]
     pub fn factory<'a>(
         _parent: &'a Map<String, Value>,
@@ -132,7 +132,7 @@ impl DidVersionTimeKeyword {
 
     /// Required to register this custom keyword validator using `jsonschema::ValidationOptions::with_keyword`.
     #[inline]
-    #[expect(clippy::result_large_err, reason = "..")] // "the `Err`-variant is at least 224 bytes" (default: 128)
+    //#[expect(clippy::result_large_err, reason = "..")] // "the `Err`-variant is at least 224 bytes" (default: 128)
     #[expect(clippy::single_char_lifetime_names, reason = "..")]
     pub fn factory<'a>(
         _parent: &'a Map<String, Value>,
