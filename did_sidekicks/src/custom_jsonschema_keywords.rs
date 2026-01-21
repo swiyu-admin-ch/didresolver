@@ -3,7 +3,7 @@
 use chrono::{DateTime, Local};
 use core::cmp::Ordering;
 use jsonschema::{
-    paths::{LazyLocation, Location},
+    paths::Location,
     Keyword, ValidationError,
 };
 use serde_json::{Map, Value};
@@ -36,9 +36,6 @@ impl DidLogEntryKeyword {
             Ok(Box::new(Self))
         } else {
             Err(ValidationError::custom(
-                Location::new(),
-                path,
-                value,
                 "The 'did-log-entry' keyword must be set to true",
             ))
         }
@@ -58,24 +55,17 @@ impl Keyword for DidLogEntryKeyword {
     fn validate<'i>(
         &self,
         instance: &'i Value,
-        location: &LazyLocation,
     ) -> Result<(), ValidationError<'i>> {
         if let Value::Array(_) = *instance {
             if self.is_valid(instance) {
                 Ok(())
             } else {
                 Err(ValidationError::custom(
-                    Location::new(),
-                    location.into(),
-                    instance,
                     "A DID log entry must include a JSON array of five items of the following types: string, string, object, object and array",
                 ))
             }
         } else {
             Err(ValidationError::custom(
-                Location::new(),
-                location.into(),
-                instance,
                 "Value must be an array",
             ))
         }
@@ -147,9 +137,6 @@ impl DidVersionTimeKeyword {
             Ok(Box::new(Self))
         } else {
             Err(ValidationError::custom(
-                Location::new(),
-                path,
-                value,
                 "The 'did-version-time' keyword must be set to true",
             ))
         }
@@ -166,7 +153,6 @@ impl Keyword for DidVersionTimeKeyword {
     fn validate<'i>(
         &self,
         instance: &'i Value,
-        location: &LazyLocation,
     ) -> Result<(), ValidationError<'i>> {
         if let Value::String(dt) = instance {
             // versionTime:
@@ -178,26 +164,17 @@ impl Keyword for DidVersionTimeKeyword {
                     let now = Local::now();
                     if parsed_dt.ge(&now) {
                         return Err(ValidationError::custom(
-                            Location::new(),
-                            location.into(),
-                            instance,
                             format!("`versionTime` '{parsed_dt}' must be before the current datetime '{now}'"),
                         ));
                     }
                     Ok(())
                 }
                 Err(_) => Err(ValidationError::custom(
-                    Location::new(),
-                    location.into(),
-                    instance,
                     "Datetime not in ISO8601 format",
                 )),
             }
         } else {
             Err(ValidationError::custom(
-                Location::new(),
-                location.into(),
-                instance,
                 "Value must be a string representing some datetime in ISO8601 format",
             ))
         }
