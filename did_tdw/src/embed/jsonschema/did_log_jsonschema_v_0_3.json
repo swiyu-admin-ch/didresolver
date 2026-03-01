@@ -72,7 +72,7 @@
             "$comment": "A number, the number of seconds that a cache entry for a resolved did:tdw DID SHOULD last, as recommended by the DID Controller."
           }
         },
-        "additionalProperties": false
+        "additionalProperties": true
       },
       {
         "type": "object",

@@ -238,13 +238,17 @@
             "type": "object"
           },
           "$comment": "Services are used in DID documents to express ways of communicating with the DID subject or associated entities. As specified by https://www.w3.org/TR/did-1.0/#services. CAUTION (e-ID conformity): Although the 'service' property is PROHIBITED in e-ID, it is left OPTIONAL for the sake of being able to use test vectors from third parties."
+        },
+        "profile_version":  {
+          "type": "string",
+          "$comment": "A string difining the version of the swiss profile being used."
         }
       },
       "required": [
         "id",
         "@context"
       ],
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "proof": {
       "type": "array",

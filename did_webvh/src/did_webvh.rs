@@ -1121,7 +1121,7 @@ mod test {
         "\"id\" is a required property"
     )]
     #[case(
-        r#"{"versionId":"1-Qhashhashhashhashhashhashhashhashhashhashhashhash","versionTime":"2025-04-29T17:15:59Z", "parameters":{}, "state":{"id":""}}"#,
+        r#"{"versionId":"1-Qhashhashhashhashhashhashhashhashhashhashhashhash","versionTime":"2025-04-29T17:15:59Z", "parameters":{}, "state":{"id":"did:webvh:QmQyDxVnosYTzHAMbzYDRZkVrD32ea9Sr2XNs8NkgMB5mn:domain.example"}}"#,
         "\"@context\" is a required property"
     )]
     // did doc context needs to be filled

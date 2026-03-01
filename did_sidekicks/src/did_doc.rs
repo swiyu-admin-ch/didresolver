@@ -161,6 +161,8 @@ pub struct DidDoc {
     pub controller: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub deactivated: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub profile_version: Option<String>,
 }
 
 // See      https://www.w3.org/TR/did-core/#dfn-did-documents
@@ -214,6 +216,8 @@ pub struct DidDocNormalized {
     pub controller: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub deactivated: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub profile_version: Option<String>,
 }
 
 impl DidDocNormalized {
@@ -230,6 +234,7 @@ impl DidDocNormalized {
             key_agreement: vec![],
             controller: self.controller.to_owned(),
             deactivated: self.deactivated,
+            profile_version: self.profile_version.to_owned(),
         };
         if !self.authentication.is_empty() {
             did_doc.authentication = vec![];
@@ -370,6 +375,11 @@ impl DidDoc {
     }
 
     #[inline]
+    pub fn get_profile_version(&self) -> Option<String> {
+        self.profile_version.to_owned()
+    }
+
+    #[inline]
     pub fn get_deactivated(&self) -> bool {
         self.deactivated.unwrap_or(false)
     }
@@ -425,6 +435,7 @@ impl DidDoc {
             key_agreement: self.key_agreement.iter().map(|x| x.id.to_owned()).collect(),
             controller: self.controller.to_owned(),
             deactivated: self.deactivated.to_owned(),
+            profile_version: self.profile_version.to_owned(),
         })
         .map_err(|err| DidSidekicksError::SerializationFailed(err.to_string()))
     }

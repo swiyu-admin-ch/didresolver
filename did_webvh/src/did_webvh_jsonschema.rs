@@ -88,6 +88,7 @@ mod test {
       "@context": [
         "https://www.w3.org/ns/did/v1"
       ],
+      "additionalProperty": "test",
       "id": "did:webvh:QmNdazvnrgei4agYFMVJjYduyZSYHcYWnHEgNW7A1sMUoU:domain.example"
     },
     "proof": [
@@ -217,7 +218,7 @@ mod test {
         "versionId": "1-QmcykRx2WnZz2L9s5ACN34E4ADEYGiCde4BJSzoxrhYoiR",
         "versionTime": "2012-12-12T12:12:12Z", 
         "parameters": {},
-        "state": {"id": "did:webvh:QmT7BM5RsM9SoaqAQKkNKHBzSEzpS2NRzT2oKaaaPYPpGr:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01"}, 
+        "state": {"id": "did:webvh:QmT7BM5RsM9SoaqAQKkNKHBzSEzpS2NRzT2oKaaaPYPpGr:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"}, 
         "proof": [{"":""}]}), false, "\"@context\" is a required property"
     )] // params may be empty, but DID doc must be complete
     #[case(vec![WebVerifiableHistoryDidLogEntryJsonSchema::V1_0, WebVerifiableHistoryDidLogEntryJsonSchema::V1_0EidConform], json!({
@@ -276,6 +277,7 @@ mod test {
         #[case] expected: bool,
         #[case] err_contains_pattern: &str,
     ) {
+        dbg!(&err_contains_pattern);
         schemata.iter().for_each(|schema| {
             let sch: &dyn DidLogEntryJsonSchema = schema;
             let validator = DidLogEntryValidator::from(sch);

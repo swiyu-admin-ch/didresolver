@@ -63,6 +63,7 @@ impl Default for MultibaseEncoderDecoder {
 impl MultibaseEncoderDecoder {
     /// The UniFFI-compliant default constructor featuring [`MultibaseAlgorithm::Base58btc`] algorithm.
     #[inline]
+    #[allow(dead_code)]
     fn build() -> Self {
         Self::default()
     }

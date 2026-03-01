@@ -277,7 +277,7 @@
         "id",
         "@context"
       ],
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "proof": {
       "type": "array",

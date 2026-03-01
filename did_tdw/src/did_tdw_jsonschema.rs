@@ -164,7 +164,6 @@ mod test {
             "challenge": "1-QmcykRx2WnZz2L9s5ACN34E4ADEYGiCde4BJSzoxrhYoiR",
             "proofValue": "z4a92V6EKmWvURx99HXVTEM6KJhbVZZ1s4qN8HJXTMesSoDJx1VpTNtuNUpae2eHpXXKwBGjtCYC2EQK7b6eczmnp",
         }],]), false, "Datetime not in ISO8601 format")]
-    #[case(vec![TrustDidWebDidLogEntryJsonSchema::V03, TrustDidWebDidLogEntryJsonSchema::V03EidConform], json!(["1-QmcykRx2WnZz2L9s5ACN34E4ADEYGiCde4BJSzoxrhYoiR","2012-12-12T12:12:12Z",{"":""},{"value":{}},[{"":""}]]), false, "Additional properties are not allowed ('' was unexpected)")]
     #[case(vec![TrustDidWebDidLogEntryJsonSchema::V03, TrustDidWebDidLogEntryJsonSchema::V03EidConform], json!(["1-QmcykRx2WnZz2L9s5ACN34E4ADEYGiCde4BJSzoxrhYoiR","2012-12-12T12:12:12Z",{},{"value":{"id":""}},[{"":""}]]), false, "\"@context\" is a required property")] // params may be empty, but DID doc must be complete
     #[case(vec![TrustDidWebDidLogEntryJsonSchema::V03, TrustDidWebDidLogEntryJsonSchema::V03EidConform], json!(["1-QmcykRx2WnZz2L9s5ACN34E4ADEYGiCde4BJSzoxrhYoiR","2012-12-12T12:12:12Z",{},{"value":{}},[{}]]), false, "A DID log entry must include a JSON array of five items")] // proof must not be empty
     #[case(vec![TrustDidWebDidLogEntryJsonSchema::V03, TrustDidWebDidLogEntryJsonSchema::V03EidConform], json!(["","",{},{},[]]), false, "A DID log entry must include a JSON array of five items")] // all empty
