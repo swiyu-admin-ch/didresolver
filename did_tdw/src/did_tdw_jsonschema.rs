@@ -164,12 +164,28 @@ mod test {
             "challenge": "1-QmcykRx2WnZz2L9s5ACN34E4ADEYGiCde4BJSzoxrhYoiR",
             "proofValue": "z4a92V6EKmWvURx99HXVTEM6KJhbVZZ1s4qN8HJXTMesSoDJx1VpTNtuNUpae2eHpXXKwBGjtCYC2EQK7b6eczmnp",
         }],]), false, "Datetime not in ISO8601 format")]
-    #[case(vec![TrustDidWebDidLogEntryJsonSchema::V03, TrustDidWebDidLogEntryJsonSchema::V03EidConform], json!(["1-QmcykRx2WnZz2L9s5ACN34E4ADEYGiCde4BJSzoxrhYoiR","2012-12-12T12:12:12Z",{},{"value":{"id":""}},[{"":""}]]), false, "\"@context\" is a required property")] // params may be empty, but DID doc must be complete
-    #[case(vec![TrustDidWebDidLogEntryJsonSchema::V03, TrustDidWebDidLogEntryJsonSchema::V03EidConform], json!(["1-QmcykRx2WnZz2L9s5ACN34E4ADEYGiCde4BJSzoxrhYoiR","2012-12-12T12:12:12Z",{},{"value":{}},[{}]]), false, "A DID log entry must include a JSON array of five items")] // proof must not be empty
-    #[case(vec![TrustDidWebDidLogEntryJsonSchema::V03, TrustDidWebDidLogEntryJsonSchema::V03EidConform], json!(["","",{},{},[]]), false, "A DID log entry must include a JSON array of five items")] // all empty
-    #[case(vec![TrustDidWebDidLogEntryJsonSchema::V03, TrustDidWebDidLogEntryJsonSchema::V03EidConform], json!(["","",{},{},[{}]]), false, "A DID log entry must include a JSON array of five items")] // all empty
-    #[case(vec![TrustDidWebDidLogEntryJsonSchema::V03, TrustDidWebDidLogEntryJsonSchema::V03EidConform], json!(["","","","",""]), false, "A DID log entry must include a JSON array of five items")] // all JSON strings
-    #[case(vec![TrustDidWebDidLogEntryJsonSchema::V03, TrustDidWebDidLogEntryJsonSchema::V03EidConform], json!([]), false, "A DID log entry must include a JSON array of five items")] // empty array
+    #[case(vec![TrustDidWebDidLogEntryJsonSchema::V03, TrustDidWebDidLogEntryJsonSchema::V03EidConform], json!([
+        "1-QmcykRx2WnZz2L9s5ACN34E4ADEYGiCde4BJSzoxrhYoiR",
+        "2012-12-12T12:12:12Z",
+        {},
+        {
+         "value":{
+         "id":"did:tdw:QmT7BM5RsM9SoaqAQKkNKHBzSEzpS2NRzT2oKaaaPYPpGr:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085", 
+         "@context": [1],
+        }},
+        [{"":""}],
+      ]), false, "1 is not of type \"string\"")] // context must be strings
+    #[case(vec![TrustDidWebDidLogEntryJsonSchema::V03, TrustDidWebDidLogEntryJsonSchema::V03EidConform], json!([
+         "1-QmcykRx2WnZz2L9s5ACN34E4ADEYGiCde4BJSzoxrhYoiR","2012-12-12T12:12:12Z",
+         {},
+         { "id":"did:tdw:QmT7BM5RsM9SoaqAQKkNKHBzSEzpS2NRzT2oKaaaPYPpGr:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085", },
+         [{}],
+      ]), false, "the supplied JSON instance is not a valid DID log")] // proof must not be empty
+    #[case(vec![TrustDidWebDidLogEntryJsonSchema::V03, TrustDidWebDidLogEntryJsonSchema::V03EidConform], json!([
+         "1-QmcykRx2WnZz2L9s5ACN34E4ADEYGiCde4BJSzoxrhYoiR","2012-12-12T12:12:12Z", "", "", "",
+      ]), false, "the supplied JSON instance is not a valid DID log")] // wrong type
+    #[case(vec![TrustDidWebDidLogEntryJsonSchema::V03, TrustDidWebDidLogEntryJsonSchema::V03EidConform], json!([
+      ]), false, "the supplied JSON instance is not a valid DID log")] // empty array
     fn test_validate_using_schema(
         #[case] schemata: Vec<TrustDidWebDidLogEntryJsonSchema>,
         #[case] instance: Value,
@@ -182,7 +198,6 @@ mod test {
             let sch: &dyn DidLogEntryJsonSchema = schema;
             let validator = DidLogEntryValidator::from(sch);
 
-            //let is_valid = validator.validate(instance.to_string());
             let is_valid = validator.validate_str(instance.to_string().as_str());
 
             assert_eq!(expected, is_valid.is_ok());

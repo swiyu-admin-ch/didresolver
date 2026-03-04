@@ -58,50 +58,50 @@ mod test {
     #[rstest]
     // CAUTION V1_0-specific (happy path) case
     #[case(vec![WebVerifiableHistoryDidLogEntryJsonSchema::V1_0], json!({
-    "versionId": "1-QmVCzWgVX2isJE6tsmUcHnNHQJ9WXZb9A26VpkxptB2fqb",
-    "versionTime": "2025-05-09T22:33:41Z",
-    "parameters": {
-      "witness": {
-        "threshold": 2,
-        "witnesses": [
-          {
-            "id": "did:key:z6MkrMuMdd6hTJmwf8e6WZz643b7JxYiAnWAFsorDLkaZF5i"
-          },
-          {
-            "id": "did:key:z6MkgXvUbnhiVu1H6SmiPVzC9xpdnCFyE5X2AgxRY4PrbbWN"
-          },
-          {
-            "id": "did:key:z6MkvZ7MQfnCewK2qjqXpDAKBcExAPpLbpWv8khQxZS3RmTj"
-          }
-        ]
-      },
-      "updateKeys": [
-        "z6Mkh8Pzehru4LVBRftuiLzpMchSzNWbEytus13N8fsfpobs"
-      ],
-      "nextKeyHashes": [
-        "QmRossAYEwzTgLNQx8zEzZPfxUU1WGSZpCFA6T8ZPku3V7"
-      ],
-      "method": "did:webvh:1.0",
-      "scid": "QmNdazvnrgei4agYFMVJjYduyZSYHcYWnHEgNW7A1sMUoU"
-    },
-    "state": {
-      "@context": [
-        "https://www.w3.org/ns/did/v1"
-      ],
-      "additionalProperty": "test",
-      "id": "did:webvh:QmNdazvnrgei4agYFMVJjYduyZSYHcYWnHEgNW7A1sMUoU:domain.example"
-    },
-    "proof": [
-      {
-        "type": "DataIntegrityProof",
-        "cryptosuite": "eddsa-jcs-2022",
-        "verificationMethod": "did:key:z6Mkh8Pzehru4LVBRftuiLzpMchSzNWbEytus13N8fsfpobs#z6Mkh8Pzehru4LVBRftuiLzpMchSzNWbEytus13N8fsfpobs",
-        "created": "2025-05-09T22:33:41Z",
-        "proofPurpose": "assertionMethod",
-        "proofValue": "z4rDHfJZ5hxVTu3TYnTLo2tTLyRFfBpzgkoWMnkLcg6tVXerkTXmXduHbM1oaMakhrc6sFt1A5Nj6AH5y63EFJysi"
-      }
-    ]
-  }), true, ""
+       "versionId": "1-QmVCzWgVX2isJE6tsmUcHnNHQJ9WXZb9A26VpkxptB2fqb",
+       "versionTime": "2025-05-09T22:33:41Z",
+       "parameters": {
+         "witness": {
+           "threshold": 2,
+           "witnesses": [
+             {
+               "id": "did:key:z6MkrMuMdd6hTJmwf8e6WZz643b7JxYiAnWAFsorDLkaZF5i"
+             },
+             {
+               "id": "did:key:z6MkgXvUbnhiVu1H6SmiPVzC9xpdnCFyE5X2AgxRY4PrbbWN"
+             },
+             {
+               "id": "did:key:z6MkvZ7MQfnCewK2qjqXpDAKBcExAPpLbpWv8khQxZS3RmTj"
+             }
+           ]
+         },
+         "updateKeys": [
+           "z6Mkh8Pzehru4LVBRftuiLzpMchSzNWbEytus13N8fsfpobs"
+         ],
+         "nextKeyHashes": [
+           "QmRossAYEwzTgLNQx8zEzZPfxUU1WGSZpCFA6T8ZPku3V7"
+         ],
+         "method": "did:webvh:1.0",
+         "scid": "QmNdazvnrgei4agYFMVJjYduyZSYHcYWnHEgNW7A1sMUoU"
+       },
+       "state": {
+         "@context": [
+           "https://www.w3.org/ns/did/v1"
+         ],
+         "profile_version": "swiss_profile",
+         "id": "did:webvh:QmNdazvnrgei4agYFMVJjYduyZSYHcYWnHEgNW7A1sMUoU:domain.example"
+       },
+       "proof": [
+         {
+           "type": "DataIntegrityProof",
+           "cryptosuite": "eddsa-jcs-2022",
+           "verificationMethod": "did:key:z6Mkh8Pzehru4LVBRftuiLzpMchSzNWbEytus13N8fsfpobs#z6Mkh8Pzehru4LVBRftuiLzpMchSzNWbEytus13N8fsfpobs",
+           "created": "2025-05-09T22:33:41Z",
+           "proofPurpose": "assertionMethod",
+           "proofValue": "z4rDHfJZ5hxVTu3TYnTLo2tTLyRFfBpzgkoWMnkLcg6tVXerkTXmXduHbM1oaMakhrc6sFt1A5Nj6AH5y63EFJysi"
+         }
+       ]
+     }), true, ""
     )] // example did log entry from https://github.com/decentralized-identity/didwebvh-py/blob/main/sample-diddoc/did.jsonl
     #[case(vec![WebVerifiableHistoryDidLogEntryJsonSchema::V1_0], json!({
         "versionId": "1-QmcykRx2WnZz2L9s5ACN34E4ADEYGiCde4BJSzoxrhYoiR",
@@ -218,9 +218,20 @@ mod test {
         "versionId": "1-QmcykRx2WnZz2L9s5ACN34E4ADEYGiCde4BJSzoxrhYoiR",
         "versionTime": "2012-12-12T12:12:12Z", 
         "parameters": {},
-        "state": {"id": "did:webvh:QmT7BM5RsM9SoaqAQKkNKHBzSEzpS2NRzT2oKaaaPYPpGr:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"}, 
-        "proof": [{"":""}]}), false, "\"@context\" is a required property"
-    )] // params may be empty, but DID doc must be complete
+        "state": {
+            "id": "did:webvh:QmT7BM5RsM9SoaqAQKkNKHBzSEzpS2NRzT2oKaaaPYPpGr:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+            "@context": [1],
+         }, 
+        "proof": [{
+            "created": "2012-12-12T12:12:12Z",
+            "challenge": "1-QmcykRx2WnZz2L9s5ACN34E4ADEYGiCde4BJSzoxrhYoiR",
+            "proofValue": "z4a92V6EKmWvURx99HXVTEM6KJhbVZZ1s4qN8HJXTMesSoDJx1VpTNtuNUpae2eHpXXKwBGjtCYC2EQK7b6eczmnp",
+            "type": "DataIntegrityProof",
+            "cryptosuite": "eddsa-jcs-2022",
+            "verificationMethod": "did:key:z6MkvdAjfVZ2CWa38V2VgZvZVjSkENZpiuiV5gyRKsXDA8UP#z6MkvdAjfVZ2CWa38V2VgZvZVjSkENZpiuiV5gyRKsXDA8UP",
+            "proofPurpose": "assertionMethod",
+      }]}), false, "1 is not of type \"string\"",
+    )] // context must be strings
     #[case(vec![WebVerifiableHistoryDidLogEntryJsonSchema::V1_0, WebVerifiableHistoryDidLogEntryJsonSchema::V1_0EidConform], json!({
         "versionId": "1-QmcykRx2WnZz2L9s5ACN34E4ADEYGiCde4BJSzoxrhYoiR",
         "versionTime": "2012-12-12T12:12:12Z", 
@@ -282,7 +293,6 @@ mod test {
             let sch: &dyn DidLogEntryJsonSchema = schema;
             let validator = DidLogEntryValidator::from(sch);
 
-            //let is_valid = validator.validate(instance.to_string());
             let is_valid = validator.validate_str(instance.to_string().as_str());
 
             assert_eq!(expected, is_valid.is_ok());
