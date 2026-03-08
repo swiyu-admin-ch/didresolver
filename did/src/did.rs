@@ -9,9 +9,15 @@ use did_tdw::did_tdw::{TrustDidWeb, TrustDidWebId};
 use did_tdw::errors::TrustDidWebIdResolutionErrorKind;
 use did_webvh::did_webvh::{WebVerifiableHistory, WebVerifiableHistoryId};
 use did_webvh::errors::WebVerifiableHistoryIdResolutionErrorKind;
+use regex::Regex;
 use std::sync::Arc;
 use strum::{AsRefStr as EnumAsRefStr, Display as EnumDisplay};
 use thiserror::Error;
+
+static FRAGMENT_REGEX_STR: &str = r#"^([-?/:@._~!$&'()*+,;=a-zA-Z0-9]|%[0-9a-fA-F]{2})*$"#;
+lazy_static! {
+    static ref FRAGMENT_REGEX: Regex = Regex::new(FRAGMENT_REGEX_STR).unwrap();
+}
 
 #[derive(Error, Debug, PartialEq, Eq)]
 #[expect(
@@ -384,6 +390,30 @@ impl TryFrom<String> for Did {
     }
 }
 
+pub fn get_did_from_absolute_kid(absolute_kid: String) -> Result<Did, DidResolveError> {
+    // Split the incoming string at the first # (as denoted here: https://www.w3.org/TR/did-1.0/#dfn-did-fragments)
+    let split_kid: Vec<&str> = absolute_kid.split("#").collect();
+    if split_kid.len() != 2 {
+        return Err(DidResolveError::MalformedDid(
+            "expected DID with fragment".into(),
+        ));
+    }
+
+    // CAUTION direct array access is safe due to above length check
+    let did = split_kid[0];
+    let fragment = split_kid[1];
+
+    // Validate that the did fragment (second part of the split) is a valid URI fragment (see allowed characters here: https://www.rfc-editor.org/rfc/rfc3986#section-3.5)
+    if FRAGMENT_REGEX.captures(fragment).is_none() {
+        return Err(DidResolveError::MalformedDid(
+            "fragment contains invalid characters".into(),
+        ));
+    }
+
+    // Validate the DID (first part of the split) to be a valid DID (logic for that should already be done in the didresolver).
+    Did::try_from(did.to_string())
+}
+
 #[cfg(test)]
 #[expect(
     clippy::unwrap_used,
@@ -394,6 +424,8 @@ impl TryFrom<String> for Did {
     reason = "no panic expected as long as test case setup is correct"
 )]
 mod tests {
+    use crate::did::get_did_from_absolute_kid;
+
     use super::DidResolveErrorKind;
     use super::{Did, DidMethod};
     use did_sidekicks::did_doc::VerificationType;
@@ -778,5 +810,40 @@ mod tests {
             did_obj_res.unwrap_err().kind(), // panic-safe unwrap call (see the previous line)
             DidResolveErrorKind::MalformedDid
         );
+    }
+
+    #[rstest]
+    #[case(
+        "did:webvh:QmSPEpPcSwb3fegq8YE8zotcPEgzHrSFyTJJDAzPo2CYBp:example.org:test#assert-key01",
+        true
+    )] // valid did webvh
+    #[case(
+        "did:tdw:QmSPEpPcSwb3fegq8YE8zotcPEgzHrSFyTJJDAzPo2CYBp:example.org:test#assert-key01",
+        true
+    )] // valid did tdw
+    #[case("did:webvh::example.org:test#assert-key01", false)] // empty SCID
+    #[case("did:tdw::example.org:test#assert-key01", false)] // empty SCID
+    #[case("did:key:QinvalidSCID:example.org:test#assert-key01", false)] // unsupported method
+    #[case(
+        "did:key:QmSPEpPcSwb3fegq8YE8zotcPEgzHrSFyTJJDAzPo2CYBp:example.org:test:assert-key01",
+        false
+    )] // missing '#'
+    #[case(
+        "did:webvh:QmSPEpPcSwb3fegq8YE8zotcPEgzHrSFyTJJDAzPo2CYBp:example.org:test:assert-key01",
+        false
+    )] // missing '#'
+    #[case("https://example.org", false)] // url
+    #[case("https://example.org#fragment", false)] // url with fragment
+    #[case("did:webvh:QmSPEpPcSwb3fegq8YE8zotcPEgzHrSFyTJJDAzPo2CYBp:example.org:test#invalidFragmentö", false)] // invalid character in fragment
+    #[case("fragmentOnly", false)] // fragment only
+    fn test_get_did_from_absolute_kid(#[case] kid: String, #[case] valid: bool) {
+        let res = get_did_from_absolute_kid(kid.clone());
+        assert!(valid == res.is_ok());
+        if !valid {
+            return;
+        }
+
+        let did = res.unwrap();
+        assert!(kid.contains(&did.to_string()));
     }
 }

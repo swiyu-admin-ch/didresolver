@@ -27,6 +27,8 @@ did_webvh = { path = "../did_webvh" }
 uniffi = { workspace = true, features = ["cli"] }
 thiserror.workspace = true
 strum.workspace = true
+regex.workspace = true
+lazy_static = "1.5.0"
 
 [build-dependencies]
 uniffi = { workspace = true, features = ["build"] }

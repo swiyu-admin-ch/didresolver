@@ -107,4 +107,6 @@ interface Did {
     /// when publishing the current and subsequent `DID log entries`.
     [Throws=DidResolveError]
     DidDocExtended resolve_all(string did_log);
+    /// Returns the original DID string used to construct this DID object.
+    string to_string();
 };
