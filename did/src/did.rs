@@ -390,8 +390,9 @@ impl TryFrom<String> for Did {
     }
 }
 
-pub fn get_did_from_absolute_kid(absolute_kid: String) -> Result<Did, DidResolveError> {
-    // Split the incoming string at the first # (as denoted here: https://www.w3.org/TR/did-1.0/#dfn-did-fragments)
+/// Constructs a DID from an absolute kid.
+pub fn get_did_from_absolute_kid(absolute_kid: String) -> Result<Arc<Did>, DidResolveError> {
+    // Split the incoming string at the first '#' (https://www.w3.org/TR/did-1.0/#dfn-did-fragments)
     let split_kid: Vec<&str> = absolute_kid.split("#").collect();
     if split_kid.len() != 2 {
         return Err(DidResolveError::MalformedDid(
@@ -403,15 +404,15 @@ pub fn get_did_from_absolute_kid(absolute_kid: String) -> Result<Did, DidResolve
     let did = split_kid[0];
     let fragment = split_kid[1];
 
-    // Validate that the did fragment (second part of the split) is a valid URI fragment (see allowed characters here: https://www.rfc-editor.org/rfc/rfc3986#section-3.5)
+    // Validate DID fragment (allowed characters are the same as in URI fragment: https://www.rfc-editor.org/rfc/rfc3986#section-3.5)
     if FRAGMENT_REGEX.captures(fragment).is_none() {
         return Err(DidResolveError::MalformedDid(
             "fragment contains invalid characters".into(),
         ));
     }
 
-    // Validate the DID (first part of the split) to be a valid DID (logic for that should already be done in the didresolver).
-    Did::try_from(did.to_string())
+    // Validate the DID
+    Did::try_from(did.to_string()).map(|did| Arc::new(did))
 }
 
 #[cfg(test)]
