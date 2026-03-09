@@ -391,6 +391,7 @@ impl TryFrom<String> for Did {
 }
 
 /// Constructs a DID from an absolute kid.
+#[inline]
 pub fn get_did_from_absolute_kid(absolute_kid: String) -> Result<Arc<Did>, DidResolveError> {
     // Split the incoming string at the first '#' (https://www.w3.org/TR/did-1.0/#dfn-did-fragments)
     let split_kid: Vec<&str> = absolute_kid.split("#").collect();
@@ -412,7 +413,7 @@ pub fn get_did_from_absolute_kid(absolute_kid: String) -> Result<Arc<Did>, DidRe
     }
 
     // Validate the DID
-    Did::try_from(did.to_string()).map(|did| Arc::new(did))
+    Did::try_from(did.to_string()).map(Arc::new)
 }
 
 #[cfg(test)]
