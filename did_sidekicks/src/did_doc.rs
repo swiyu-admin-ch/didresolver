@@ -429,7 +429,7 @@ impl DidDoc {
         .map_err(|err| DidSidekicksError::SerializationFailed(err.to_string()))
     }
 
-    /// Returns a cryptographic public key ([`Jwk`]) referenced by the supplied `key_id`, if any.
+    /// Returns a cryptographic public key ([`Jwk`]) referenced by the supplied fragment (`key_id`), if any.
     ///
     /// The key lookup is always done across all verification methods (`verificationMethod`) and
     /// verification relationships
@@ -462,6 +462,35 @@ impl DidDoc {
                 None => Err(DidSidekicksError::NonExistingKeyReferenced(key_id)),
             },
             None => Err(DidSidekicksError::KeyNotFound(key_id)),
+        }
+    }
+
+    /// Returns a cryptographic public key ([`Jwk`]) referenced by the supplied id of the
+    /// verification method, if any.
+    ///
+    /// The key lookup is always done across all verification methods (`verificationMethod`) and
+    /// verification relationships
+    /// (`authentication`, `assertionMethod`, `keyAgreement`, `capabilityInvocation`, `capabilityInvocation`).
+    ///
+    /// If no such key exists, [`DidSidekicksError::KeyNotFound`] is returned.
+    #[inline]
+    pub fn get_key_by_method_id(&self, kid: String) -> Result<Jwk, DidSidekicksError> {
+        // A JWK referenced by the supplied key_id might be anywhere in this DID doc
+        match self
+            .verification_method
+            .iter()
+            .chain(self.authentication.iter())
+            .chain(self.capability_invocation.iter())
+            .chain(self.capability_delegation.iter())
+            .chain(self.assertion_method.iter())
+            .chain(self.key_agreement.iter())
+            .find(|&key| key.id.eq(&kid))
+        {
+            Some(key) => match key.public_key_jwk.to_owned() {
+                Some(jwk) => Ok(jwk),
+                None => Err(DidSidekicksError::NonExistingKeyReferenced(kid)),
+            },
+            None => Err(DidSidekicksError::KeyNotFound(kid)),
         }
     }
 }

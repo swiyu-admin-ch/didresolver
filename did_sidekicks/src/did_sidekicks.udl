@@ -152,7 +152,7 @@ interface DidDoc {
     sequence<VerificationMethod> get_assertion_method();
     string? get_controller();
     boolean get_deactivated();
-    /// Returns a cryptographic public key (`Jwk`) referenced by the supplied `key_id`, if any.
+    /// Returns a cryptographic public key ([`Jwk`]) referenced by the supplied fragment (`key_id`), if any.
     /// The key lookup is always done across all verification methods (`verificationMethod`) and
     /// verification relationships
     /// (`authentication`, `assertionMethod`, `keyAgreement`, `capabilityInvocation`, `capabilityInvocation`).
@@ -160,6 +160,15 @@ interface DidDoc {
     /// If no such key exists, `DidSidekicksError::KeyNotFound` is returned.
     [Throws=DidSidekicksError]
     Jwk get_key(string key_id);
+    /// Returns a cryptographic public key ([`Jwk`]) referenced by the supplied id of the
+    /// verification method, if any.
+    /// The key lookup is always done across all verification methods (`verificationMethod`) and
+    /// verification relationships
+    /// (`authentication`, `assertionMethod`, `keyAgreement`, `capabilityInvocation`, `capabilityInvocation`).
+    ///
+    /// If no such key exists, `DidSidekicksError::KeyNotFound` is returned.
+    [Throws=DidSidekicksError]
+    Jwk get_key_by_method_id(string key_id);
 };
 
 /// A simple container for both `DidDoc` and the related collection of `DidMethodParameter` objects.

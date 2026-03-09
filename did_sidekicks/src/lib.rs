@@ -51,8 +51,8 @@ uniffi::include_scaffolding!("did_sidekicks");
     reason = "unwrap calls are panic-safe as long as test case setup is correct"
 )]
 mod test {
-    use crate::did_doc;
     use crate::did_doc::DidDocNormalized;
+    use crate::did_doc;
     use crate::errors::*;
     use rand::distributions::Alphanumeric;
     use rand::Rng as _;
@@ -251,6 +251,84 @@ mod test {
                 }
             }
         });
+    }
+
+    #[rstest]
+    #[case(
+        json!({
+            "@context": [ "https://www.w3.org/ns/did/v1", "https://w3id.org/security/jwk/v1" ],
+            "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+            "authentication": [ "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01" ],
+            "assertionMethod": [ "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#assert-key-02" ],
+            "verificationMethod": [{
+                    "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01",
+                    "controller": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+                    "type": "JsonWebKey2020",
+                    "publicKeyJwk": {
+                        "kty": "EC",
+                        "crv": "P-256",
+                        "kid": "auth-key-01",
+                        "x": "3-xR-ApvKYCKtXxjvypxIb4tHJSUTHCl0uUYVAvP6sE",
+                        "y": "jkQdXwStFmrJjHuWw8PE_AG43c4OQwd6-Rkr4sPiC7Y"
+                    }
+                },{
+                    "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#assert-key-02",
+                    "controller": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+                    "type": "JsonWebKey2020",
+                    "publicKeyJwk": {
+                        "kty": "EC",
+                        "crv": "P-256",
+                        "kid": "assert-key-02",
+                        "x": "Ja4P63oUfaUageuu9O_6kOHT6bLe5D4myacZpEICwC8",
+                        "y": "A4JwAyrpKxtsNLX50A0pQ_4G2AYO-NJw0dzne11xUj0"
+                    }
+            }]
+        }),
+        vec![
+          "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01",
+          "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#assert-key-02",
+        ],
+    )]
+    // The example taken from: https://www.w3.org/TR/did-1.0/#example-did-document-with-different-verification-method-types
+    #[case(
+        json!({
+          "@context": [ "https://www.w3.org/ns/did/v1", "https://w3id.org/security/jwk/v1" ],
+          "id": "did:example:123",
+          "verificationMethod": [{
+              "id": "did:example:123#key-3",
+              "type": "JsonWebKey2020",
+              "controller": "did:example:123",
+              "publicKeyJwk": {
+                "kty": "EC", // external (property name)
+                "crv": "P-256", // external (property name)
+                "x": "Er6KSSnAjI70ObRWhlaMgqyIOQYrDJTE94ej5hybQ2M", // external (property name)
+                "y": "pPVzCOTJwgikPjuUE6UebfZySqEJ0ZtsWFpj7YSPGEk" // external (property name)
+                // "kid" is OPTIONAL (https://www.rfc-editor.org/rfc/rfc7517#section-4.5)
+              }
+          }]
+        }),
+        vec!["did:example:123#key-3"],
+    )]
+    // cases to test
+    // - did doc with jwks directly (DidDoc)
+    // - did doc with jwks indirectly (DidDocNormalized)
+    // - did doc invalid
+    fn test_get_key_by_method_id(#[case] did_doc: JsonValue, #[case] kids: Vec<&str>) {
+        let doc = serde_json::from_str::<DidDocNormalized>(did_doc.to_string().as_str())
+            .unwrap()
+            .to_did_doc()
+            .unwrap();
+        for kid in kids.iter() {
+            let result = doc.get_key_by_method_id(kid.to_string());
+            assert!(result.is_ok());
+            // CAUTION "kid" is OPTIONAL (https://www.rfc-editor.org/rfc/rfc7517#section-4.5)
+            match result.unwrap().kid {
+                None => {} // legit
+                Some(jwk_kid) => {
+                    assert!(kid.contains(&jwk_kid.to_string()));
+                }
+            }
+        }
     }
 
     #[rstest]
