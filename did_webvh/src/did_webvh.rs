@@ -45,10 +45,10 @@ static DOMAIN_REGEX_STR: &str = r"^[\-a-z0-9]+(\.[\-a-z0-9]+)*$";
 static HAS_PATH_REGEX_STR: &str = r"([a-z]|[0-9])\/([a-z]|[0-9])";
 static HAS_PORT_REGEX_STR: &str = r"\:[0-9]+";
 
-lazy_static!{
-   static ref DOMAIN_REGEX: Regex = Regex::new(DOMAIN_REGEX_STR).unwrap();
-   static ref HAS_PATH_REGEX: Regex = Regex::new(HAS_PATH_REGEX_STR).unwrap();
-   static ref HAS_PORT_REGEX: Regex = Regex::new(HAS_PORT_REGEX_STR).unwrap();
+lazy_static! {
+    static ref DOMAIN_REGEX: Regex = Regex::new(DOMAIN_REGEX_STR).unwrap();
+    static ref HAS_PATH_REGEX: Regex = Regex::new(HAS_PATH_REGEX_STR).unwrap();
+    static ref HAS_PORT_REGEX: Regex = Regex::new(HAS_PORT_REGEX_STR).unwrap();
 }
 
 /// Entry in a did log file as shown here
@@ -933,11 +933,8 @@ impl TryFrom<(String, Option<bool>)> for WebVerifiableHistoryId {
                         )
                     }
                 };
-                if HAS_PATH_REGEX
-                    .captures(url.as_str())
-                    .is_some()
-                    || HAS_PORT_REGEX.captures(url.as_str())
-                        .is_some()
+                if HAS_PATH_REGEX.captures(url.as_str()).is_some()
+                    || HAS_PORT_REGEX.captures(url.as_str()).is_some()
                 {
                     Ok(Self {
                         scid: scid.to_owned(),

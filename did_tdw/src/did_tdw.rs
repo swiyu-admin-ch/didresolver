@@ -1013,7 +1013,9 @@ mod test {
     #[case("[\"1-Qaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",[1234],3,4,5]")]
     #[case("[\"1-Qaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"invalidTime\",3,4,5]")]
     // missing params
-    #[case("[\"1-Qaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"2012-12-12T12:12:12Z\",{},4,5]")]
+    #[case(
+        "[\"1-Qaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"2012-12-12T12:12:12Z\",{},4,5]"
+    )]
     // JSON 'patch' is not supported
     #[case(format!("[\"1-Qaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"2012-12-12T12:12:12Z\",{},{{\"patch\":0}},5]", build_valid_params_json_string()))]
     // JSON 'value' needs to be a valid did doc
