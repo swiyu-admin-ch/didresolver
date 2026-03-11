@@ -299,7 +299,7 @@ mod test {
         "did:webvh:QmT4kPBFsHpJKvvvxgFUYxnSGPMeaQy1HWwyXMHj8NjLuy:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
     )]
     #[case(
-        "test_data/manually_created/log_with_swiss_profile.jsonl",
+        "test_data/manually_created/log_with_profile_version.jsonl",
         "did:webvh:QmQUfyXM2U979BVTitj8ysi88i3Ay6PrJjCEkwdAmfAJeY:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
     )]
     fn test_read_did_webvh(#[case] did_log_raw_filepath: String, #[case] did_url: String) {
