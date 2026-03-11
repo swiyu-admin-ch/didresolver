@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT
+#[macro_use]
+extern crate lazy_static;
 
 #[allow(unused_imports, reason = "required by the UniFFI compiler!")]
 #[expect(clippy::allow_attributes, reason = "..")]

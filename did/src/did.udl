@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 namespace did {
-
+	/// Constructs a DID from an absolute kid.
+	[Throws=DidResolveError]
+	Did get_did_from_absolute_kid(string absolute_kid);
 };
 
 // did_sidekicks
@@ -107,4 +109,6 @@ interface Did {
     /// when publishing the current and subsequent `DID log entries`.
     [Throws=DidResolveError]
     DidDocExtended resolve_all(string did_log);
+    /// Returns the original DID string used to construct this DID object.
+    string to_string();
 };

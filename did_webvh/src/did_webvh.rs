@@ -41,9 +41,15 @@ pub const DID_LOG_ENTRY_PROOF: &str = "proof";
 /// Regex to check if a domain follows the assumption described in https://www.rfc-editor.org/rfc/rfc952.html
 /// Allowed are lowercase letters (a-z), digits (0-9) dash (-) and period (.). Periods are only allowed to
 /// delimit components.
-static DOMAIN_REGEX: &str = r"^[\-a-z0-9]+(\.[\-a-z0-9]+)*$";
-static HAS_PATH_REGEX: &str = r"([a-z]|[0-9])\/([a-z]|[0-9])";
-static HAS_PORT_REGEX: &str = r"\:[0-9]+";
+static DOMAIN_REGEX_STR: &str = r"^[\-a-z0-9]+(\.[\-a-z0-9]+)*$";
+static HAS_PATH_REGEX_STR: &str = r"([a-z]|[0-9])\/([a-z]|[0-9])";
+static HAS_PORT_REGEX_STR: &str = r"\:[0-9]+";
+
+lazy_static! {
+    static ref DOMAIN_REGEX: Regex = Regex::new(DOMAIN_REGEX_STR).unwrap();
+    static ref HAS_PATH_REGEX: Regex = Regex::new(HAS_PATH_REGEX_STR).unwrap();
+    static ref HAS_PORT_REGEX: Regex = Regex::new(HAS_PORT_REGEX_STR).unwrap();
+}
 
 /// Entry in a did log file as shown here
 /// https://identity.foundation/didwebvh/v1.0/#term:did-log-entry
@@ -838,11 +844,7 @@ impl TryFrom<String> for WebVerifiableHistoryId {
         // Special characters were encoded by `Url::parse`.
         // URL without domain, that instead use an ip address are already validated in step 5
         if let url::Origin::Tuple(_, url::Host::Domain(dom), _) = url.origin() {
-            if Regex::new(DOMAIN_REGEX)
-                .unwrap()
-                .captures(dom.as_str())
-                .is_none()
-            {
+            if DOMAIN_REGEX.captures(dom.as_str()).is_none() {
                 return Err(
                     WebVerifiableHistoryIdResolutionError::InvalidMethodSpecificId(
                         "Domain of provided DID is invalid".to_owned(),
@@ -931,14 +933,8 @@ impl TryFrom<(String, Option<bool>)> for WebVerifiableHistoryId {
                         )
                     }
                 };
-                if Regex::new(HAS_PATH_REGEX)
-                    .unwrap()
-                    .captures(url.as_str())
-                    .is_some()
-                    || Regex::new(HAS_PORT_REGEX)
-                        .unwrap()
-                        .captures(url.as_str())
-                        .is_some()
+                if HAS_PATH_REGEX.captures(url.as_str()).is_some()
+                    || HAS_PORT_REGEX.captures(url.as_str()).is_some()
                 {
                     Ok(Self {
                         scid: scid.to_owned(),

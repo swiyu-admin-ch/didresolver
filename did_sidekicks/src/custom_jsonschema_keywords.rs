@@ -2,10 +2,7 @@
 
 use chrono::{DateTime, Local};
 use core::cmp::Ordering;
-use jsonschema::{
-    paths::Location,
-    Keyword, ValidationError,
-};
+use jsonschema::{paths::Location, Keyword, ValidationError};
 use serde_json::{Map, Value};
 
 /// Yet another custom [`Keyword`] trait implementation able to validate if a JSON array represents
@@ -52,10 +49,7 @@ impl Keyword for DidLogEntryKeyword {
     /// 5. A Data Integrity (DI) proof across the entry, signed by a DID authorized to update the DIDDoc, using the `versionId` as the challenge.
     #[inline]
     #[expect(clippy::single_char_lifetime_names, reason = "for the sake of brevity")]
-    fn validate<'i>(
-        &self,
-        instance: &'i Value,
-    ) -> Result<(), ValidationError<'i>> {
+    fn validate<'i>(&self, instance: &'i Value) -> Result<(), ValidationError<'i>> {
         if let Value::Array(_) = *instance {
             if self.is_valid(instance) {
                 Ok(())
@@ -65,9 +59,7 @@ impl Keyword for DidLogEntryKeyword {
                 ))
             }
         } else {
-            Err(ValidationError::custom(
-                "Value must be an array",
-            ))
+            Err(ValidationError::custom("Value must be an array"))
         }
     }
 
@@ -150,10 +142,7 @@ impl Keyword for DidVersionTimeKeyword {
     #[inline]
     #[expect(clippy::single_char_lifetime_names, reason = "for the sake of brevity")]
     #[expect(clippy::pattern_type_mismatch, reason = "..")]
-    fn validate<'i>(
-        &self,
-        instance: &'i Value,
-    ) -> Result<(), ValidationError<'i>> {
+    fn validate<'i>(&self, instance: &'i Value) -> Result<(), ValidationError<'i>> {
         if let Value::String(dt) = instance {
             // versionTime:
             // 1. Valid datetime in ISO8601 format SPEC
@@ -169,9 +158,7 @@ impl Keyword for DidVersionTimeKeyword {
                     }
                     Ok(())
                 }
-                Err(_) => Err(ValidationError::custom(
-                    "Datetime not in ISO8601 format",
-                )),
+                Err(_) => Err(ValidationError::custom("Datetime not in ISO8601 format")),
             }
         } else {
             Err(ValidationError::custom(

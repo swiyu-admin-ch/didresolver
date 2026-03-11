@@ -37,6 +37,7 @@ url-escape = "0.1.1"
 url = "2.5.7"
 rust-embed = { version = "8.9.0" , features = ["include-exclude", "compression"]}
 rayon = "1.11.0"
+lazy_static = "1.5.0"
 
 [workspace.lints.clippy]
 cargo = { level = "warn", priority = -1 }

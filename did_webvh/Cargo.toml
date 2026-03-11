@@ -33,6 +33,7 @@ thiserror.workspace = true
 url.workspace = true
 rust-embed = { workspace = true , features = ["include-exclude", "compression"]}
 rayon.workspace = true
+lazy_static.workspace = true
 
 [build-dependencies]
 uniffi = { workspace = true, features = ["build"] }

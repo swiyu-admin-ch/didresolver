@@ -13,6 +13,9 @@ pub mod did_tdw_jsonschema;
 pub mod did_tdw_method_parameters;
 pub mod errors;
 
+#[macro_use]
+extern crate lazy_static;
+
 // CAUTION All structs required by UniFFI bindings generator (declared in UDL) MUST also be "used" here
 #[allow(unused_imports, reason = "required by the UniFFI compiler!")]
 #[expect(clippy::allow_attributes, reason = "..")]

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 
+use core::str::from_utf8;
 use did_sidekicks::did_jsonschema::DidLogEntryJsonSchema;
 use rust_embed::Embed;
-use core::str::from_utf8;
 
 /// As defined by https://identity.foundation/didwebvh/v1.0 bzt w.r.t. (eID-conformity) addendum:
 /// - https://confluence.bit.admin.ch/display/EIDTEAM/DID+Log+Conformity+Check
@@ -51,7 +51,9 @@ impl DidLogEntryJsonSchema for WebVerifiableHistoryDidLogEntryJsonSchema {
 #[cfg(test)]
 mod test {
     use crate::did_webvh_jsonschema::WebVerifiableHistoryDidLogEntryJsonSchema;
-    use did_sidekicks::did_jsonschema::{DidLogEntryJsonSchema, DidLogEntryValidator, DidLogEntryValidatorErrorKind};
+    use did_sidekicks::did_jsonschema::{
+        DidLogEntryJsonSchema, DidLogEntryValidator, DidLogEntryValidatorErrorKind,
+    };
     use rstest::rstest;
     use serde_json::{json, Value};
 
@@ -102,7 +104,8 @@ mod test {
          }
        ]
      }), true, ""
-    )] // example did log entry from https://github.com/decentralized-identity/didwebvh-py/blob/main/sample-diddoc/did.jsonl
+    )]
+    // example did log entry from https://github.com/decentralized-identity/didwebvh-py/blob/main/sample-diddoc/did.jsonl
     #[case(vec![WebVerifiableHistoryDidLogEntryJsonSchema::V1_0], json!({
         "versionId": "1-QmcykRx2WnZz2L9s5ACN34E4ADEYGiCde4BJSzoxrhYoiR",
         "versionTime": "2012-12-12T12:12:12Z",
@@ -221,7 +224,7 @@ mod test {
         "state": {
             "id": "did:webvh:QmT7BM5RsM9SoaqAQKkNKHBzSEzpS2NRzT2oKaaaPYPpGr:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
             "@context": [1],
-         }, 
+         },
         "proof": [{
             "created": "2012-12-12T12:12:12Z",
             "challenge": "1-QmcykRx2WnZz2L9s5ACN34E4ADEYGiCde4BJSzoxrhYoiR",
@@ -239,7 +242,7 @@ mod test {
         "state": {
             "id": "did:webvh:QmT7BM5RsM9SoaqAQKkNKHBzSEzpS2NRzT2oKaaaPYPpGr:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
             "@context": ["https://www.w3.org/ns/did/v1", "https://w3id.org/security/jwk/v1"],
-        }, 
+        },
         "proof": [{}]}), false, "\"type\" is a required property")] // proof must not be empty
     #[case(vec![WebVerifiableHistoryDidLogEntryJsonSchema::V1_0EidConform], json!({
         "versionId": "1-QmcykRx2WnZz2L9s5ACN34E4ADEYGiCde4BJSzoxrhYoiR",

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 
-use std::hint::black_box;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use did_sidekicks::did_jsonschema::{DidLogEntryJsonSchema, DidLogEntryValidator};
 use did_webvh::did_webvh::WebVerifiableHistory;
 use did_webvh::did_webvh_jsonschema::WebVerifiableHistoryDidLogEntryJsonSchema;
 use rayon::prelude::*;
 use std::fs;
+use std::hint::black_box;
 use std::path::Path;
 
 #[expect(clippy::unwrap_used, reason = "..")]
@@ -80,7 +80,8 @@ pub fn criterion_benchmark_did_webvh_jsonschema(c: &mut Criterion) {
         //.warm_up_time(Duration::from_secs(5))
     ;
 
-    let sch: &dyn DidLogEntryJsonSchema = &WebVerifiableHistoryDidLogEntryJsonSchema::V1_0EidConform;
+    let sch: &dyn DidLogEntryJsonSchema =
+        &WebVerifiableHistoryDidLogEntryJsonSchema::V1_0EidConform;
     let validator = DidLogEntryValidator::from(sch);
 
     let function_name_base = "DidLogEntryValidator_validate";
