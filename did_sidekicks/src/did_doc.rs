@@ -448,7 +448,22 @@ impl DidDoc {
     ///
     /// If no such key exists, [`DidSidekicksError::KeyNotFound`] is returned.
     #[inline]
+    #[deprecated(
+        since = "2.6.0",
+        note = "please use `get_key_by_fragment` instead for 1 to 1 compatibility, or `get_key_by_method_id` to retrieve the key based on the entire id e.g. did:webvh:scid:example.com#fragment"
+    )]
     pub fn get_key(&self, key_id: String) -> Result<Jwk, DidSidekicksError> {
+        self.get_key_by_fragment(key_id)
+    }
+
+    /// Returns a cryptographic public key ([`Jwk`]) referenced by the supplied fragment (`key_id`), if any.
+    ///
+    /// The key lookup is always done across all verification methods (`verificationMethod`) and
+    /// verification relationships
+    /// (`authentication`, `assertionMethod`, `keyAgreement`, `capabilityInvocation`, `capabilityInvocation`).
+    ///
+    /// If no such key exists, [`DidSidekicksError::KeyNotFound`] is returned.
+    pub fn get_key_by_fragment(&self, key_id: String) -> Result<Jwk, DidSidekicksError> {
         // A JWK referenced by the supplied key_id might be anywhere in this DID doc
         match self
             .verification_method
@@ -528,7 +543,10 @@ pub fn get_key_from_did_doc(did_doc: String, key_id: String) -> Result<Jwk, DidS
         },
     };
 
-    doc.get_key(key_id)
+    match doc.get_key_by_method_id(key_id.clone()) {
+        Ok(key) => Ok(key),
+        Err(_) => doc.get_key_by_fragment(key_id),
+    }
 }
 
 impl DidDocExtended {

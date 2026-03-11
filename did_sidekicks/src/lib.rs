@@ -51,8 +51,8 @@ uniffi::include_scaffolding!("did_sidekicks");
     reason = "unwrap calls are panic-safe as long as test case setup is correct"
 )]
 mod test {
-    use crate::did_doc::DidDocNormalized;
     use crate::did_doc;
+    use crate::did_doc::DidDocNormalized;
     use crate::errors::*;
     use rand::distributions::Alphanumeric;
     use rand::Rng as _;
@@ -180,7 +180,12 @@ mod test {
                     }
             }]
         }),
-        vec!["auth-key-01", "assert-key-02"],
+        vec![
+         "auth-key-01",
+         "assert-key-02",
+         "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01",
+         "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#assert-key-02",
+       ],
     )]
     #[case(
         json!({
@@ -213,7 +218,12 @@ mod test {
             }],
             "verificationMethod": [ ]
         }),
-        vec!["auth-key-01", "assert-key-02"],
+        vec![
+         "auth-key-01",
+         "assert-key-02",
+         "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01",
+         "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#assert-key-02",
+       ],
     )]
     // The example taken from: https://www.w3.org/TR/did-1.0/#example-did-document-with-different-verification-method-types
     #[case(
@@ -233,7 +243,10 @@ mod test {
               }
           }]
         }),
-        vec!["key-3"],
+        vec![
+         "key-3",
+         "did:example:123#key-3",
+       ],
     )]
     // cases to test
     // - did doc with jwks directly (DidDoc)
@@ -247,7 +260,7 @@ mod test {
             match result.unwrap().kid {
                 None => {} // legit
                 Some(kid) => {
-                    assert!(kid.eq(key_id.to_string().as_str()));
+                    assert!(key_id.contains(&kid));
                 }
             }
         });
