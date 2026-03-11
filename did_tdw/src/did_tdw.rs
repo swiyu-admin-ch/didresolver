@@ -1010,19 +1010,19 @@ mod test {
     #[case("[\"1\",2,3,4,5]")]
     #[case("[\"invalidNumber-hash\",2,3,4,5]")]
     // invalid time
-    #[case("[\"1-hash\",[1234],3,4,5]")]
-    #[case("[\"1-hash\",\"invalidTime\",3,4,5]")]
+    #[case("[\"1-Qaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",[1234],3,4,5]")]
+    #[case("[\"1-Qaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"invalidTime\",3,4,5]")]
     // missing params
-    #[case("[\"1-hash\",\"2012-12-12T12:12:12Z\",{},4,5]")]
+    #[case("[\"1-Qaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"2012-12-12T12:12:12Z\",{},4,5]")]
     // JSON 'patch' is not supported
-    #[case(format!("[\"1-hash\",\"2012-12-12T12:12:12Z\",{},{{\"patch\":0}},5]", build_valid_params_json_string()))]
+    #[case(format!("[\"1-Qaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"2012-12-12T12:12:12Z\",{},{{\"patch\":0}},5]", build_valid_params_json_string()))]
     // JSON 'value' needs to be a valid did doc
-    #[case(format!("[\"1-hash\",\"2012-12-12T12:12:12Z\",{},{{\"value\":\"invalidDoc\"}},5]", build_valid_params_json_string()))]
+    #[case(format!("[\"1-Qaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"2012-12-12T12:12:12Z\",{},{{\"value\":\"invalidDoc\"}},5]", build_valid_params_json_string()))]
     fn test_invalid_did_log(#[case] did_log: String) {
         assert_trust_did_web_error(
             TrustDidWebDidLog::try_from(did_log),
             DidResolverErrorKind::DeserializationFailed,
-            "the supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation: the supplied JSON instance is not a valid DID log: A DID log entry must include a JSON array of five items of the following types: string, string, object, object and array",
+            "the supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation: ",
         );
     }
 

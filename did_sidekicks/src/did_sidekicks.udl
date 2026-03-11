@@ -151,6 +151,7 @@ interface DidDoc {
     sequence<VerificationMethod> get_capability_delegation();
     sequence<VerificationMethod> get_assertion_method();
     string? get_controller();
+    string? get_profile_version();
     boolean get_deactivated();
     /// Returns a cryptographic public key ([`Jwk`]) referenced by the supplied fragment (`key_id`), if any.
     /// The key lookup is always done across all verification methods (`verificationMethod`) and
