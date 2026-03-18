@@ -230,7 +230,6 @@ impl DidLogEntry {
                     }
                 };
 
-                //Ok(Ed25519VerifyingKey::from_multibase(update_key.as_str())?)
                 Ok(verifying_key)
             }
             None => {
@@ -634,6 +633,13 @@ impl TrustDidWebDidLog {
     /// Checks if all entries in the did log are valid (data integrity, versioning etc.)
     #[inline]
     pub fn validate(&self) -> Result<DidDoc, DidResolverError> {
+        for entry in self.did_log_entries.iter() {
+            entry
+                .did_doc
+                .is_valid()
+                .map_err(|err| DidResolverError::InvalidDidDocument(err.to_string()))?;
+        }
+
         self.validate_with_scid(None)
     }
 

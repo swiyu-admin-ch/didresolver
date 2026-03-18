@@ -291,7 +291,6 @@ mod test {
         #[case] expected: bool,
         #[case] err_contains_pattern: &str,
     ) {
-        dbg!(&err_contains_pattern);
         schemata.iter().for_each(|schema| {
             let sch: &dyn DidLogEntryJsonSchema = schema;
             let validator = DidLogEntryValidator::from(sch);

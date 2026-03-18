@@ -122,7 +122,7 @@ impl Clone for VerificationMethod {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[expect(clippy::exhaustive_structs, reason = "..")]
 pub struct DidDoc {
-    #[serde(rename = "@context")]
+    #[serde(rename = "@context", skip_serializing_if = "Vec::is_empty", default)]
     pub context: Vec<String>,
     pub id: String,
     #[serde(rename = "verificationMethod")]
@@ -171,7 +171,7 @@ pub struct DidDoc {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[expect(clippy::exhaustive_structs, reason = "..")]
 pub struct DidDocNormalized {
-    #[serde(rename = "@context")]
+    #[serde(rename = "@context", skip_serializing_if = "Vec::is_empty", default)]
     pub context: Vec<String>,
     pub id: String,
     #[serde(
@@ -518,6 +518,19 @@ impl DidDoc {
             },
             None => Err(DidSidekicksError::KeyNotFound(kid)),
         }
+    }
+
+    pub fn is_valid(&self) -> Result<(), DidSidekicksError> {
+        let id = self.get_id();
+        for vm in self.verification_method.iter() {
+            if vm.controller.is_empty() {
+                continue;
+            }
+            if vm.controller != id.as_str() {
+                return Err(DidSidekicksError::InvalidDidDocument("controller must be set to the id of the DID log".into()));
+            }
+        }
+        Ok(())
     }
 }
 
