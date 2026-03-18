@@ -520,14 +520,26 @@ impl DidDoc {
         }
     }
 
-    pub fn is_valid(&self) -> Result<(), DidSidekicksError> {
+    #[inline]
+    pub fn validate(&self) -> Result<(), DidSidekicksError> {
         let id = self.get_id();
+
+        // Only validate controller if a value is present
+        if let Some(controller) = self.get_controller()
+            && controller != id.as_str()
+        {
+            return Err(DidSidekicksError::InvalidDidDocument(
+                "controller must be set to the id of the DID log".into(),
+            ));
+        }
+
         for vm in self.verification_method.iter() {
-            if vm.controller.is_empty() {
-                continue;
-            }
-            if vm.controller != id.as_str() {
-                return Err(DidSidekicksError::InvalidDidDocument("controller must be set to the id of the DID log".into()));
+            // Only validate controller if a value is present
+            if !vm.controller.is_empty() && vm.controller != id.as_str() {
+                return Err(DidSidekicksError::InvalidDidDocument(format!(
+                    "controller of the verificationMethod '{}' must be set to the id of the DID log",
+                    &vm.id
+                )));
             }
         }
         Ok(())
