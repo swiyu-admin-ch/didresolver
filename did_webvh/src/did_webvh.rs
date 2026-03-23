@@ -24,7 +24,7 @@ use serde::de;
 use serde::{Deserialize, Serialize};
 use serde_json::Value::Object as JsonObject;
 use serde_json::{
-    from_str as json_from_str, json, to_string as json_to_string, Value as JsonValue,
+    Value as JsonValue, from_str as json_from_str, json, to_string as json_to_string,
 };
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -259,7 +259,7 @@ impl DidLogEntry {
                 Err(err) => {
                     return Err(DidResolverError::InvalidDataIntegrityProof(format!(
                         "Failed to verify proof due to: {err}"
-                    )))
+                    )));
                 }
             };
         }
@@ -281,7 +281,7 @@ impl DidLogEntry {
                 None => {
                     return Err(DidResolverError::DeserializationFailed(
                         "Error extracting scid".to_owned(),
-                    ))
+                    ));
                 }
             },
         };
@@ -330,8 +330,8 @@ impl DidLogEntry {
                     Ok(key) => key,
                     Err(err) => {
                         return Err(DidResolverError::InvalidDataIntegrityProof(format!(
-                        "Failed to convert update key (from its multibase representation): {err}"
-                    )))
+                            "Failed to convert update key (from its multibase representation): {err}"
+                        )));
                     }
                 };
 
@@ -669,6 +669,12 @@ impl WebVerifiableHistoryDidLog {
             // Verify the entryHash
             entry.verify_version_id_integrity()?;
 
+            // Verify did document
+            entry
+                .did_doc
+                .validate()
+                .map_err(|err| DidResolverError::InvalidDidDocument(err.to_string()))?;
+
             if expected_version_index == 1 {
                 // Verify that the SCID is correct
                 let scid = match entry.parameters.get_scid_option() {
@@ -676,15 +682,15 @@ impl WebVerifiableHistoryDidLog {
                     None => {
                         return Err(DidResolverError::InvalidDataIntegrityProof(
                             "Missing SCID inside the DID document.".to_owned(),
-                        ))
+                        ));
                     }
                 };
 
                 if let Some(res) = scid_to_validate.to_owned() {
                     if res.ne(scid.as_str()) {
                         return Err(DidResolverError::InvalidDataIntegrityProof(format!(
-                                        "The SCID '{scid}' supplied inside the DID document does not match the one supplied for validation: '{res}'"
-                                    )));
+                            "The SCID '{scid}' supplied inside the DID document does not match the one supplied for validation: '{res}'"
+                        )));
                     }
                 }
 
@@ -798,9 +804,11 @@ impl TryFrom<String> for WebVerifiableHistoryId {
         let scid = did_webvh_split[2];
         if scid.is_empty() {
             // the SCID MUST be present in the DID string
-            return Err(WebVerifiableHistoryIdResolutionError::InvalidMethodSpecificId(
-                String::from("Empty self-certifying identifier (SCID) detected. An object identifier derived from initial data is expected"),
-            ));
+            return Err(
+                WebVerifiableHistoryIdResolutionError::InvalidMethodSpecificId(String::from(
+                    "Empty self-certifying identifier (SCID) detected. An object identifier derived from initial data is expected",
+                )),
+            );
         };
 
         if did_webvh_split[3].replace(":", "").is_empty() || did_webvh_split[3].starts_with(":") {
@@ -817,7 +825,7 @@ impl TryFrom<String> for WebVerifiableHistoryId {
         let url_split: Vec<&str> = did_webvh_split[3].splitn(2, ":").collect();
         // if the domain segment contains a port, decode percent-encoding and preserve the port.
         let domain = url_split[0].replace("%3A", ":"); //.nfc().collect::<String>();
-                                                       // 4. Transform the path, the 0 or more segments after the first : character, delimited by : characters.
+        // 4. Transform the path, the 0 or more segments after the first : character, delimited by : characters.
         let path = if url_split.len() > 1 {
             url_split[1].replace(":", "/")
         } else {
@@ -834,7 +842,7 @@ impl TryFrom<String> for WebVerifiableHistoryId {
                     WebVerifiableHistoryIdResolutionError::InvalidMethodSpecificId(format!(
                         "Not a valid URL: {err}"
                     )),
-                )
+                );
             }
         };
 
@@ -930,7 +938,7 @@ impl TryFrom<(String, Option<bool>)> for WebVerifiableHistoryId {
                             WebVerifiableHistoryIdResolutionError::InvalidMethodSpecificId(
                                 did_webvh_reduced.to_owned(),
                             ),
-                        )
+                        );
                     }
                 };
                 if HAS_PATH_REGEX.captures(url.as_str()).is_some()
@@ -1140,7 +1148,7 @@ mod test {
         "did:webvh:QmT7BM5RsM9SoaqAQKkNKHBzSEzpS2NRzT2oKaaaPYPpGr:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
         DidResolverErrorKind::InvalidIntegrityProof,
         "invalid DID log integration proof: The SCID"
-        )]
+    )]
     #[case(
         "test_data/manually_created/unhappy_path/signed_with_unauthorized_key.jsonl",
         "did:webvh:QmT7BM5RsM9SoaqAQKkNKHBzSEzpS2NRzT2oKaaaPYPpGr:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
@@ -1183,20 +1191,18 @@ mod test {
         DidResolverErrorKind::InvalidDidParameter,
         "Illegal update key detected"
     )]
-    /* TODO generate a proper (did:webvh) test case data using didtoolbox-java
     #[case(
-        "test_data/generated_by_tdw_js/already_deactivated.jsonl",
-        "did:tdw:QmdSU7F2rF8r4m6GZK7Evi2tthfDDxhw3NppU8pJMbd2hB:example.com",
+        "test_data/manually_created/unhappy_path/invalid_did_controller.jsonl",
+        "did:webvh:QmZTVeCmc3coUx4A4pf91Dq1vGNhu6DBLyyUiP1wkgvFQx:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
         DidResolverErrorKind::InvalidDidDocument,
-        "This DID document is already deactivated"
+        "controller must be set to the id of the DID log"
     )]
     #[case(
-        "test_data/generated_by_tdw_js/unhappy_path/not_authorized.jsonl",
-        "did:tdw:QmXjp5qhSEvm8oXip43cDX62hZhHZdAMYv7Magy1tkffSz:example.com",
-        DidResolverErrorKind::InvalidIntegrityProof,
-        "Key extracted from proof is not authorized for update"
+        "test_data/manually_created/unhappy_path/invalid_verificationmethod_controller.jsonl",
+        "did:webvh:QmatFaFi9pzYrydbganNoRcvrR5VoqFyBjj5uoQqmfuHCE:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+        DidResolverErrorKind::InvalidDidDocument,
+        "must be set to the id of the DID log"
     )]
-    */
     fn test_read_invalid_did_log(
         #[case] did_log_raw_filepath: String,
         #[case] did_url: String,

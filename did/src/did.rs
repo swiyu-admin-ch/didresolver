@@ -348,6 +348,11 @@ impl Did {
             did_resolver.collect_did_method_parameters_map()?, // may throw DidResolverError
         )))
     }
+
+    #[inline]
+    pub fn as_string(&self) -> String {
+        self.to_string()
+    }
 }
 
 /// This implementation reconstructs the original (textual) DID, regardless of its validity.

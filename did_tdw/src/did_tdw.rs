@@ -21,7 +21,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value::Object as JsonObject;
 use serde_json::{
-    from_str as json_from_str, json, to_string as json_to_string, Value as JsonValue,
+    Value as JsonValue, from_str as json_from_str, json, to_string as json_to_string,
 };
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -150,7 +150,7 @@ impl DidLogEntry {
                 Err(err) => {
                     return Err(DidResolverError::InvalidDataIntegrityProof(format!(
                         "Failed to verify proof due to: {err}"
-                    )))
+                    )));
                 }
             };
         }
@@ -172,7 +172,7 @@ impl DidLogEntry {
                 None => {
                     return Err(DidResolverError::DeserializationFailed(
                         "Error extracting SCID".to_owned(),
-                    ))
+                    ));
                 }
             },
         };
@@ -217,7 +217,7 @@ impl DidLogEntry {
                     _ => {
                         return Err(DidResolverError::InvalidDataIntegrityProof(format!(
                             "Key extracted from proof is not authorized for update: {update_key}"
-                        )))
+                        )));
                     }
                 };
 
@@ -225,12 +225,11 @@ impl DidLogEntry {
                     Ok(key) => key,
                     Err(err) => {
                         return Err(DidResolverError::InvalidDataIntegrityProof(format!(
-                        "Failed to convert update key (from its multibase representation): {err}"
-                    )))
+                            "Failed to convert update key (from its multibase representation): {err}"
+                        )));
                     }
                 };
 
-                //Ok(Ed25519VerifyingKey::from_multibase(update_key.as_str())?)
                 Ok(verifying_key)
             }
             None => {
@@ -264,7 +263,7 @@ impl DidLogEntry {
                     None => {
                         return Err(DidResolverError::InvalidDataIntegrityProof(
                             "Proof is empty.".to_owned(),
-                        ))
+                        ));
                     }
                 };
 
@@ -574,6 +573,12 @@ impl TrustDidWebDidLog {
                     // Verify the entryHash
                     entry.verify_version_id_integrity()?;
                     previous_entry = Some(entry.clone());
+
+                    // Verify did document
+                    entry
+                        .did_doc
+                        .validate()
+                        .map_err(|err| DidResolverError::InvalidDidDocument(err.to_string()))?;
                 }
                 None => {
                     // First / genesis entry in did log
@@ -590,13 +595,19 @@ impl TrustDidWebDidLog {
                     // Verify the entryHash
                     genesis_entry.verify_version_id_integrity()?;
 
+                    // Verify did document
+                    genesis_entry
+                        .did_doc
+                        .validate()
+                        .map_err(|err| DidResolverError::InvalidDidDocument(err.to_string()))?;
+
                     // Verify that the SCID is correct
                     let scid = match genesis_entry.parameters.get_scid_option() {
                         Some(scid_value) => scid_value,
                         None => {
                             return Err(DidResolverError::InvalidDataIntegrityProof(
                                 "Missing SCID inside the DID document.".to_owned(),
-                            ))
+                            ));
                         }
                     };
 
@@ -733,7 +744,9 @@ impl TryFrom<String> for TrustDidWebId {
         if scid.is_empty() {
             // the SCID MUST be present in the DID string
             return Err(TrustDidWebIdResolutionError::InvalidMethodSpecificId(
-                String::from("Empty self-certifying identifier (SCID) detected. An object identifier derived from initial data is expected"),
+                String::from(
+                    "Empty self-certifying identifier (SCID) detected. An object identifier derived from initial data is expected",
+                ),
             ));
         };
 
@@ -760,7 +773,7 @@ impl TryFrom<String> for TrustDidWebId {
             Err(err) => {
                 return Err(TrustDidWebIdResolutionError::InvalidMethodSpecificId(
                     format!("Not a valid URL: {err}"),
-                ))
+                ));
             }
         };
 
@@ -857,7 +870,7 @@ impl TryFrom<(String, Option<bool>)> for TrustDidWebId {
                     Err(_) => {
                         return Err(TrustDidWebIdResolutionError::InvalidMethodSpecificId(
                             did_tdw_reduced.to_owned(),
-                        ))
+                        ));
                     }
                 };
                 if HAS_PATH_REGEX.captures(url.as_str()).is_some()
