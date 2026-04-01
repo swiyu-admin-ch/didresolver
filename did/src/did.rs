@@ -26,12 +26,12 @@ lazy_static! {
 )]
 pub enum DidResolveError {
     /// The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation
-    #[error("The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation: {0}")]
+    #[error(
+        "The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation: {0}"
+    )]
     DeserializationFailed(String),
     /// The supplied DID is not supported (currently supported are: did:tdw, did:webvh)
-    #[error(
-        "The supplied DID is not supported (currently supported are: did:tdw, did:webvh): {0}"
-    )]
+    #[error("The supplied DID is not supported (currently supported are: did:tdw, did:webvh): {0}")]
     DidNotSupported(String),
     /// Invalid DID log integration proof
     #[error("invalid DID log integration proof: {0}")]
@@ -655,7 +655,8 @@ mod tests {
     }
 
     #[rstest]
-    #[case("did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+    #[case(
+        "did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
         r#"["Invalid Log"]"#,
         "the supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation"
     )]
@@ -688,7 +689,8 @@ mod tests {
     }
 
     #[rstest]
-    #[case("did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
+    #[case(
+        "did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
     )]
     fn test_resolve_invalid_did_log_with_no_entries(#[case] did: String) {
         let did_obj = Did::new(did).unwrap(); // panic-safe unwrap call (as long as #case setup is correct)
@@ -841,7 +843,10 @@ mod tests {
     )] // missing '#'
     #[case("https://example.org", false)] // url
     #[case("https://example.org#fragment", false)] // url with fragment
-    #[case("did:webvh:QmSPEpPcSwb3fegq8YE8zotcPEgzHrSFyTJJDAzPo2CYBp:example.org:test#invalidFragmentö", false)] // invalid character in fragment
+    #[case(
+        "did:webvh:QmSPEpPcSwb3fegq8YE8zotcPEgzHrSFyTJJDAzPo2CYBp:example.org:test#invalidFragmentö",
+        false
+    )] // invalid character in fragment
     #[case("fragmentOnly", false)] // fragment only
     fn test_get_did_from_absolute_kid(#[case] kid: String, #[case] valid: bool) {
         let res = get_did_from_absolute_kid(kid.clone());

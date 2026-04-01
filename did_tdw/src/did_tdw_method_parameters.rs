@@ -174,9 +174,9 @@ impl TrustDidWebDidMethodParameters {
                 // This item MAY appear in later DID log entries to indicate that the processing rules
                 // for that and later entries have been changed to a different specification version.
                 if method != DID_METHOD_PARAMETER_VERSION {
-                    return Err(DidResolverError::InvalidDidParameter(
-                        format!("Invalid 'method' DID parameter. Expected '{DID_METHOD_PARAMETER_VERSION}'.")
-                    ));
+                    return Err(DidResolverError::InvalidDidParameter(format!(
+                        "Invalid 'method' DID parameter. Expected '{DID_METHOD_PARAMETER_VERSION}'."
+                    )));
                 }
                 Some(method)
             }
@@ -373,7 +373,7 @@ const DID_METHOD_PARAMETER_VERSION: &str = "did:tdw:0.3";
 #[cfg(test)]
 mod test {
     use crate::did_tdw_method_parameters::{
-        TrustDidWebDidMethodParameters, DID_METHOD_PARAMETER_VERSION,
+        DID_METHOD_PARAMETER_VERSION, TrustDidWebDidMethodParameters,
     };
     use crate::test::assert_trust_did_web_error;
     use did_sidekicks::did_method_parameters::DidMethodParameter;
@@ -647,16 +647,20 @@ mod test {
         assert!(!update_keys.is_empty_array());
         assert!(update_keys.get_string_array_value().is_some());
         assert!(!update_keys.get_string_array_value().unwrap().is_empty());
-        assert!(!update_keys
-            .get_string_array_value()
-            .unwrap()
-            .iter()
-            .all(|v| v.is_empty()));
-        assert!(update_keys
-            .get_string_array_value()
-            .unwrap()
-            .iter()
-            .any(|v| v.contains("some_update_key")));
+        assert!(
+            !update_keys
+                .get_string_array_value()
+                .unwrap()
+                .iter()
+                .all(|v| v.is_empty())
+        );
+        assert!(
+            update_keys
+                .get_string_array_value()
+                .unwrap()
+                .iter()
+                .any(|v| v.contains("some_update_key"))
+        );
 
         assert!(param_map.contains_key("portable"));
         let portable_option = param_map.get("portable");

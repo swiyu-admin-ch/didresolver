@@ -58,7 +58,8 @@ pub enum TrustDidWebError {
     #[error("failed to serialize DID document (to JSON): {0}")]
     SerializationFailed(String),
     /// The supplied did doc is invalid or contains an argument which isn't part of the did specification/recommendation
-    #[error("The supplied did doc is invalid or contains an argument which isn't part of the did specification/recommendation: {0}"
+    #[error(
+        "The supplied did doc is invalid or contains an argument which isn't part of the did specification/recommendation: {0}"
     )]
     DeserializationFailed(String),
     /// Invalid (or not yet supported) operation against DID doc

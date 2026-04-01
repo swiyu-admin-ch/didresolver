@@ -10,15 +10,15 @@ use crate::errors::DidSidekicksError::{
 };
 use crate::multibase::{MultiBaseConvertible, MultibaseEncoderDecoder};
 use ed25519_dalek::{
+    PUBLIC_KEY_LENGTH, SECRET_KEY_LENGTH, SIGNATURE_LENGTH, Signature, Signer as _, SigningKey,
+    VerifyingKey,
     pkcs8::{
-        spki::der::pem::LineEnding, DecodePrivateKey as _, DecodePublicKey as _,
-        EncodePrivateKey as _, EncodePublicKey as _,
+        DecodePrivateKey as _, DecodePublicKey as _, EncodePrivateKey as _, EncodePublicKey as _,
+        spki::der::pem::LineEnding,
     },
-    Signature, Signer as _, SigningKey, VerifyingKey, PUBLIC_KEY_LENGTH, SECRET_KEY_LENGTH,
-    SIGNATURE_LENGTH,
 };
-use hex::decode as hex_decode;
 use hex::FromHex as from_hex;
+use hex::decode as hex_decode;
 use rand::rngs::OsRng;
 
 /// A (Ed25519) [`Signature`] derivation implementing [`MultiBaseConvertible`] trait.
@@ -427,7 +427,7 @@ impl Ed25519VerifyingKey {
             Err(_) => {
                 return Err(KeySignatureError(
                     "Failed to decode from hex string.".to_owned(),
-                ))
+                ));
             }
         };
         // Strictly verify a signature on a message with this keypair's public key.
@@ -522,14 +522,18 @@ mod tests {
         let message = "This is a test of the tsunami alert system.";
         let signature = signing_key_test_vector.sign(message.into());
 
-        assert!(signing_key_test_vector
-            .verifying_key()
-            .verify_strict(message, &signature)
-            .is_ok());
+        assert!(
+            signing_key_test_vector
+                .verifying_key()
+                .verify_strict(message, &signature)
+                .is_ok()
+        );
 
-        assert!(verifying_key_test_vector
-            .verify_strict(message, &signature)
-            .is_ok());
+        assert!(
+            verifying_key_test_vector
+                .verify_strict(message, &signature)
+                .is_ok()
+        );
     }
 
     #[rstest]
@@ -613,10 +617,12 @@ MCowBQYDK2VwAyEA8ETLwQBKgk9fM2V0tQV5AdjrMvetLrgj5C+FOmYGTJg=
 
         let message = "This is a test of the tsunami alert system.";
         let signature = signing_key.sign(message.into());
-        assert!(signing_key
-            .verifying_key()
-            .verify_strict(message, &signature)
-            .is_ok());
+        assert!(
+            signing_key
+                .verifying_key()
+                .verify_strict(message, &signature)
+                .is_ok()
+        );
         assert!(verifying_key.verify_strict(message, &signature).is_ok());
     }
 
@@ -646,10 +652,12 @@ MCowBQYDK2VwAyEA8ETLwQBKgk9fM2V0tQV5AdjrMvetLrgj5C+FOmYGTJg=
 
         let message = "This is a test of the tsunami alert system.";
         let signature = signing_key.sign(message.into());
-        assert!(signing_key
-            .verifying_key()
-            .verify_strict(message, &signature)
-            .is_ok());
+        assert!(
+            signing_key
+                .verifying_key()
+                .verify_strict(message, &signature)
+                .is_ok()
+        );
         assert!(verifying_key.verify_strict(message, &signature).is_ok());
     }
 }

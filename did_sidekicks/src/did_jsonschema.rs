@@ -5,7 +5,7 @@ use thiserror::Error;
 
 use crate::custom_jsonschema_keywords::*;
 use jsonschema::draft202012::meta as jsch_meta;
-use jsonschema::{options as jsch_opts, Draft, Validator as ValidatorBase};
+use jsonschema::{Draft, Validator as ValidatorBase, options as jsch_opts};
 use serde_json::from_str as json_from_str;
 
 /// Represents any error condition that might occur in conjunction with [`DidLogEntryValidator`].

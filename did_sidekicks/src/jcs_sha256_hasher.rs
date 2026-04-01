@@ -2,13 +2,13 @@
 
 use crate::errors::DidSidekicksError;
 use crate::errors::DidSidekicksError::JscHashingFailed;
-use bs58::{encode as base58_encode, Alphabet as Alphabet58};
+use bs58::{Alphabet as Alphabet58, encode as base58_encode};
 use hex;
 use hex::ToHex as _;
 // CAUTION Beware that using the "serde_jcs" crate here may cause
 //         "not yet implemented: Handle number str (u128/i128)" error
 //         in case of numeric json properties, e.g. "witnessThreshold".
-use serde_json::{from_str as json_from_str, Value as JsonValue};
+use serde_json::{Value as JsonValue, from_str as json_from_str};
 use serde_json_canonicalizer::to_string as jcs_to_string;
 use sha2::{Digest as _, Sha256};
 

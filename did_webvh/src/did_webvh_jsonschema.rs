@@ -55,7 +55,7 @@ mod test {
         DidLogEntryJsonSchema, DidLogEntryValidator, DidLogEntryValidatorErrorKind,
     };
     use rstest::rstest;
-    use serde_json::{json, Value};
+    use serde_json::{Value, json};
 
     #[rstest]
     // CAUTION V1_0-specific (happy path) case

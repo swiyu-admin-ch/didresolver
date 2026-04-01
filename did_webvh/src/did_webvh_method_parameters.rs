@@ -189,9 +189,9 @@ impl WebVerifiableHistoryDidMethodParameters {
                 // This item MAY appear in later DID log entries to indicate that the processing rules
                 // for that and later entries have been changed to a different specification version.
                 if method != DID_METHOD_PARAMETER_VERSION {
-                    return Err(DidResolverError::InvalidDidParameter(
-                        format!("Invalid 'method' DID parameter. Expected '{DID_METHOD_PARAMETER_VERSION}'.")
-                    ));
+                    return Err(DidResolverError::InvalidDidParameter(format!(
+                        "Invalid 'method' DID parameter. Expected '{DID_METHOD_PARAMETER_VERSION}'."
+                    )));
                 }
                 Some(method)
             }
@@ -243,9 +243,9 @@ impl WebVerifiableHistoryDidMethodParameters {
                     .flatten()
                     .any(|next_key_hash| *next_key_hash == hashed_update_key)
                 {
-                    return Err(DidResolverError::InvalidDidParameter(
-                        format!("Illegal update key detected: {update_key}. All multikey formatted public keys added in a new 'updateKeys' list MUST have their hashes listed in the 'nextKeyHashes' list from the previous log entry (except for the first log entry)")
-                    ));
+                    return Err(DidResolverError::InvalidDidParameter(format!(
+                        "Illegal update key detected: {update_key}. All multikey formatted public keys added in a new 'updateKeys' list MUST have their hashes listed in the 'nextKeyHashes' list from the previous log entry (except for the first log entry)"
+                    )));
                 }
             }
         } else if new_params
@@ -456,7 +456,7 @@ const DID_METHOD_PARAMETER_VERSION: &str = "did:webvh:1.0";
 )]
 mod test {
     use crate::did_webvh_method_parameters::{
-        WebVerifiableHistoryDidMethodParameters, Witness, DID_METHOD_PARAMETER_VERSION,
+        DID_METHOD_PARAMETER_VERSION, WebVerifiableHistoryDidMethodParameters, Witness,
     };
     use crate::test::assert_trust_did_web_error;
     use did_sidekicks::did_method_parameters::DidMethodParameter;
@@ -726,7 +726,7 @@ mod test {
         // Test "updateKeys" DID parameter with pre-rotation illegal values
         let mut old_params = base_params.clone();
         old_params.next_keys = Some(vec![
-            JcsSha256Hasher::default().base58btc_encode_multihash_multikey("new_update_key")
+            JcsSha256Hasher::default().base58btc_encode_multihash_multikey("new_update_key"),
         ]);
 
         let mut new_params = base_params.clone();
@@ -842,16 +842,20 @@ mod test {
         assert!(!update_keys.is_empty_array());
         assert!(update_keys.get_string_array_value().is_some());
         assert!(!update_keys.get_string_array_value().unwrap().is_empty());
-        assert!(!update_keys
-            .get_string_array_value()
-            .unwrap()
-            .iter()
-            .all(|str| str.is_empty()));
-        assert!(update_keys
-            .get_string_array_value()
-            .unwrap()
-            .iter()
-            .any(|str| str.contains("some_update_key")));
+        assert!(
+            !update_keys
+                .get_string_array_value()
+                .unwrap()
+                .iter()
+                .all(|str| str.is_empty())
+        );
+        assert!(
+            update_keys
+                .get_string_array_value()
+                .unwrap()
+                .iter()
+                .any(|str| str.contains("some_update_key"))
+        );
 
         assert!(param_map.contains_key("nextKeyHashes"));
         let next_key_hashes_option = param_map.get("nextKeyHashes");
@@ -861,16 +865,20 @@ mod test {
         assert!(!next_key_hashes.is_empty_array());
         assert!(next_key_hashes.get_string_array_value().is_some());
         assert!(!next_key_hashes.get_string_array_value().unwrap().is_empty());
-        assert!(!next_key_hashes
-            .get_string_array_value()
-            .unwrap()
-            .iter()
-            .all(|str| str.is_empty()));
-        assert!(next_key_hashes
-            .get_string_array_value()
-            .unwrap()
-            .iter()
-            .any(|str| str.contains("some_next_key_hash")));
+        assert!(
+            !next_key_hashes
+                .get_string_array_value()
+                .unwrap()
+                .iter()
+                .all(|str| str.is_empty())
+        );
+        assert!(
+            next_key_hashes
+                .get_string_array_value()
+                .unwrap()
+                .iter()
+                .any(|str| str.contains("some_next_key_hash"))
+        );
 
         assert!(param_map.contains_key("portable"));
         let portable_option = param_map.get("portable");
