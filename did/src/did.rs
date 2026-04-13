@@ -10,6 +10,7 @@ use did_tdw::errors::TrustDidWebIdResolutionErrorKind;
 use did_webvh::did_webvh::{WebVerifiableHistory, WebVerifiableHistoryId};
 use did_webvh::errors::WebVerifiableHistoryIdResolutionErrorKind;
 use regex::Regex;
+use serde_json::json;
 use std::sync::Arc;
 use strum::{AsRefStr as EnumAsRefStr, Display as EnumDisplay};
 use thiserror::Error;
@@ -76,11 +77,9 @@ impl DidResolveError {
             Self::InvalidDataIntegrityProof(_) => DidResolveErrorKind::InvalidDataIntegrityProof,
         }
     }
-}
 
-impl From<DidResolverError> for DidResolveError {
     #[inline]
-    fn from(value: DidResolverError) -> Self {
+    fn from_old(value: DidResolverError) -> Self {
         match value.kind() {
             DidResolverErrorKind::InvalidMethodSpecificId => {
                 Self::InvalidMethodSpecificId(format!("{value}"))
@@ -102,6 +101,66 @@ impl From<DidResolverError> for DidResolveError {
             }
         }
     }
+}
+
+impl From<DidResolverError> for DidResolveError {
+    #[inline]
+    fn from(value: DidResolverError) -> Self {
+        match value {
+            // TODO@MP remove clone here and below match arm
+            DidResolverError::InvalidMethodSpecificId(v) => Self::InvalidMethodSpecificId(v),
+            DidResolverError::SerializationFailed(v) => Self::SerializationFailed(v),
+            DidResolverError::DeserializationFailed(v) => Self::DeserializationFailed(v),
+            DidResolverError::InvalidDidParameter(v) => Self::InvalidDidParameter(v),
+            DidResolverError::InvalidDidDocument(v) => Self::InvalidDidDocument(v),
+            DidResolverError::InvalidDataIntegrityProof(v) => Self::InvalidDataIntegrityProof(v),
+        }
+    }
+}
+
+// TODO@MP document properly and probably also refactor
+// not impl of DIDResolverError because can't be done with Uniffi bindings :()
+const METADATA_ATTRIBUTE_ERROR: &str = "error";
+const METADATA_ATTRIBUTE_PROBLEM_DETAILS: &str = "problemDetails";
+const METADATA_ATTRIBUTE_PROBLEM_DETAILS_TYPE: &str = "type";
+const METADATA_ATTRIBUTE_PROBLEM_DETAILS_TITLE: &str = "title";
+const METADATA_ATTRIBUTE_PROBLEM_DETAILS_DETAIL: &str = "detail";
+pub fn get_metadata_from_error(error: DidResolveError) -> String {
+    match &error {
+        DidResolveError::InvalidMethodSpecificId(method) => method_not_supported(method),
+        DidResolveError::SerializationFailed(_) => todo!(),
+        DidResolveError::DeserializationFailed(e) => invalid_did(e.as_str()),
+        DidResolveError::InvalidDidParameter(_) => todo!(),
+        DidResolveError::InvalidDidDocument(_) => todo!(),
+        DidResolveError::InvalidDataIntegrityProof(_) => todo!(),
+        DidResolveError::DidNotSupported(_) => todo!(),
+        DidResolveError::InvalidDidDoc(_) => todo!(),
+        DidResolveError::InvalidDidLog(_) => todo!(),
+        DidResolveError::MalformedDid(_) => todo!(),
+    }
+    .to_string()
+}
+
+fn invalid_did(detail: &str) -> serde_json::Value {
+    json!({
+       METADATA_ATTRIBUTE_ERROR: "invalidDid",
+       METADATA_ATTRIBUTE_PROBLEM_DETAILS: {
+        METADATA_ATTRIBUTE_PROBLEM_DETAILS_TYPE: "https://www.w3.org/ns/did#INVALID_DID",
+        METADATA_ATTRIBUTE_PROBLEM_DETAILS_TITLE: "The resolved DID is invalid.",
+        METADATA_ATTRIBUTE_PROBLEM_DETAILS_DETAIL: detail,
+       },
+    })
+}
+
+fn method_not_supported(method: &str) -> serde_json::Value {
+    json!({
+       METADATA_ATTRIBUTE_ERROR: "invalidDid",
+       METADATA_ATTRIBUTE_PROBLEM_DETAILS: {
+        METADATA_ATTRIBUTE_PROBLEM_DETAILS_TYPE: "https://www.w3.org/ns/did#METHOD_NOT_SUPPORTED",
+        METADATA_ATTRIBUTE_PROBLEM_DETAILS_TITLE: "Method not supported.",
+        METADATA_ATTRIBUTE_PROBLEM_DETAILS_DETAIL: format!("The method '{}' is not supported.", method),
+       },
+    })
 }
 
 /// [`DidResolveError`] kind.

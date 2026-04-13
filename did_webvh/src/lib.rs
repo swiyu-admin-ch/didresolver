@@ -53,8 +53,8 @@ mod test {
     use core::panic;
     use did_sidekicks::did_doc::*;
     use did_sidekicks::errors::{DidResolverError, DidResolverErrorKind};
-    use rand::distributions::Alphanumeric;
     use rand::Rng as _;
+    use rand::distributions::Alphanumeric;
     use rstest::{fixture, rstest};
     use serde_json::Value as JsonValue;
     use std::fs;

@@ -13,7 +13,8 @@ pub enum DidSidekicksError {
     #[error("failed to serialize DID document (to JSON): {0}")]
     SerializationFailed(String),
     /// The supplied DID document is invalid or contains an argument which isn't part of the DID specification/recommendation
-    #[error("the supplied DID document is invalid or contains an argument which isn't part of the DID specification/recommendation: {0}"
+    #[error(
+        "the supplied DID document is invalid or contains an argument which isn't part of the DID specification/recommendation: {0}"
     )]
     DeserializationFailed(String),
     /// Failed to create type a from hex-encoded string
@@ -127,10 +128,6 @@ pub enum DidSidekicksErrorKind {
     VCDataIntegrityProofGenerationError,
     VCDataIntegrityProofVerificationError,
     VCDataIntegrityProofTransformationError,
-    /*
-    VCDataIntegrityInvalidDomainError,
-    VCDataIntegrityInvalidChallengeError,
-     */
 }
 
 /// The error accompanying [`DidResolver`] trait.
@@ -149,7 +146,8 @@ pub enum DidResolverError {
     #[error("failed to serialize DID document (to JSON): {0}")]
     SerializationFailed(String),
     /// The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation
-    #[error("the supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation: {0}"
+    #[error(
+        "the supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation: {0}"
     )]
     DeserializationFailed(String),
     /// Invalid DID parameter

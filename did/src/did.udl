@@ -3,6 +3,8 @@ namespace did {
 	/// Constructs a DID from an absolute kid.
 	[Throws=DidResolveError]
 	Did get_did_from_absolute_kid(string absolute_kid);
+
+	string get_metadata_from_error(DidResolveError error);
 };
 
 // did_sidekicks
