@@ -12,7 +12,7 @@ on:
     tags:
       - '*'
   # Enable it only while debugging
-  #workflow_dispatch:
+  workflow_dispatch:
 
 jobs:
   build:
@@ -27,24 +27,37 @@ jobs:
           #ref: ${{ github.ref_name }}
 
       - name: Rust toolchain (stable)
-        # For more Rust extensions, please visit: https://github.com/marketplace?query=rust&type=actions
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
+          targets: > 
+            arm-linux-androideabi,
+            aarch64-linux-android,
+            armv7-linux-androideabi,
+            i686-linux-android,
+            x86_64-linux-android,
+            x86_64-unknown-linux-gnu
+
+      # old rust setup
+      # - name: Rust toolchain (stable)
+      #   # For more Rust extensions, please visit: https://github.com/marketplace?query=rust&type=actions
+      #   uses: actions-rs/toolchain@v1
+      #   with:
+      #     toolchain: stable
 
       - name: Install targets (cross-compilation)
         run: |
           cargo install cargo-ndk
           cargo ndk --version
+          cargo ndk-env --target x86_64-linux-android
+
+      #    rustup target add arm-linux-androideabi
+      #    rustup target add aarch64-linux-android
+      #    rustup target add armv7-linux-androideabi
+      #    rustup target add i686-linux-android
+      #    rustup target add x86_64-linux-android
+      #    rustup target add x86_64-unknown-linux-gnu
           
-          rustup target add arm-linux-androideabi
-          rustup target add aarch64-linux-android
-          rustup target add armv7-linux-androideabi
-          rustup target add i686-linux-android
-          rustup target add x86_64-linux-android
-          rustup target add x86_64-unknown-linux-gnu
-          
-          #cargo ndk-env --target x86_64-linux-android
 
       - name: Cache Rust modules
         id: cache-rust
