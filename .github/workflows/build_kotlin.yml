@@ -11,7 +11,8 @@ on:
     # Use ${{ github.ref_name }} to get the short ref name of tag that triggered the workflow run
     tags:
       - '*'
-  workflow_dispatch:
+  # Enable it only while debugging
+  #workflow_dispatch:
 
 # limit the concurrency of entire workflow runs for a specific branch
 concurrency:
@@ -56,11 +57,11 @@ jobs:
     runs-on: ${{ matrix.os }}${{ matrix.label }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         #with:
         #  ref: ${{ github.ref_name }}
       - name: Cache Rust
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cargo/bin/
@@ -79,7 +80,7 @@ jobs:
           cargo run --bin uniffi-bindgen generate --library target/release/${{ matrix.file-prefix }}didresolver.${{ matrix.file-extension }} --language kotlin --out-dir bindings-repo/src/main/kotlin
           cp target/release/${{ matrix.file-prefix }}didresolver.${{ matrix.file-extension }} bindings-repo/src/main/resources/${{ matrix.jna-dir }}/
       - name: Save Bindings Patch as Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bindings-repo-patch-${{ matrix.os }}${{ matrix.label }}
           path: bindings-repo
@@ -109,7 +110,7 @@ jobs:
       latest_git_tag: ${{ needs.set-context.outputs.latest_git_tag }}
     steps:
       - name: Checkout Bindings Repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # CAUTION This assumes such repo exists
           repository: ${{ github.repository }}-kotlin
@@ -119,33 +120,33 @@ jobs:
           lfs: true
 
       - name: Download Generated Bindings Patch (macos-latest)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: bindings-repo-patch-macos-latest
           path: bindings-repo
       - name: Download Generated Bindings Patch (macos-15-intel)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: bindings-repo-patch-macos-15-intel
           path: bindings-repo
       - name: Download Generated Bindings Patch (windows-latest)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: bindings-repo-patch-windows-latest
           path: bindings-repo
       - name: Download Generated Bindings Patch (ubuntu-24.04-arm)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: bindings-repo-patch-ubuntu-24.04-arm
           path: bindings-repo
       - name: Download Generated Bindings Patch (ubuntu-latest)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: bindings-repo-patch-ubuntu-latest
           path: bindings-repo
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           path: bindings-repo
           #branch: automated-pull-request/bindings-patch-${{ env.timestamp }}

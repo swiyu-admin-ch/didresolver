@@ -12,7 +12,7 @@ on:
     tags:
       - '*'
   # Enable it only while debugging
-  # workflow_dispatch:
+  #workflow_dispatch:
 
 jobs:
   build:
@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           #ssh-key: ${{ secrets.SSH_KEY }}
           submodules: recursive
@@ -41,7 +41,7 @@ jobs:
 
       - name: Cache Rust modules
         id: cache-rust
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         env:
           cache-name: cache-rust-modules
         with:
@@ -111,7 +111,7 @@ jobs:
           echo -e "${GREEN}>> No UNALIGNED 64-bit JNI libs detected.${COLORS_OFF}"
 
       - name: Save Bindings Patch as Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bindings-repo-patch
           path: bindings-repo
@@ -141,7 +141,7 @@ jobs:
       latest_git_tag: ${{ needs.set-context.outputs.latest_git_tag }}
     steps:
       - name: Checkout Bindings Repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # CAUTION This assumes such repo exists
           repository: ${{ github.repository }}-kotlin-android
@@ -151,13 +151,13 @@ jobs:
           lfs: true
 
       - name: Download Generated Bindings Patch
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: bindings-repo-patch
           path: bindings-repo
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           path: bindings-repo
           #branch: automated-pull-request/bindings-patch-${{ env.timestamp }}
