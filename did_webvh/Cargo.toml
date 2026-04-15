@@ -31,7 +31,9 @@ regex.workspace = true
 url-escape.workspace = true
 thiserror.workspace = true
 url.workspace = true
-rust-embed = { workspace = true , features = ["include-exclude", "compression"]}
+# Compression disabled as transient dependency core2 has been yanked
+# rust-embed = { workspace = true , features = ["include-exclude", "compression"]}
+rust-embed = { workspace = true , features = ["include-exclude"]}
 rayon.workspace = true
 lazy_static.workspace = true
 
