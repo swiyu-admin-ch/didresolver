@@ -37,4 +37,4 @@ permissions:
 jobs:
   rust-osv-scanner:
     # just reuse a relevant workflow from the dedicated repo https://github.com/swiyu-admin-ch/github-actions-workflows
-    uses: swiyu-admin-ch/github-actions-workflows/.github/workflows/rust-osv-scanner.yml@fix/EIDOMNI-853-improve-github-actions
+    uses: swiyu-admin-ch/github-actions-workflows/.github/workflows/rust-osv-scanner.yml@main

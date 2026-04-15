@@ -35,4 +35,4 @@ jobs:
   rust-codeql-analyze:
     name: Analyze code (CodeQL)
     # just reuse a relevant workflow from the dedicated repo https://github.com/swiyu-admin-ch/github-actions-workflows
-    uses: swiyu-admin-ch/github-actions-workflows/.github/workflows/rust-codeql-analyze.yml@fix/EIDOMNI-853-improve-github-actions
+    uses: swiyu-admin-ch/github-actions-workflows/.github/workflows/rust-codeql-analyze.yml@main
