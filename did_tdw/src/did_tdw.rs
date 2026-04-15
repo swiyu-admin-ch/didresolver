@@ -13,7 +13,6 @@ use did_sidekicks::did_resolver::DidResolver;
 use did_sidekicks::ed25519::*;
 use did_sidekicks::errors::DidResolverError;
 use did_sidekicks::jcs_sha256_hasher::JcsSha256Hasher;
-use did_sidekicks::multibase::MultiBaseConvertible as _;
 use did_sidekicks::vc_data_integrity::*;
 use rayon::prelude::*;
 use regex;
@@ -204,46 +203,28 @@ impl DidLogEntry {
         &self,
         update_key: String,
     ) -> Result<Ed25519VerifyingKey, DidResolverError> {
-        match self.parameters.update_keys.to_owned() {
-            Some(update_keys) => {
-                if update_keys.is_empty() {
-                    return Err(DidResolverError::InvalidDataIntegrityProof(
-                        "No update keys detected".to_owned(),
-                    ));
-                }
-
-                match update_keys.iter().find(|entry| *entry == &update_key) {
-                    Some(_) => {}
-                    _ => {
-                        return Err(DidResolverError::InvalidDataIntegrityProof(format!(
-                            "Key extracted from proof is not authorized for update: {update_key}"
-                        )));
-                    }
-                };
-
-                let verifying_key = match Ed25519VerifyingKey::from_multibase(update_key.as_str()) {
-                    Ok(key) => key,
-                    Err(err) => {
-                        return Err(DidResolverError::InvalidDataIntegrityProof(format!(
-                            "Failed to convert update key (from its multibase representation): {err}"
-                        )));
-                    }
-                };
-
-                Ok(verifying_key)
-            }
-            None => {
-                let prev_entry = match self.prev_entry.to_owned() {
-                    Some(err) => err,
-                    _ => {
-                        return Err(DidResolverError::InvalidDataIntegrityProof(
-                            "No update keys detected".to_owned(),
-                        ));
-                    }
-                };
-                prev_entry.is_key_authorized_for_update(update_key) // recursive call
-            }
+        // Check if current log entry contains keys
+        if let Some(result) = self.parameters.find_authorized_update_key(&update_key) {
+            return result;
         }
+
+        // If not, check iteratively previous entries for update keys
+
+        // Clone on an Arc only copies the pointer to the data and reference counter, making it a relatively cheap operation
+        let mut entry = self.prev_entry.clone();
+        while let Some(e) = entry {
+            // If entry contains update keys, return result
+            if let Some(result) = e.parameters.find_authorized_update_key(&update_key) {
+                return result;
+            }
+            // Otherwise, move on to previous entry
+            entry = e.prev_entry.clone(); // Same applies to this clone
+        }
+
+        // No log entry contains update keys
+        return Err(DidResolverError::InvalidDataIntegrityProof(
+            "No update keys detected".to_owned(),
+        ));
     }
 
     fn to_log_entry_line(&self) -> Result<JsonValue, DidResolverError> {
