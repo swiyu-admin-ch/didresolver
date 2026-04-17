@@ -23,7 +23,7 @@ categories.workspace = true
 [dependencies]
 did_sidekicks = { path = "../did_sidekicks" }
 uniffi = { workspace = true, features = ["cli"] }
-serde = { workspace = true, features = ["derive"] }
+serde = { workspace = true, features = ["derive", "rc"] }
 serde_json = { workspace = true, features = ["preserve_order"] }
 chrono = { workspace = true, features = ["serde"] }
 rand.workspace = true

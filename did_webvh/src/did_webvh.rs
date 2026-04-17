@@ -389,7 +389,7 @@ impl DidLogEntry {
 #[derive(Serialize, Debug)]
 pub struct WebVerifiableHistoryDidLog {
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub did_log_entries: Vec<DidLogEntry>,
+    pub did_log_entries: Vec<Arc<DidLogEntry>>,
     #[serde(skip)]
     pub did_method_parameters: WebVerifiableHistoryDidMethodParameters,
 }
@@ -578,7 +578,7 @@ impl TryFrom<String> for WebVerifiableHistoryDidLog {
                         ))
                     };
 
-                    let current_entry = DidLogEntry::new(
+                    let current_entry = Arc::new(DidLogEntry::new(
                         version,
                         version_time,
                         parameters,
@@ -586,11 +586,11 @@ impl TryFrom<String> for WebVerifiableHistoryDidLog {
                         did_doc_value,
                         proof,
                         prev_entry.to_owned(),
-                    );
-                    prev_entry = Some(Arc::from(current_entry.to_owned()));
+                    ));
+                    prev_entry = Some(current_entry.clone());
 
                     Ok(current_entry)
-                }).collect::<Result<Vec<DidLogEntry>, DidResolverError>>()?;
+                }).collect::<Result<Vec<Arc<DidLogEntry>>, DidResolverError>>()?;
 
         current_params.map_or_else(
             || {
@@ -697,7 +697,7 @@ impl WebVerifiableHistoryDidLog {
                     "Invalid did log. No entries found".to_owned(),
                 ))
             },
-            |entry| Ok(entry.clone().did_doc),
+            |entry| Ok(entry.did_doc.clone()),
         )
     }
 }

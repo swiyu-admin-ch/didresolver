@@ -289,7 +289,7 @@ impl DidLogEntry {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TrustDidWebDidLog {
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub did_log_entries: Vec<DidLogEntry>,
+    pub did_log_entries: Vec<Arc<DidLogEntry>>,
     pub did_method_parameters: TrustDidWebDidMethodParameters,
 }
 
@@ -496,7 +496,7 @@ impl TryFrom<String> for TrustDidWebDidLog {
                         ))
                     };
 
-                    let current_entry = DidLogEntry::new(
+                    let current_entry = Arc::from(DidLogEntry::new(
                         version_id,
                         version_index,
                         version_time,
@@ -506,11 +506,11 @@ impl TryFrom<String> for TrustDidWebDidLog {
                         did_doc_hash,
                         proof,
                         prev_entry.clone(),
-                    );
-                    prev_entry = Some(Arc::from(current_entry.clone()));
+                    ));
+                    prev_entry = Some(current_entry.clone());
 
                     Ok(current_entry)
-                }).collect::<Result<Vec<DidLogEntry>, DidResolverError>>()?;
+                }).collect::<Result<Vec<Arc<DidLogEntry>>, DidResolverError>>()?;
 
         if current_params.is_none() {
             // unlikely, but still
@@ -537,7 +537,7 @@ impl TrustDidWebDidLog {
         &self,
         scid_to_validate: Option<String>,
     ) -> Result<DidDoc, DidResolverError> {
-        let mut previous_entry: Option<DidLogEntry> = None;
+        let mut previous_entry: Option<Arc<DidLogEntry>> = None;
         for entry in &self.did_log_entries {
             match previous_entry.to_owned() {
                 Some(prev) => {
@@ -616,7 +616,7 @@ impl TrustDidWebDidLog {
             };
         }
         match previous_entry {
-            Some(entry) => Ok(entry.did_doc),
+            Some(entry) => Ok(entry.did_doc.clone()),
             None => Err(DidResolverError::InvalidDataIntegrityProof(
                 "Invalid did log. No entries found".to_owned(),
             )),
