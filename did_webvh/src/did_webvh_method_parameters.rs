@@ -169,7 +169,7 @@ impl WebVerifiableHistoryDidMethodParameters {
             }
         }
 
-        /* TODO Ensure validity of the "portable" DID parameter. Currently ignored/disabled for the sake of being able to use test vectors from third parties
+        // Portable not supported as defined by Swiss profile
         if let Some(portable) = self.portable {
             if portable {
                 return Err(DidResolverError::InvalidDidParameter(
@@ -177,7 +177,6 @@ impl WebVerifiableHistoryDidMethodParameters {
                 ));
             }
         }
-         */
 
         Ok(())
     }
@@ -283,7 +282,7 @@ impl WebVerifiableHistoryDidMethodParameters {
         self.watchers = new_params.watchers.or(current_params.watchers);
 
         self.portable = match (current_params.portable, new_params.portable) {
-            (Some(true), Some(true)) => return Err(DidResolverError::InvalidDidParameter(
+            (Some(true), _) => return Err(DidResolverError::InvalidDidParameter(
                 "Unsupported 'portable' DID parameter. We currently don't support portable dids".to_owned(),
             )),
             (_, Some(true)) =>  return Err(DidResolverError::InvalidDidParameter(

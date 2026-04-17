@@ -278,10 +278,6 @@ mod test {
     )]
     */
     #[case(
-        "test_data/third_party_test_vectors/revoked-did.jsonl",
-        "did:webvh:QmWC6mWD7HSbkkqvyZ64mfrK4JiSMFxgCeh3awNzRdwfMr:localhost%3A8000"
-    )]
-    #[case(
         "test_data/generated_by_didtoolbox_java/single_update_key.jsonl",
         "did:webvh:QmQqco6RKGLje7JdQpwsPsM5qyuVou9NmiHTs5S3dqu78a:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
     )]
