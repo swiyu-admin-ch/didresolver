@@ -350,7 +350,7 @@
             },
             "proofValue": {
               "type": "string",
-              "pattern": "^z[1-9a-zA-NP-Z]{87,}$",
+              "pattern": "^z[1-9a-zA-NP-Z]{86,}$",
               "$comment": "The proofValue property of the proof MUST be a detached EdDSA signature produced according to [RFC8032], encoded using the base-58-btc header and alphabet as described in the Multibase section of Controlled Identifiers v1.0 (https://www.w3.org/TR/cid-1.0)."
             },
             "challenge": {
