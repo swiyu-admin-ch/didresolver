@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 
 use did_sidekicks::did_method_parameters::DidMethodParameter;
+use did_sidekicks::ed25519::Ed25519VerifyingKey;
 use did_sidekicks::errors::DidResolverError;
+use did_sidekicks::multibase::MultiBaseConvertible as _;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -299,6 +301,42 @@ impl TrustDidWebDidMethodParameters {
             }
         }
         false
+    }
+
+    /// Checks if the provided update_key is authorized
+    /// In case these parameters contain no update_keys, None is returned.
+    /// Otherwise, it tries to find / parse the key. If it fails an error is returned.
+    pub fn find_authorized_update_key(&self, update_key: &String) -> Option<Result<Ed25519VerifyingKey, DidResolverError>> {
+        match self.update_keys.to_owned() {
+            Some(update_keys) => {
+                if update_keys.is_empty() {
+                    return Some(Err(DidResolverError::InvalidDataIntegrityProof(
+                        "No update keys detected".to_owned(),
+                    )));
+                }
+
+                match update_keys.iter().find(|entry| *entry == update_key) {
+                    Some(_) => {}
+                    _ => {
+                        return Some(Err(DidResolverError::InvalidDataIntegrityProof(format!(
+                            "Key extracted from proof is not authorized for update: {update_key}"
+                        ))));
+                    }
+                };
+
+                let verifying_key = match Ed25519VerifyingKey::from_multibase(update_key.as_str()) {
+                    Ok(key) => key,
+                    Err(err) => {
+                        return Some(Err(DidResolverError::InvalidDataIntegrityProof(format!(
+                            "Failed to convert update key (from its multibase representation): {err}"
+                        ))));
+                    }
+                };
+
+                Some(Ok(verifying_key))
+            },
+            None => None,
+        }
     }
 }
 
