@@ -28,6 +28,7 @@ jobs:
 
       - name: Install targets (cross-compilation)
         run: |
+          # Rust already setup in ubuntu-latest (https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md#rust-tools)
           cargo install cargo-ndk
           cargo ndk --version
           rustup target add arm-linux-androideabi

@@ -72,6 +72,7 @@ jobs:
           #key: ${{ runner.os }}-${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           key: ${{ runner.os }}-${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
       - name: Build
+        # Rust available from the get go in ubuntu-latest (https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md#rust-tools)
         run:  cargo build --release
       - name: Generate UniFFI bindings
         run:  |
