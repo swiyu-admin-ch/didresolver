@@ -26,12 +26,12 @@ lazy_static! {
 )]
 pub enum DidResolveError {
     /// The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation
-    #[error("The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation: {0}")]
+    #[error(
+        "The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation: {0}"
+    )]
     DeserializationFailed(String),
     /// The supplied DID is not supported (currently supported are: did:tdw, did:webvh)
-    #[error(
-        "The supplied DID is not supported (currently supported are: did:tdw, did:webvh): {0}"
-    )]
+    #[error("The supplied DID is not supported (currently supported are: did:tdw, did:webvh): {0}")]
     DidNotSupported(String),
     /// Invalid DID log integration proof
     #[error("invalid DID log integration proof: {0}")]
@@ -545,15 +545,6 @@ mod tests {
         r#"{ "versionId": "1-QmQNjSbRroDtnctDN57Fjvd4e5jYHWVTgMZpzJiTbPfQ5K", "versionTime": "2025-08-06T08:55:01Z", "parameters": { "method": "did:webvh:1.0", "scid": "QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX", "updateKeys": [ "z6MkkkjG6shmZk6D2ghgDbpJQHD4xvpZhzYiWSLKDeznibiJ" ], "portable": false }, "state": { "@context": [ "https://www.w3.org/ns/did/v1", "https://w3id.org/security/jwk/v1" ], "id": "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com", "authentication": [ "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#auth-key-01" ], "assertionMethod": [ "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#assert-key-01" ], "verificationMethod": [ { "id": "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#auth-key-01", "type": "JsonWebKey2020", "publicKeyJwk": { "kty": "EC", "crv": "P-256", "x": "5d-hJaS_UKIU1c05hEBhZa8Xkj_AqBDmqico_PSrRfU", "y": "TK5YKD_osEaVrDBnah-jUDXI27yqFVIo6ZYTfWp-NbY", "kid": "auth-key-01" } }, { "id": "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#assert-key-01", "type": "JsonWebKey2020", "publicKeyJwk": { "kty": "EC", "crv": "P-256", "x": "7jWgolr5tQIUIGp9sDaB0clAiXcFwVYXUhEiXXLkmKg", "y": "NYGIxi2VGEv2OL_WqzVOd_VKjOQbl1kaERYbpAjWo58", "kid": "assert-key-01" } } ] }, "proof": [ { "type": "DataIntegrityProof", "cryptosuite": "eddsa-jcs-2022", "created": "2025-08-13T05:43:17Z", "verificationMethod": "did:key:z6MkkkjG6shmZk6D2ghgDbpJQHD4xvpZhzYiWSLKDeznibiJ#z6MkkkjG6shmZk6D2ghgDbpJQHD4xvpZhzYiWSLKDeznibiJ", "proofPurpose": "assertionMethod", "proofValue": "z3L7j2siRiZ4zziQQmRqLY5qH2RfVz6VTC5gbDE6vntw1De5Ej5DNR3wDU6m9KRiUYPm9o8P89yMzNk5EhWVTo4Tn" } ] }
 { "versionId": "2-QmYkDQ83oPnBqyUEjdUdZZCc8VjQY7aE5BikRaa8cZAxVS", "versionTime": "2025-08-13T08:46:50Z", "parameters": {}, "state": { "@context": [ "https://www.w3.org/ns/did/v1", "https://w3id.org/security/jwk/v1" ], "id": "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com", "authentication": [ "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#auth-key-01" ], "assertionMethod": [ "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#assert-key-01" ], "verificationMethod": [ { "id": "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#auth-key-01", "type": "JsonWebKey2020", "publicKeyJwk": { "kty": "EC", "crv": "P-256", "kid": "auth-key-01", "x": "Ow_aAo2hbAYgEhKAOeu3TYO8bbKOxgJ2gndk46AaXF0", "y": "hdVPThXbmadBl3L5HaYjiz8ewIAve4VHqOgs98MdV5M" } }, { "id": "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#assert-key-01", "type": "JsonWebKey2020", "publicKeyJwk": { "kty": "EC", "crv": "P-256", "kid": "assert-key-02", "x": "oZq9zqDbbYfRV9gdXbLJaaKWF9G27P4CQfTEyC1aT0I", "y": "QS-uHvmj1mVLB5zJtnwTyWYRZIML4RzvCf4qOrsqfWQ" } } ] }, "proof": [ { "type": "DataIntegrityProof", "cryptosuite": "eddsa-jcs-2022", "created": "2025-08-13T09:02:55Z", "verificationMethod": "did:key:z6MkkkjG6shmZk6D2ghgDbpJQHD4xvpZhzYiWSLKDeznibiJ#z6MkkkjG6shmZk6D2ghgDbpJQHD4xvpZhzYiWSLKDeznibiJ", "proofPurpose": "assertionMethod", "proofValue": "z2tZe9tFzyTKWRX7NEpf3ARRs7yZqu5Kq8jzr5qzzffeN9FeJPzmKs6Jb1TMNfpn8Nar6WEfifvMT5SVWozJruTwD" } ] }
 "#)]
-    // affinidi-tdk-rs test vector(s)
-    // https://raw.githubusercontent.com/affinidi/affinidi-tdk-rs/refs/tags/did-webvh-v0.1.7/crates/affinidi-did-resolver/affinidi-did-resolver-methods/did-webvh/tests/test_vectors/first_log_entry_good.jsonl
-    /*#[case("did:webvh:QmQHjAiCq1N2dbTPKBkH7xpd93FQCgEPxmR2zTXqt4fndY:localhost%3A8000",
-            r#"{"versionId":"1-QmWZWcvritBzgX3JiMz9dSjkTL2Pbw4HmBo4zC3eiNqLy8","versionTime":"2025-07-07T01:52:23Z","parameters":{"method":"did:webvh:1.0","scid":"QmQHjAiCq1N2dbTPKBkH7xpd93FQCgEPxmR2zTXqt4fndY","updateKeys":["z6MkqjRELM1dN43aw6QdkjG46k1fUTjdQJqx7g338djC3Bre"],"portable":true,"nextKeyHashes":["zQmTaTNScJGPSEiHWTxaEpdVExMYqn7DF2DFZ3VqoF9cawN"]},"state":{"@context":["https://www.w3.org/ns/did/v1","https://www.w3.org/ns/cid/v1"],"assertionMethod":["did:webvh:QmQHjAiCq1N2dbTPKBkH7xpd93FQCgEPxmR2zTXqt4fndY:localhost%3A8000#key-0"],"authentication":["did:webvh:QmQHjAiCq1N2dbTPKBkH7xpd93FQCgEPxmR2zTXqt4fndY:localhost%3A8000#key-0"],"capabilityDelegation":[],"capabilityInvocation":[],"id":"did:webvh:QmQHjAiCq1N2dbTPKBkH7xpd93FQCgEPxmR2zTXqt4fndY:localhost%3A8000","keyAgreement":["did:webvh:QmQHjAiCq1N2dbTPKBkH7xpd93FQCgEPxmR2zTXqt4fndY:localhost%3A8000#key-0"],"service":[],"verificationMethod":[{"controller":"did:webvh:QmQHjAiCq1N2dbTPKBkH7xpd93FQCgEPxmR2zTXqt4fndY:localhost%3A8000","id":"did:webvh:QmQHjAiCq1N2dbTPKBkH7xpd93FQCgEPxmR2zTXqt4fndY:localhost%3A8000#key-0","publicKeyMultibase":"z6Mkp6U8WcpWKFi6TFfUpzrtNN99a1aXpWARJEeXh8uFEn7H","type":"Multikey"}]},"proof":[{"type":"DataIntegrityProof","cryptosuite":"eddsa-jcs-2022","created":"2025-07-07T01:52:23Z","verificationMethod":"did:key:z6MkqjRELM1dN43aw6QdkjG46k1fUTjdQJqx7g338djC3Bre#z6MkqjRELM1dN43aw6QdkjG46k1fUTjdQJqx7g338djC3Bre","proofPurpose":"assertionMethod","proofValue":"z5VnQYT8GkJ2PQArqaqcFuNjpd8CcueLVT4JriXDYPfUBtS9LJBSMYpLQUAA1oUQQYhLuqemYE8H8Yv1J3i1DYbQj"}]}
-    "#)]*/
-    // https://raw.githubusercontent.com/affinidi/affinidi-tdk-rs/refs/tags/did-webvh-v0.1.7/crates/affinidi-did-resolver/affinidi-did-resolver-methods/did-webvh/tests/test_vectors/first_log_entry_verify_full.jsonl
-    #[case("did:webvh:QmP7NForSYfNsLYSibwCNLv46NeHR8e8JNW4BgMDhB5qia:localhost%3A8000",
-        r#"{"versionId":"1-QmRiFdWdyckg8HETNgZWEXP3LGhEZD9pJBVqFRCRWpUrKh","versionTime":"2025-07-09T21:32:15Z","parameters":{"method":"did:webvh:1.0","scid":"QmP7NForSYfNsLYSibwCNLv46NeHR8e8JNW4BgMDhB5qia","updateKeys":["z6Mkg7jJzawE4bCvZ4bNEcXCv77gQb6cWoKS7vR6WvZC91YR"],"portable":true,"nextKeyHashes":["QmUSYM6seDvKtYpSEsr7Y5bmM5owYVGV3EhZ5BCUexrAcR"],"ttl":300},"state":{"@context":["https://www.w3.org/ns/did/v1","https://www.w3.org/ns/cid/v1"],"assertionMethod":["did:webvh:QmP7NForSYfNsLYSibwCNLv46NeHR8e8JNW4BgMDhB5qia:localhost%3A8000#key-0"],"authentication":["did:webvh:QmP7NForSYfNsLYSibwCNLv46NeHR8e8JNW4BgMDhB5qia:localhost%3A8000#key-0"],"capabilityDelegation":[],"capabilityInvocation":[],"id":"did:webvh:QmP7NForSYfNsLYSibwCNLv46NeHR8e8JNW4BgMDhB5qia:localhost%3A8000","keyAgreement":["did:webvh:QmP7NForSYfNsLYSibwCNLv46NeHR8e8JNW4BgMDhB5qia:localhost%3A8000#key-0"],"service":[],"verificationMethod":[{"controller":"did:webvh:QmP7NForSYfNsLYSibwCNLv46NeHR8e8JNW4BgMDhB5qia:localhost%3A8000","id":"did:webvh:QmP7NForSYfNsLYSibwCNLv46NeHR8e8JNW4BgMDhB5qia:localhost%3A8000#key-0","publicKeyMultibase":"z6MkizY3BLE8VwADPdzuhRcsTVDnakfGRNMjWxhk1WJYTjRg","type":"Multikey"}]},"proof":[{"type":"DataIntegrityProof","cryptosuite":"eddsa-jcs-2022","created":"2025-07-09T21:32:15Z","verificationMethod":"did:key:z6Mkg7jJzawE4bCvZ4bNEcXCv77gQb6cWoKS7vR6WvZC91YR#z6Mkg7jJzawE4bCvZ4bNEcXCv77gQb6cWoKS7vR6WvZC91YR","proofPurpose":"assertionMethod","proofValue":"z64Ney14a8BVM5XWQ9qHchnmNH2EKwsRpp7y972sxoGc84mDu56Vq8pJHpymZPpcPmcrDPtqKJs1CkapXxc14ZGeM"}]}
-"#)]
     // https://raw.githubusercontent.com/affinidi/affinidi-tdk-rs/refs/tags/did-webvh-v0.1.7/crates/affinidi-did-resolver/affinidi-did-resolver-methods/did-webvh/tests/test_vectors/pre-1_0-spec.jsonl
     #[case("did:webvh:QmRcxocrbu6F6nDAiWeFBJXHjqgif3NPnuZyHDzxtEpvjx:example.example",
         r#"{"versionId":"1-QmbN9L4sb5s2brWSomReR9BpH5L3HnbjvC9Wshf1LpeK19","versionTime":"2025-07-19T11:55:46Z","parameters":{"method":"did:webvh:1.0","scid":"QmRcxocrbu6F6nDAiWeFBJXHjqgif3NPnuZyHDzxtEpvjx","updateKeys":["z6MkjV2QDQf7skfEiQ6hN7dPUgyvf8NAXefPFqm5jaczXaoL"],"nextKeyHashes":["QmPyrGjbkwKPbDE33StNmA6v9uwNWB9NWgmxMiQ7tV1uJx"],"watchers":["https://watcher1.example/"]},"state":{"@context":["https://www.w3.org/ns/did/v1","https://www.w3.org/ns/cid/v1"],"assertionMethod":["did:webvh:QmRcxocrbu6F6nDAiWeFBJXHjqgif3NPnuZyHDzxtEpvjx:example.example#key-0"],"authentication":["did:webvh:QmRcxocrbu6F6nDAiWeFBJXHjqgif3NPnuZyHDzxtEpvjx:example.example#key-0"],"capabilityDelegation":[],"capabilityInvocation":[],"id":"did:webvh:QmRcxocrbu6F6nDAiWeFBJXHjqgif3NPnuZyHDzxtEpvjx:example.example","keyAgreement":["did:webvh:QmRcxocrbu6F6nDAiWeFBJXHjqgif3NPnuZyHDzxtEpvjx:example.example#key-0"],"service":[],"verificationMethod":[{"controller":"did:webvh:QmRcxocrbu6F6nDAiWeFBJXHjqgif3NPnuZyHDzxtEpvjx:example.example","id":"did:webvh:QmRcxocrbu6F6nDAiWeFBJXHjqgif3NPnuZyHDzxtEpvjx:example.example#key-0","publicKeyMultibase":"z6MkoStXcsJvsZ8quDUZyRj9xiGRyhBVB4f8Qme1vze8DWLc","type":"Multikey"}]},"proof":[{"type":"DataIntegrityProof","cryptosuite":"eddsa-jcs-2022","created":"2025-07-19T11:55:46Z","verificationMethod":"did:key:z6MkjV2QDQf7skfEiQ6hN7dPUgyvf8NAXefPFqm5jaczXaoL#z6MkjV2QDQf7skfEiQ6hN7dPUgyvf8NAXefPFqm5jaczXaoL","proofPurpose":"assertionMethod","proofValue":"z3vfSXEm2fpoahV6Z7dhsWimkn1WfW17AnBrbe1gHmgoccwJ6LQghm9ydf9zbWr295mw6CNRtFU4BzWghasUW2gpK"}]}
@@ -561,11 +552,9 @@ mod tests {
     fn test_resolve_all_ok(#[case] did: String, #[case] did_log_raw: String) {
         let did_obj = Did::new(did.to_owned()).unwrap(); // panic-safe unwrap call (as long as #case setup is correct)
 
-        // TODO assert_eq!(DidMethod::TDW { scid: String::from("/* value */"), url: String::from("/* value */") }, did_obj.get_method());
+        assert!(did_obj.get_method() != DidMethod::UNKNOWN);
 
-        let resolve_all = did_obj.resolve_all(did_log_raw);
-        assert!(resolve_all.is_ok());
-        let did_doc = resolve_all.unwrap();
+        let did_doc = did_obj.resolve_all(did_log_raw).unwrap();
         assert_eq!(did_doc.get_did_doc().get_id(), did);
 
         let params = did_doc.get_did_method_parameters();
@@ -620,7 +609,7 @@ mod tests {
     #[rstest]
     // https://raw.githubusercontent.com/affinidi/affinidi-tdk-rs/refs/tags/did-webvh-v0.1.7/crates/affinidi-did-resolver/affinidi-did-resolver-methods/did-webvh/tests/test_vectors/first_log_entry_verify_tampered.jsonl
     #[case("did:webvh:QmP7NForSYfNsLYSibwCNLv46NeHR8e8JNW4BgMDhB5qia:localhost%3A8000",
-        r#"{"versionId":"1-QmRiFdWdyckg8HETNgZWEXP3LGhEZD9pJBVqFRCRWpUrKh","versionTime":"2025-07-09T21:32:16Z","parameters":{"method":"did:webvh:1.0","scid":"QmP7NForSYfNsLYSibwCNLv46NeHR8e8JNW4BgMDhB5qia","updateKeys":["z6Mkg7jJzawE4bCvZ4bNEcXCv77gQb6cWoKS7vR6WvZC91YR"],"portable":true,"nextKeyHashes":["QmUSYM6seDvKtYpSEsr7Y5bmM5owYVGV3EhZ5BCUexrAcR"],"ttl":300},"state":{"@context":["https://www.w3.org/ns/did/v1","https://www.w3.org/ns/cid/v1"],"assertionMethod":["did:webvh:QmP7NForSYfNsLYSibwCNLv46NeHR8e8JNW4BgMDhB5qia:localhost%3A8000#key-0"],"authentication":["did:webvh:QmP7NForSYfNsLYSibwCNLv46NeHR8e8JNW4BgMDhB5qia:localhost%3A8000#key-0"],"capabilityDelegation":[],"capabilityInvocation":[],"id":"did:webvh:QmP7NForSYfNsLYSibwCNLv46NeHR8e8JNW4BgMDhB5qia:localhost%3A8000","keyAgreement":["did:webvh:QmP7NForSYfNsLYSibwCNLv46NeHR8e8JNW4BgMDhB5qia:localhost%3A8000#key-0"],"service":[],"verificationMethod":[{"controller":"did:webvh:QmP7NForSYfNsLYSibwCNLv46NeHR8e8JNW4BgMDhB5qia:localhost%3A8000","id":"did:webvh:QmP7NForSYfNsLYSibwCNLv46NeHR8e8JNW4BgMDhB5qia:localhost%3A8000#key-0","publicKeyMultibase":"z6MkizY3BLE8VwADPdzuhRcsTVDnakfGRNMjWxhk1WJYTjRg","type":"Multikey"}]},"proof":[{"type":"DataIntegrityProof","cryptosuite":"eddsa-jcs-2022","created":"2025-07-09T21:32:15Z","verificationMethod":"did:key:z6Mkg7jJzawE4bCvZ4bNEcXCv77gQb6cWoKS7vR6WvZC91YR#z6Mkg7jJzawE4bCvZ4bNEcXCv77gQb6cWoKS7vR6WvZC91YR","proofPurpose":"assertionMethod","proofValue":"z64Ney14a8BVM5XWQ9qHchnmNH2EKwsRpp7y972sxoGc84mDu56Vq8pJHpymZPpcPmcrDPtqKJs1CkapXxc14ZGeM"}]}
+        r#"{"versionId":"1-QmRiFdWdyckg8HETNgZWEXP3LGhEZD9pJBVqFRCRWpUrKh","versionTime":"2025-07-09T21:32:16Z","parameters":{"method":"did:webvh:1.0","scid":"QmP7NForSYfNsLYSibwCNLv46NeHR8e8JNW4BgMDhB5qia","updateKeys":["z6Mkg7jJzawE4bCvZ4bNEcXCv77gQb6cWoKS7vR6WvZC91YR"],"portable":false,"nextKeyHashes":["QmUSYM6seDvKtYpSEsr7Y5bmM5owYVGV3EhZ5BCUexrAcR"],"ttl":300},"state":{"@context":["https://www.w3.org/ns/did/v1","https://www.w3.org/ns/cid/v1"],"assertionMethod":["did:webvh:QmP7NForSYfNsLYSibwCNLv46NeHR8e8JNW4BgMDhB5qia:localhost%3A8000#key-0"],"authentication":["did:webvh:QmP7NForSYfNsLYSibwCNLv46NeHR8e8JNW4BgMDhB5qia:localhost%3A8000#key-0"],"capabilityDelegation":[],"capabilityInvocation":[],"id":"did:webvh:QmP7NForSYfNsLYSibwCNLv46NeHR8e8JNW4BgMDhB5qia:localhost%3A8000","keyAgreement":["did:webvh:QmP7NForSYfNsLYSibwCNLv46NeHR8e8JNW4BgMDhB5qia:localhost%3A8000#key-0"],"service":[],"verificationMethod":[{"controller":"did:webvh:QmP7NForSYfNsLYSibwCNLv46NeHR8e8JNW4BgMDhB5qia:localhost%3A8000","id":"did:webvh:QmP7NForSYfNsLYSibwCNLv46NeHR8e8JNW4BgMDhB5qia:localhost%3A8000#key-0","publicKeyMultibase":"z6MkizY3BLE8VwADPdzuhRcsTVDnakfGRNMjWxhk1WJYTjRg","type":"Multikey"}]},"proof":[{"type":"DataIntegrityProof","cryptosuite":"eddsa-jcs-2022","created":"2025-07-09T21:32:15Z","verificationMethod":"did:key:z6Mkg7jJzawE4bCvZ4bNEcXCv77gQb6cWoKS7vR6WvZC91YR#z6Mkg7jJzawE4bCvZ4bNEcXCv77gQb6cWoKS7vR6WvZC91YR","proofPurpose":"assertionMethod","proofValue":"z64Ney14a8BVM5XWQ9qHchnmNH2EKwsRpp7y972sxoGc84mDu56Vq8pJHpymZPpcPmcrDPtqKJs1CkapXxc14ZGeM"}]}
 "#, "signature error: Verification equation was not satisfied"
     )]
     // https://raw.githubusercontent.com/affinidi/affinidi-tdk-rs/refs/tags/did-webvh-v0.1.7/crates/affinidi-did-resolver/affinidi-did-resolver-methods/did-webvh/tests/test_vectors/pre-1_0-spec.jsonl
@@ -655,7 +644,8 @@ mod tests {
     }
 
     #[rstest]
-    #[case("did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+    #[case(
+        "did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
         r#"["Invalid Log"]"#,
         "the supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation"
     )]
@@ -688,7 +678,8 @@ mod tests {
     }
 
     #[rstest]
-    #[case("did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
+    #[case(
+        "did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
     )]
     fn test_resolve_invalid_did_log_with_no_entries(#[case] did: String) {
         let did_obj = Did::new(did).unwrap(); // panic-safe unwrap call (as long as #case setup is correct)
@@ -841,7 +832,10 @@ mod tests {
     )] // missing '#'
     #[case("https://example.org", false)] // url
     #[case("https://example.org#fragment", false)] // url with fragment
-    #[case("did:webvh:QmSPEpPcSwb3fegq8YE8zotcPEgzHrSFyTJJDAzPo2CYBp:example.org:test#invalidFragmentö", false)] // invalid character in fragment
+    #[case(
+        "did:webvh:QmSPEpPcSwb3fegq8YE8zotcPEgzHrSFyTJJDAzPo2CYBp:example.org:test#invalidFragmentö",
+        false
+    )] // invalid character in fragment
     #[case("fragmentOnly", false)] // fragment only
     fn test_get_did_from_absolute_kid(#[case] kid: String, #[case] valid: bool) {
         let res = get_did_from_absolute_kid(kid.clone());

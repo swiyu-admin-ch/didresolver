@@ -654,13 +654,13 @@ impl WebVerifiableHistoryDidLog {
                         WebVerifiableHistoryId::parse_did_webvh(entry.did_doc.get_id()),
                         WebVerifiableHistoryId::parse_did_webvh(prev_entry.did_doc.get_id()),
                     ) {
-                        (Ok(id1), Ok(id2)) => {
-                            if id1.scid != id2.scid {
+                        (Ok(current_did_doc_id), Ok(previous_did_doc_id)) => {
+                            if current_did_doc_id.scid != previous_did_doc_id.scid {
                                 return Err(DidResolverError::InvalidDidDocument("SCID may NOT change between DID log entries.".into()))
                             }
                         }
                         _ => return Err(DidResolverError::InvalidDidDocument("DID Document contains invalid id".into())),
-                        // Missing validation for AlsoKnownAs
+                        // Missing validation for alsoKnownAs to include previous entry
                     }
                     // Check that DID Document ID stayed the same
                 } else if entry.did_doc.get_id() != prev_entry.did_doc.get_id() {
