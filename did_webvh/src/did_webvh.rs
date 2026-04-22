@@ -13,7 +13,6 @@ use did_sidekicks::did_resolver::DidResolver;
 use did_sidekicks::ed25519::*;
 use did_sidekicks::errors::DidResolverError;
 use did_sidekicks::jcs_sha256_hasher::JcsSha256Hasher;
-use did_sidekicks::multibase::MultiBaseConvertible as _;
 use did_sidekicks::vc_data_integrity::{
     CryptoSuiteType, DataIntegrityProof, EddsaJcs2022Cryptosuite, VCDataIntegrity as _,
 };
@@ -309,43 +308,28 @@ impl DidLogEntry {
         &self,
         update_key: String,
     ) -> Result<Ed25519VerifyingKey, DidResolverError> {
-        match self.parameters.update_keys.to_owned() {
-            Some(update_keys) => {
-                if update_keys.is_empty() {
-                    return Err(DidResolverError::InvalidDataIntegrityProof(
-                        "No update keys detected".to_owned(),
-                    ));
-                }
-
-                if !update_keys
-                    .iter()
-                    .any(|entry| *entry == update_key.as_str())
-                {
-                    return Err(DidResolverError::InvalidDataIntegrityProof(format!(
-                        "Key extracted from proof is not authorized for update: {update_key}"
-                    )));
-                }
-
-                let verifying_key = match Ed25519VerifyingKey::from_multibase(update_key.as_str()) {
-                    Ok(key) => key,
-                    Err(err) => {
-                        return Err(DidResolverError::InvalidDataIntegrityProof(format!(
-                            "Failed to convert update key (from its multibase representation): {err}"
-                        )));
-                    }
-                };
-
-                Ok(verifying_key)
-            }
-            None => {
-                let Some(prev_entry) = self.prev_entry.to_owned() else {
-                    return Err(DidResolverError::InvalidDataIntegrityProof(
-                        "No update keys detected".to_owned(),
-                    ));
-                };
-                prev_entry.is_key_authorized_for_update(update_key) // recursive call
-            }
+        // Check if current log entry contains keys
+        if let Some(result) = self.parameters.find_authorized_update_key(&update_key) {
+            return result;
         }
+
+        // If not, check iteratively previous entries for update keys
+
+        // Clone on an Arc only copies the pointer to the data and reference counter, making it a relatively cheap operation
+        let mut entry = self.prev_entry.clone();
+        while let Some(e) = entry {
+            // If entry contains update keys, return result
+            if let Some(result) = e.parameters.find_authorized_update_key(&update_key) {
+                return result;
+            }
+            // Otherwise, move on to previous entry
+            entry = e.prev_entry.clone(); // Same applies to this clone
+        }
+
+        // No log entry contains update keys
+        Err(DidResolverError::InvalidDataIntegrityProof(
+            "No update keys detected".to_owned(),
+        ))
     }
 
     #[expect(
@@ -405,7 +389,7 @@ impl DidLogEntry {
 #[derive(Serialize, Debug)]
 pub struct WebVerifiableHistoryDidLog {
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub did_log_entries: Vec<DidLogEntry>,
+    pub did_log_entries: Vec<Arc<DidLogEntry>>,
     #[serde(skip)]
     pub did_method_parameters: WebVerifiableHistoryDidMethodParameters,
 }
@@ -594,7 +578,7 @@ impl TryFrom<String> for WebVerifiableHistoryDidLog {
                         ))
                     };
 
-                    let current_entry = DidLogEntry::new(
+                    let current_entry = Arc::new(DidLogEntry::new(
                         version,
                         version_time,
                         parameters,
@@ -602,11 +586,11 @@ impl TryFrom<String> for WebVerifiableHistoryDidLog {
                         did_doc_value,
                         proof,
                         prev_entry.to_owned(),
-                    );
-                    prev_entry = Some(Arc::from(current_entry.to_owned()));
+                    ));
+                    prev_entry = Some(Arc::clone(&current_entry));
 
                     Ok(current_entry)
-                }).collect::<Result<Vec<DidLogEntry>, DidResolverError>>()?;
+                }).collect::<Result<Vec<Arc<DidLogEntry>>, DidResolverError>>()?;
 
         current_params.map_or_else(
             || {
@@ -713,7 +697,7 @@ impl WebVerifiableHistoryDidLog {
                     "Invalid did log. No entries found".to_owned(),
                 ))
             },
-            |entry| Ok(entry.clone().did_doc),
+            |entry| Ok(entry.did_doc.clone()),
         )
     }
 }

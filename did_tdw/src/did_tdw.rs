@@ -13,7 +13,6 @@ use did_sidekicks::did_resolver::DidResolver;
 use did_sidekicks::ed25519::*;
 use did_sidekicks::errors::DidResolverError;
 use did_sidekicks::jcs_sha256_hasher::JcsSha256Hasher;
-use did_sidekicks::multibase::MultiBaseConvertible as _;
 use did_sidekicks::vc_data_integrity::*;
 use rayon::prelude::*;
 use regex;
@@ -204,46 +203,28 @@ impl DidLogEntry {
         &self,
         update_key: String,
     ) -> Result<Ed25519VerifyingKey, DidResolverError> {
-        match self.parameters.update_keys.to_owned() {
-            Some(update_keys) => {
-                if update_keys.is_empty() {
-                    return Err(DidResolverError::InvalidDataIntegrityProof(
-                        "No update keys detected".to_owned(),
-                    ));
-                }
-
-                match update_keys.iter().find(|entry| *entry == &update_key) {
-                    Some(_) => {}
-                    _ => {
-                        return Err(DidResolverError::InvalidDataIntegrityProof(format!(
-                            "Key extracted from proof is not authorized for update: {update_key}"
-                        )));
-                    }
-                };
-
-                let verifying_key = match Ed25519VerifyingKey::from_multibase(update_key.as_str()) {
-                    Ok(key) => key,
-                    Err(err) => {
-                        return Err(DidResolverError::InvalidDataIntegrityProof(format!(
-                            "Failed to convert update key (from its multibase representation): {err}"
-                        )));
-                    }
-                };
-
-                Ok(verifying_key)
-            }
-            None => {
-                let prev_entry = match self.prev_entry.to_owned() {
-                    Some(err) => err,
-                    _ => {
-                        return Err(DidResolverError::InvalidDataIntegrityProof(
-                            "No update keys detected".to_owned(),
-                        ));
-                    }
-                };
-                prev_entry.is_key_authorized_for_update(update_key) // recursive call
-            }
+        // Check if current log entry contains keys
+        if let Some(result) = self.parameters.find_authorized_update_key(&update_key) {
+            return result;
         }
+
+        // If not, check iteratively previous entries for update keys
+
+        // Clone on an Arc only copies the pointer to the data and reference counter, making it a relatively cheap operation
+        let mut entry = self.prev_entry.clone();
+        while let Some(e) = entry {
+            // If entry contains update keys, return result
+            if let Some(result) = e.parameters.find_authorized_update_key(&update_key) {
+                return result;
+            }
+            // Otherwise, move on to previous entry
+            entry = e.prev_entry.clone(); // Same applies to this clone
+        }
+
+        // No log entry contains update keys
+        Err(DidResolverError::InvalidDataIntegrityProof(
+            "No update keys detected".to_owned(),
+        ))
     }
 
     fn to_log_entry_line(&self) -> Result<JsonValue, DidResolverError> {
@@ -308,7 +289,7 @@ impl DidLogEntry {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TrustDidWebDidLog {
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub did_log_entries: Vec<DidLogEntry>,
+    pub did_log_entries: Vec<Arc<DidLogEntry>>,
     pub did_method_parameters: TrustDidWebDidMethodParameters,
 }
 
@@ -515,7 +496,7 @@ impl TryFrom<String> for TrustDidWebDidLog {
                         ))
                     };
 
-                    let current_entry = DidLogEntry::new(
+                    let current_entry = Arc::from(DidLogEntry::new(
                         version_id,
                         version_index,
                         version_time,
@@ -525,11 +506,11 @@ impl TryFrom<String> for TrustDidWebDidLog {
                         did_doc_hash,
                         proof,
                         prev_entry.clone(),
-                    );
-                    prev_entry = Some(Arc::from(current_entry.clone()));
+                    ));
+                    prev_entry = Some(Arc::clone(&current_entry));
 
                     Ok(current_entry)
-                }).collect::<Result<Vec<DidLogEntry>, DidResolverError>>()?;
+                }).collect::<Result<Vec<Arc<DidLogEntry>>, DidResolverError>>()?;
 
         if current_params.is_none() {
             // unlikely, but still
@@ -556,7 +537,7 @@ impl TrustDidWebDidLog {
         &self,
         scid_to_validate: Option<String>,
     ) -> Result<DidDoc, DidResolverError> {
-        let mut previous_entry: Option<DidLogEntry> = None;
+        let mut previous_entry: Option<Arc<DidLogEntry>> = None;
         for entry in &self.did_log_entries {
             match previous_entry.to_owned() {
                 Some(prev) => {
@@ -635,7 +616,7 @@ impl TrustDidWebDidLog {
             };
         }
         match previous_entry {
-            Some(entry) => Ok(entry.did_doc),
+            Some(entry) => Ok(entry.did_doc.clone()),
             None => Err(DidResolverError::InvalidDataIntegrityProof(
                 "Invalid did log. No entries found".to_owned(),
             )),
