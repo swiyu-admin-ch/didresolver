@@ -369,6 +369,7 @@ impl WebVerifiableHistoryDidMethodParameters {
     /// Checks if the provided update_key is authorized
     /// In case these parameters contain no update_keys, None is returned.
     /// Otherwise, it tries to find / parse the key. If it fails an error is returned.
+    #[inline]
     pub fn find_authorized_update_key(&self, update_key: &String) -> Option<Result<Ed25519VerifyingKey, DidResolverError>> {
         match self.update_keys.to_owned() {
             Some(update_keys) => {

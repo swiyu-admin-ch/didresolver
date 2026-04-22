@@ -327,9 +327,9 @@ impl DidLogEntry {
         }
 
         // No log entry contains update keys
-        return Err(DidResolverError::InvalidDataIntegrityProof(
+        Err(DidResolverError::InvalidDataIntegrityProof(
             "No update keys detected".to_owned(),
-        ));
+        ))
     }
 
     #[expect(
@@ -587,7 +587,7 @@ impl TryFrom<String> for WebVerifiableHistoryDidLog {
                         proof,
                         prev_entry.to_owned(),
                     ));
-                    prev_entry = Some(current_entry.clone());
+                    prev_entry = Some(Arc::clone(&current_entry));
 
                     Ok(current_entry)
                 }).collect::<Result<Vec<Arc<DidLogEntry>>, DidResolverError>>()?;
