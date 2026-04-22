@@ -222,9 +222,9 @@ impl DidLogEntry {
         }
 
         // No log entry contains update keys
-        return Err(DidResolverError::InvalidDataIntegrityProof(
+        Err(DidResolverError::InvalidDataIntegrityProof(
             "No update keys detected".to_owned(),
-        ));
+        ))
     }
 
     fn to_log_entry_line(&self) -> Result<JsonValue, DidResolverError> {
@@ -507,7 +507,7 @@ impl TryFrom<String> for TrustDidWebDidLog {
                         proof,
                         prev_entry.clone(),
                     ));
-                    prev_entry = Some(current_entry.clone());
+                    prev_entry = Some(Arc::clone(&current_entry));
 
                     Ok(current_entry)
                 }).collect::<Result<Vec<Arc<DidLogEntry>>, DidResolverError>>()?;
