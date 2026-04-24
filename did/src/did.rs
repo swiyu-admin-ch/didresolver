@@ -14,7 +14,7 @@ use std::sync::Arc;
 use strum::{AsRefStr as EnumAsRefStr, Display as EnumDisplay};
 use thiserror::Error;
 
-static FRAGMENT_REGEX_STR: &str = r#"^([-?/:@._~!$&'()*+,;=a-zA-Z0-9]|%[0-9a-fA-F]{2})*$"#;
+static FRAGMENT_REGEX_STR: &str = "^([-?/:@._~!$&'()*+,;=a-zA-Z0-9]|%[0-9a-fA-F]{2})*$";
 lazy_static! {
     static ref FRAGMENT_REGEX: Regex = Regex::new(FRAGMENT_REGEX_STR).unwrap();
 }
@@ -407,7 +407,9 @@ pub fn get_did_from_absolute_kid(absolute_kid: String) -> Result<Arc<Did>, DidRe
     }
 
     // CAUTION direct array access is safe due to above length check
+    #[expect(clippy::indexing_slicing, reason = "size checked in code above")]
     let did = split_kid[0];
+    #[expect(clippy::indexing_slicing, reason = "size checked in code above")]
     let fragment = split_kid[1];
 
     // Validate DID fragment (allowed characters are the same as in URI fragment: https://www.rfc-editor.org/rfc/rfc3986#section-3.5)
@@ -418,7 +420,7 @@ pub fn get_did_from_absolute_kid(absolute_kid: String) -> Result<Arc<Did>, DidRe
     }
 
     // Validate the DID
-    Did::try_from(did.to_string()).map(Arc::new)
+    Did::try_from(did.to_owned()).map(Arc::new)
 }
 
 #[cfg(test)]

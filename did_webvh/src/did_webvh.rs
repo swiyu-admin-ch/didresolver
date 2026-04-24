@@ -647,7 +647,7 @@ impl WebVerifiableHistoryDidLog {
                 };
             }
 
-            if let Some(prev_entry) = &entry.prev_entry {
+            if let Some(prev_entry) = entry.prev_entry.to_owned() {
                 if matches!(entry.parameters.portable, Some(true)) {
                     // Validate that changed identifier keeps the same SCID
                     match (
