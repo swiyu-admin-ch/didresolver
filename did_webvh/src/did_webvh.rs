@@ -647,6 +647,29 @@ impl WebVerifiableHistoryDidLog {
                 };
             }
 
+            if let Some(prev_entry) = entry.prev_entry.to_owned() {
+                if matches!(entry.parameters.portable, Some(true)) {
+                    // Validate that changed identifier keeps the same SCID
+                    match (
+                        WebVerifiableHistoryId::parse_did_webvh(entry.did_doc.get_id()),
+                        WebVerifiableHistoryId::parse_did_webvh(prev_entry.did_doc.get_id()),
+                    ) {
+                        (Ok(current_did_doc_id), Ok(previous_did_doc_id)) => {
+                            if current_did_doc_id.scid != previous_did_doc_id.scid {
+                                return Err(DidResolverError::InvalidDidDocument("SCID may NOT change between DID log entries.".into()))
+                            }
+                        }
+                        _ => return Err(DidResolverError::InvalidDidDocument("DID Document contains invalid id".into())),
+                        // Missing validation for alsoKnownAs to include previous entry
+                    }
+                    // Check that DID Document ID stayed the same
+                } else if entry.did_doc.get_id() != prev_entry.did_doc.get_id() {
+                    return Err(DidResolverError::InvalidDidDocument(
+                        "ID of DID Document may only change when portable is active.".into(),
+                    ));
+                }
+            }
+
             // Verify data integrity proof
             entry.verify_data_integrity_proof()?;
 
@@ -1186,6 +1209,12 @@ mod test {
         "did:webvh:QmatFaFi9pzYrydbganNoRcvrR5VoqFyBjj5uoQqmfuHCE:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
         DidResolverErrorKind::InvalidDidDocument,
         "must be set to the id of the DID log"
+    )]
+    #[case(
+        "test_data/manually_created/unhappy_path/portable.jsonl",
+        "did:webvh:QmW48UthNM556Y99qU3mrcYvP9AxtGaQW2L7bRkRCj3QnC:example.com",
+        DidResolverErrorKind::InvalidDidDocument,
+        "may only change when portable is active"
     )]
     fn test_read_invalid_did_log(
         #[case] did_log_raw_filepath: String,
