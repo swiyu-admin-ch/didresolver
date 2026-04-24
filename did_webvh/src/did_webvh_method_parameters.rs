@@ -435,7 +435,7 @@ impl TryInto<HashMap<String, Arc<DidMethodParameter>>> for WebVerifiableHistoryD
                 "portable".to_owned(),
                 Arc::new(DidMethodParameter::new_bool_from_option(
                     "portable",
-                    self.deactivated,
+                    self.portable,
                 )),
             ),
             // Defaults to false if not set in the first DID log entry
@@ -847,30 +847,36 @@ mod test {
         base_params.deactivated = Some(true);
         base_params.ttl = Some(7200);
 
-        let try_into = base_params.try_into(); // MUT
+        let try_into = base_params.clone().try_into(); // MUT
 
         assert!(try_into.is_ok());
         let param_map: HashMap<String, Arc<DidMethodParameter>> = try_into.unwrap();
         assert!(!param_map.is_empty());
 
+        // Validate Method
         assert!(param_map.contains_key("method"));
-        let method_option = param_map.get("method");
-        assert!(method_option.is_some());
-        let method = method_option.unwrap();
-        assert!(method.is_string());
-        assert!(method.get_string_value().is_some());
-        assert_eq!(
-            DID_METHOD_PARAMETER_VERSION,
-            method.get_string_value().unwrap()
-        );
+        let method = param_map.get("method").unwrap();
+        assert_eq!(method.get_string_value().unwrap(), DID_METHOD_PARAMETER_VERSION.to_string());
+        base_params.method = None;
+        let param_map: Result<HashMap<String, Arc<DidMethodParameter>>, _> = base_params.clone().try_into();
+        assert!(param_map.is_err());
+        base_params.method = Some("new_method".into());
+        let param_map: HashMap<String, Arc<DidMethodParameter>> = base_params.clone().try_into().unwrap();
+        let method =param_map.get("method").expect("method missing");
+        assert_eq!("new_method", method.get_string_value().expect("method should be of type string"));
 
+        // Validate scid
         assert!(param_map.contains_key("scid"));
-        let scid_option = param_map.get("scid");
-        assert!(scid_option.is_some());
-        let scid = scid_option.unwrap();
+        let scid = param_map.get("scid").expect("scid missing");
         assert!(scid.is_string());
-        assert!(method.get_string_value().is_some());
         assert_eq!("scid", scid.get_string_value().unwrap());
+        base_params.scid = None;
+        let param_map: Result<HashMap<String, Arc<DidMethodParameter>>, _> = base_params.clone().try_into();
+        assert!(param_map.is_err());
+        base_params.scid = Some("new scid".into());
+        let param_map: HashMap<String, Arc<DidMethodParameter>> = base_params.clone().try_into().unwrap();
+        let scid =param_map.get("scid").expect("scid missing");
+        assert_eq!("new scid", scid.get_string_value().expect("scid should be of type string"));
 
         assert!(param_map.contains_key("updateKeys"));
         let update_keys_option = param_map.get("updateKeys");
@@ -910,20 +916,35 @@ mod test {
             .iter()
             .any(|str| str.contains("some_next_key_hash")));
 
+        // Validate portable
         assert!(param_map.contains_key("portable"));
-        let portable_option = param_map.get("portable");
-        assert!(portable_option.is_some());
-        let portable = portable_option.unwrap();
+        let portable = param_map.get("portable").expect("portable missing");
         assert!(portable.is_bool());
-        assert!(portable.get_bool_value().is_some_and(|bool| { bool }));
+        assert_eq!(true, portable.get_bool_value().unwrap());
+        base_params.portable = None;
+        let param_map: HashMap<String, Arc<DidMethodParameter>, _> = base_params.clone().try_into().unwrap();
+        let portable = param_map.get("portable").expect("portable missing");
+        assert_eq!(false, portable.get_bool_value().expect("portable should be of type bool"));
+        base_params.portable = Some(false);
+        let param_map: HashMap<String, Arc<DidMethodParameter>> = base_params.clone().try_into().unwrap();
+        let portable =param_map.get("portable").expect("portable missing");
+        assert_eq!(false, portable.get_bool_value().expect("portable should be of type bool"));
 
+        // Validate deactivated
         assert!(param_map.contains_key("deactivated"));
-        let deactivated_option = param_map.get("deactivated");
-        assert!(deactivated_option.is_some());
-        let deactivated = deactivated_option.unwrap();
+        let deactivated = param_map.get("deactivated").expect("deactivated missing");
         assert!(deactivated.is_bool());
-        assert!(deactivated.get_bool_value().is_some_and(|bool| { bool }));
+        assert_eq!(false, portable.get_bool_value().unwrap());
+        base_params.deactivated = None;
+        let param_map: HashMap<String, Arc<DidMethodParameter>, _> = base_params.clone().try_into().unwrap();
+        let deactivated = param_map.get("deactivated").expect("deactivated missing");
+        assert_eq!(false, deactivated.get_bool_value().expect("deactivated should be of type bool"));
+        base_params.deactivated = Some(true);
+        let param_map: HashMap<String, Arc<DidMethodParameter>> = base_params.clone().try_into().unwrap();
+        let deactivated =param_map.get("deactivated").expect("deactivated missing");
+        assert_eq!(true, deactivated.get_bool_value().expect("deactivated should be of type bool"));
 
+        // Validate ttl
         assert!(param_map.contains_key("ttl"));
         let ttl_option = param_map.get("ttl");
         assert!(ttl_option.is_some());
