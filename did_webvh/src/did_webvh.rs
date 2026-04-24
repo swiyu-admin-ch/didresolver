@@ -45,13 +45,25 @@ static HAS_PATH_REGEX_STR: &str = r"([a-z]|[0-9])\/([a-z]|[0-9])";
 static HAS_PORT_REGEX_STR: &str = r"\:[0-9]+";
 
 lazy_static! {
-    static ref DOMAIN_REGEX: Regex = Regex::new(DOMAIN_REGEX_STR).unwrap();
-    static ref HAS_PATH_REGEX: Regex = Regex::new(HAS_PATH_REGEX_STR).unwrap();
-    static ref HAS_PORT_REGEX: Regex = Regex::new(HAS_PORT_REGEX_STR).unwrap();
+    static ref DOMAIN_REGEX: Regex = #[expect(
+        clippy::unwrap_used,
+        reason = "string manually checked that it compiles"
+    )]
+    Regex::new(DOMAIN_REGEX_STR).unwrap();
+    static ref HAS_PATH_REGEX: Regex = #[expect(
+        clippy::unwrap_used,
+        reason = "string manually checked that it compiles"
+    )]
+    Regex::new(HAS_PATH_REGEX_STR).unwrap();
+    static ref HAS_PORT_REGEX: Regex = #[expect(
+        clippy::unwrap_used,
+        reason = "string manually checked that it compiles"
+    )]
+    Regex::new(HAS_PORT_REGEX_STR).unwrap();
 }
 
 /// Entry in a did log file as shown here
-/// https://identity.foundation/didwebvh/v1.0/#term:did-log-entry
+/// https://identity.foundation/didwebvh/v1.0/#term:did-log-entry.
 #[expect(clippy::exhaustive_structs, reason = "..")]
 #[derive(Serialize, Debug, Clone)]
 pub struct DidLogEntry {
@@ -157,7 +169,7 @@ impl<'de> de::Visitor<'de> for DidLogVersionVisitor {
 }
 
 impl DidLogEntry {
-    /// Import of existing log entry
+    /// Import of existing log entry.
     #[inline]
     pub fn new(
         version: DidLogVersion,
@@ -179,7 +191,7 @@ impl DidLogEntry {
         }
     }
 
-    /// Check whether the versionId of this log entry is based on the previous versionId
+    /// Check whether the versionId of this log entry is based on the previous versionId.
     #[inline]
     pub fn verify_version_id_integrity(&self) -> Result<(), DidResolverError> {
         // 1 Extract the versionId in the DID log entry, and remove from it the version number and dash prefix, leaving the log entry entryHash value.
@@ -196,7 +208,8 @@ impl DidLogEntry {
         Ok(())
     }
 
-    /// Check whether the integrity proof matches the content of the did document of this log entry
+    /// Check whether the integrity proof matches the content of the did document of this log
+    /// entry.
     #[inline]
     //#[expect(clippy::unwrap_in_result, reason = "..")]
     pub fn verify_data_integrity_proof(&self) -> Result<(), DidResolverError> {
@@ -316,14 +329,14 @@ impl DidLogEntry {
         // If not, check iteratively previous entries for update keys
 
         // Clone on an Arc only copies the pointer to the data and reference counter, making it a relatively cheap operation
-        let mut entry = self.prev_entry.clone();
-        while let Some(e) = entry {
+        let mut previous_entry = self.prev_entry.clone();
+        while let Some(entry) = previous_entry {
             // If entry contains update keys, return result
-            if let Some(result) = e.parameters.find_authorized_update_key(&update_key) {
+            if let Some(result) = entry.parameters.find_authorized_update_key(&update_key) {
                 return result;
             }
             // Otherwise, move on to previous entry
-            entry = e.prev_entry.clone(); // Same applies to this clone
+            previous_entry = entry.prev_entry.clone(); // Same applies to this clone
         }
 
         // No log entry contains update keys
@@ -648,6 +661,7 @@ impl WebVerifiableHistoryDidLog {
             }
 
             if let Some(prev_entry) = entry.prev_entry.to_owned() {
+                #[expect(clippy::else_if_without_else, reason = "else case not needed")]
                 if matches!(entry.parameters.portable, Some(true)) {
                     // Validate that changed identifier keeps the same SCID
                     match (
@@ -656,11 +670,16 @@ impl WebVerifiableHistoryDidLog {
                     ) {
                         (Ok(current_did_doc_id), Ok(previous_did_doc_id)) => {
                             if current_did_doc_id.scid != previous_did_doc_id.scid {
-                                return Err(DidResolverError::InvalidDidDocument("SCID may NOT change between DID log entries.".into()))
+                                return Err(DidResolverError::InvalidDidDocument(
+                                    "SCID may NOT change between DID log entries.".into(),
+                                ));
                             }
                         }
-                        _ => return Err(DidResolverError::InvalidDidDocument("DID Document contains invalid id".into())),
-                        // Missing validation for alsoKnownAs to include previous entry
+                        _ => {
+                            return Err(DidResolverError::InvalidDidDocument(
+                                "DID Document contains invalid id".into(),
+                            ));
+                        } // Missing validation for alsoKnownAs to include previous entry
                     }
                     // Check that DID Document ID stayed the same
                 } else if entry.did_doc.get_id() != prev_entry.did_doc.get_id() {
@@ -693,12 +712,12 @@ impl WebVerifiableHistoryDidLog {
                     }
                 };
 
-                if let Some(res) = scid_to_validate.to_owned() {
-                    if res.ne(scid.as_str()) {
-                        return Err(DidResolverError::InvalidDataIntegrityProof(format!(
-                            "The SCID '{scid}' supplied inside the DID document does not match the one supplied for validation: '{res}'"
-                        )));
-                    }
+                if let Some(res) = scid_to_validate.to_owned()
+                    && res.ne(scid.as_str())
+                {
+                    return Err(DidResolverError::InvalidDataIntegrityProof(format!(
+                        "The SCID '{scid}' supplied inside the DID document does not match the one supplied for validation: '{res}'"
+                    )));
                 }
 
                 let original_scid = entry.build_original_scid(&scid).map_err(|err| {
@@ -776,24 +795,16 @@ impl WebVerifiableHistoryId {
     }
 }
 
-/// Implementation for a string denoting did_webvh
+/// Implementation for a string denoting did_webvh.
 impl TryFrom<String> for WebVerifiableHistoryId {
     type Error = WebVerifiableHistoryIdResolutionError;
 
     /// It basically implements the 'The DID to HTTPS Transformation',
-    /// as specified by https://identity.foundation/didwebvh/v1.0/#the-did-to-https-transformation
+    /// as specified by https://identity.foundation/didwebvh/v1.0/#the-did-to-https-transformation.
     #[inline]
     #[expect(
         clippy::indexing_slicing,
         reason = "panic-free indexing ensured in code"
-    )]
-    #[expect(
-        clippy::unwrap_in_result,
-        reason = "panic-free as long as the regex is valid"
-    )]
-    #[expect(
-        clippy::unwrap_used,
-        reason = "panic-free as long as the regex is valid"
     )]
     fn try_from(did_webvh: String) -> Result<Self, Self::Error> {
         let did_webvh_split: Vec<&str> = did_webvh.splitn(4, ":").collect();
@@ -858,14 +869,14 @@ impl TryFrom<String> for WebVerifiableHistoryId {
         // Verify that the host is a valid domain.
         // Special characters were encoded by `Url::parse`.
         // URL without domain, that instead use an ip address are already validated in step 5
-        if let url::Origin::Tuple(_, url::Host::Domain(dom), _) = url.origin() {
-            if DOMAIN_REGEX.captures(dom.as_str()).is_none() {
-                return Err(
-                    WebVerifiableHistoryIdResolutionError::InvalidMethodSpecificId(
-                        "Domain of provided DID is invalid".to_owned(),
-                    ),
-                );
-            }
+        if let url::Origin::Tuple(_, url::Host::Domain(dom), _) = url.origin()
+            && DOMAIN_REGEX.captures(dom.as_str()).is_none()
+        {
+            return Err(
+                WebVerifiableHistoryIdResolutionError::InvalidMethodSpecificId(
+                    "Domain of provided DID is invalid".to_owned(),
+                ),
+            );
         }
 
         // append '/did.jsonl' to complete the URL.
@@ -900,14 +911,6 @@ impl TryFrom<(String, Option<bool>)> for WebVerifiableHistoryId {
     #[expect(
         clippy::indexing_slicing,
         reason = "panic-free indexing ensured in code"
-    )]
-    #[expect(
-        clippy::unwrap_in_result,
-        reason = "panic-free as long as the regex is valid"
-    )]
-    #[expect(
-        clippy::unwrap_used,
-        reason = "panic-free as long as the regex is valid"
     )]
     fn try_from(value: (String, Option<bool>)) -> Result<Self, Self::Error> {
         let did_webvh = value.0;
@@ -1034,7 +1037,7 @@ impl WebVerifiableHistory {
     }
 
     /// The single constructor of [`WebVerifiableHistory`] implementing the
-    /// [*Read (Resolve)* DID method operation for a `did:webvh` DID](https://identity.foundation/didwebvh/v1.0/#read-resolve)
+    /// [*Read (Resolve)* DID method operation for a `did:webvh` DID](https://identity.foundation/didwebvh/v1.0/#read-resolve).
     ///
     /// In case of error, the available [`DidResolverError`] object features all the detailed
     /// information required to narrow down the root cause.

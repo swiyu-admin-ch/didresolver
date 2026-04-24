@@ -2,13 +2,13 @@
 
 use chrono::{DateTime, Local};
 use core::cmp::Ordering;
-use jsonschema::{paths::Location, Keyword, ValidationError};
+use jsonschema::{Keyword, ValidationError, paths::Location};
 use serde_json::{Map, Value};
 
 /// Yet another custom [`Keyword`] trait implementation able to validate if a JSON array represents
 /// a regular `didwebvh` DID log entry (as defined by https://identity.foundation/didwebvh/v0.3/#overview).
 ///
-/// This [`Keyword`] trait implementation validates instances according to https://identity.foundation/didwebvh/v0.3/#overview
+/// This [`Keyword`] trait implementation validates instances according to https://identity.foundation/didwebvh/v0.3/#overview.
 #[expect(clippy::exhaustive_structs, reason = "..")]
 pub struct DidLogEntryKeyword;
 
@@ -152,9 +152,9 @@ impl Keyword for DidVersionTimeKeyword {
                 Ok(parsed_dt) => {
                     let now = Local::now();
                     if parsed_dt.ge(&now) {
-                        return Err(ValidationError::custom(
-                            format!("`versionTime` '{parsed_dt}' must be before the current datetime '{now}'"),
-                        ));
+                        return Err(ValidationError::custom(format!(
+                            "`versionTime` '{parsed_dt}' must be before the current datetime '{now}'"
+                        )));
                     }
                     Ok(())
                 }
@@ -191,7 +191,7 @@ mod test {
     use crate::custom_jsonschema_keywords::*;
     use jsonschema::options as jsch_opts;
     use rstest::rstest;
-    use serde_json::{json, Value};
+    use serde_json::{Value, json};
 
     #[rstest]
     fn test_did_log_entry_keyword_wrong_keyword() {

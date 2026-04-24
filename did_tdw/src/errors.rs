@@ -6,7 +6,7 @@ use did_sidekicks::errors::{DidResolverError, DidResolverErrorKind};
 
 /// Yet another UniFFI-compliant error.
 ///
-/// Resembles ssi::dids::resolution::Error
+/// Resembles ssi::dids::resolution::Error.
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 #[expect(clippy::exhaustive_enums, reason = "..")]
 pub enum TrustDidWebIdResolutionError {
@@ -43,35 +43,36 @@ pub enum TrustDidWebIdResolutionErrorKind {
 
 /// Yet another UniFFI-compliant error.
 ///
-/// Resembles ssi::dids::resolution::Error
+/// Resembles ssi::dids::resolution::Error.
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 #[expect(clippy::exhaustive_enums, reason = "..")]
 pub enum TrustDidWebError {
-    /// DID method is not supported by this resolver
+    /// DID method is not supported by this resolver.
     #[error("DID method `{0}` not supported")]
     #[deprecated(note = "as redundant")]
     MethodNotSupported(String),
-    /// Invalid method-specific identifier
+    /// Invalid method-specific identifier.
     #[error("invalid method specific identifier: {0}")]
     InvalidMethodSpecificId(String),
-    /// Failed to serialize DID document (to JSON)
+    /// Failed to serialize DID document (to JSON).
     #[error("failed to serialize DID document (to JSON): {0}")]
     SerializationFailed(String),
-    /// The supplied did doc is invalid or contains an argument which isn't part of the did specification/recommendation
-    #[error("The supplied did doc is invalid or contains an argument which isn't part of the did specification/recommendation: {0}"
+    /// The supplied did doc is invalid or contains an argument which isn't part of the did specification/recommendation.
+    #[error(
+        "The supplied did doc is invalid or contains an argument which isn't part of the did specification/recommendation: {0}"
     )]
     DeserializationFailed(String),
-    /// Invalid (or not yet supported) operation against DID doc
+    /// Invalid (or not yet supported) operation against DID doc.
     #[deprecated(note = "as redundant")]
     #[error("invalid (or not yet supported) operation against DID doc: {0}")]
     InvalidOperation(String),
-    /// Invalid DID parameter
+    /// Invalid DID parameter.
     #[error("invalid DID parameter: {0}")]
     InvalidDidParameter(String),
-    /// Invalid DID document
+    /// Invalid DID document.
     #[error("invalid DID document: {0}")]
     InvalidDidDocument(String),
-    /// Invalid DID log integration proof
+    /// Invalid DID log integration proof.
     #[error("invalid DID log integration proof: {0}")]
     InvalidDataIntegrityProof(String),
 }
