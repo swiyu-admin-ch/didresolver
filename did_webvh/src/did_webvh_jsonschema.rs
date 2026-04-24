@@ -10,7 +10,7 @@ use rust_embed::Embed;
 const DID_LOG_ENTRY_JSONSCHEMA_V_1_0_EID_CONFORM_FILENAME: &str =
     "did_log_jsonschema_v_1_0_eid_conform.json";
 
-/// As defined by https://identity.foundation/didwebvh/v1.0
+/// As defined by https://identity.foundation/didwebvh/v1.0.
 const DID_LOG_ENTRY_JSONSCHEMA_V_1_0_FILENAME: &str = "did_log_jsonschema_v_1_0.json";
 
 #[derive(Embed)]
@@ -18,13 +18,13 @@ const DID_LOG_ENTRY_JSONSCHEMA_V_1_0_FILENAME: &str = "did_log_jsonschema_v_1_0.
 #[include = "*.json"]
 struct WebVerifiableHistoryDidLogJsonSchemaEmbedFolder;
 
-/// W.r.t. corresponding specification version available at https://identity.foundation/didwebvh
+/// W.r.t. corresponding specification version available at https://identity.foundation/didwebvh.
 ///
 /// # CAUTION The single currently supported version is: v1.0
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
 pub enum WebVerifiableHistoryDidLogEntryJsonSchema {
-    /// As (strictly) specified by https://identity.foundation/didwebvh/v1.0
+    /// As (strictly) specified by https://identity.foundation/didwebvh/v1.0.
     V1_0,
     /// As defined by https://identity.foundation/didwebvh/v1.0 but w.r.t. (eID-conformity) addendum:
     /// - https://confluence.bit.admin.ch/x/r_0EMw (DID Log Conformity Check)

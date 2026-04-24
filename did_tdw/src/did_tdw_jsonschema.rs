@@ -10,7 +10,7 @@ use rust_embed::Embed;
 #[include = "*.json"]
 struct DidLogJsonSchemaEmbedFolder;
 
-/// W.r.t. corresponding specification version available at https://identity.foundation/didwebvh/v0.3
+/// W.r.t. corresponding specification version available at https://identity.foundation/didwebvh/v0.3.
 ///
 /// # CAUTION The single currently supported version is: v0.3
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -20,11 +20,11 @@ pub enum TrustDidWebDidLogEntryJsonSchema {
     /// - https://confluence.bit.admin.ch/display/EIDTEAM/DID+Log+Conformity+Check
     /// - https://confluence.bit.admin.ch/display/EIDTEAM/DID+Doc+Conformity+Check
     V03EidConform,
-    /// As (strictly) specified by https://identity.foundation/didwebvh/v0.3
+    /// As (strictly) specified by https://identity.foundation/didwebvh/v0.3.
     V03,
 }
 
-/// As defined by https://identity.foundation/didwebvh/v0.3
+/// As defined by https://identity.foundation/didwebvh/v0.3.
 const DID_LOG_ENTRY_JSONSCHEMA_V_0_3_FILENAME: &str = "did_log_jsonschema_v_0_3.json";
 
 /// As defined by https://identity.foundation/didwebvh/v0.3 bzt w.r.t. (eID-conformity) addendum:

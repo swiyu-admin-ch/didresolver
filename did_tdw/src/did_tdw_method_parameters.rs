@@ -83,10 +83,10 @@ impl TrustDidWebDidMethodParameters {
         }
     }
 
-    /// Validation against all the criteria described in https://identity.foundation/didwebvh/v0.3/#didtdw-did-method-parameters
+    /// Validation against all the criteria described in https://identity.foundation/didwebvh/v0.3/#didtdw-did-method-parameters.
     ///
     /// Furthermore, the relevant Swiss profile checks are also taken into account here:
-    /// https://github.com/e-id-admin/open-source-community/blob/main/tech-roadmap/swiss-profile.md#didtdwdidwebvh
+    /// https://github.com/e-id-admin/open-source-community/blob/main/tech-roadmap/swiss-profile.md#didtdwdidwebvh.
     #[inline]
     pub fn validate_initial(&self) -> Result<(), DidResolverError> {
         if let Some(method) = self.method.to_owned() {
@@ -130,38 +130,40 @@ impl TrustDidWebDidMethodParameters {
             ));
         }
 
-        if let Some(portable) = self.portable {
-            if portable {
-                return Err(DidResolverError::InvalidDidParameter(
-                    "Unsupported 'portable' DID parameter. We currently don't support portable dids".to_owned(),
-                ));
-            }
+        if let Some(portable) = self.portable
+            && portable
+        {
+            return Err(DidResolverError::InvalidDidParameter(
+                "Unsupported 'portable' DID parameter. We currently don't support portable dids"
+                    .to_owned(),
+            ));
         }
 
-        if let Some(prerotation) = self.prerotation {
-            if prerotation {
-                return Err(DidResolverError::InvalidDidParameter(
-                    "Unsupported 'prerotation' DID parameter. We currently don't support prerotation".to_owned(),
-                ));
-            }
+        if let Some(prerotation) = self.prerotation
+            && prerotation
+        {
+            return Err(DidResolverError::InvalidDidParameter(
+                "Unsupported 'prerotation' DID parameter. We currently don't support prerotation"
+                    .to_owned(),
+            ));
         }
 
-        if let Some(next_keys) = self.next_keys.to_owned() {
-            if !next_keys.is_empty() {
-                return Err(DidResolverError::InvalidDidParameter(
-                    "Unsupported non-empty 'nextKeyHashes' DID parameter.".to_owned(),
-                ));
-            }
+        if let Some(next_keys) = self.next_keys.to_owned()
+            && !next_keys.is_empty()
+        {
+            return Err(DidResolverError::InvalidDidParameter(
+                "Unsupported non-empty 'nextKeyHashes' DID parameter.".to_owned(),
+            ));
         }
 
-        if let Some(witnesses) = self.witnesses.to_owned() {
-            if !witnesses.is_empty() {
-                // A witness item in the first DID log entry is used to define the witnesses and necessary threshold for that initial log entry.
-                // In all other DID log entries, a witness item becomes active after the publication of its entry.
-                return Err(DidResolverError::InvalidDidParameter(
-                    "Unsupported non-empty 'witnesses' DID parameter.".to_owned(),
-                ));
-            }
+        if let Some(witnesses) = self.witnesses.to_owned()
+            && !witnesses.is_empty()
+        {
+            // A witness item in the first DID log entry is used to define the witnesses and necessary threshold for that initial log entry.
+            // In all other DID log entries, a witness item becomes active after the publication of its entry.
+            return Err(DidResolverError::InvalidDidParameter(
+                "Unsupported non-empty 'witnesses' DID parameter.".to_owned(),
+            ));
         }
 
         Ok(())
@@ -249,7 +251,7 @@ impl TrustDidWebDidMethodParameters {
         Ok(())
     }
 
-    /// As specified by https://identity.foundation/didwebvh/v0.3/#deactivate-revoke
+    /// As specified by https://identity.foundation/didwebvh/v0.3/#deactivate-revoke.
     #[inline]
     pub fn deactivate(&mut self) {
         self.update_keys = Some(vec![]);
@@ -295,10 +297,10 @@ impl TrustDidWebDidMethodParameters {
     /// Yet another UniFFI-compliant getter.
     #[inline]
     pub const fn is_deactivated(&self) -> bool {
-        if let Some(deactivated) = self.deactivated {
-            if deactivated {
-                return deactivated;
-            }
+        if let Some(deactivated) = self.deactivated
+            && deactivated
+        {
+            return deactivated;
         }
         false
     }
@@ -408,7 +410,7 @@ impl TryInto<HashMap<String, Arc<DidMethodParameter>>> for TrustDidWebDidMethodP
     }
 }
 
-/// As defined by https://identity.foundation/trustdidweb/v0.3/#didtdw-did-method-parameters
+/// As defined by https://identity.foundation/trustdidweb/v0.3/#didtdw-did-method-parameters.
 const DID_METHOD_PARAMETER_VERSION: &str = "did:tdw:0.3";
 
 #[cfg(test)]

@@ -37,17 +37,29 @@ static HAS_PATH_REGEX_STR: &str = r"([a-z]|[0-9])\/([a-z]|[0-9])";
 static HAS_PORT_REGEX_STR: &str = r"\:[0-9]+";
 
 lazy_static! {
-    static ref DOMAIN_REGEX: Regex = Regex::new(DOMAIN_REGEX_STR).unwrap();
-    static ref HAS_PATH_REGEX: Regex = Regex::new(HAS_PATH_REGEX_STR).unwrap();
-    static ref HAS_PORT_REGEX: Regex = Regex::new(HAS_PORT_REGEX_STR).unwrap();
+    static ref DOMAIN_REGEX: Regex = #[expect(
+        clippy::unwrap_used,
+        reason = "string manually checked that it compiles"
+    )]
+    Regex::new(DOMAIN_REGEX_STR).unwrap();
+    static ref HAS_PATH_REGEX: Regex = #[expect(
+        clippy::unwrap_used,
+        reason = "string manually checked that it compiles"
+    )]
+    Regex::new(HAS_PATH_REGEX_STR).unwrap();
+    static ref HAS_PORT_REGEX: Regex = #[expect(
+        clippy::unwrap_used,
+        reason = "string manually checked that it compiles"
+    )]
+    Regex::new(HAS_PORT_REGEX_STR).unwrap();
 }
 
 /// Entry in a did log file as shown here
-/// https://identity.foundation/didwebvh/v0.3/#the-did-log-file
+/// https://identity.foundation/didwebvh/v0.3/#the-did-log-file.
 #[expect(clippy::exhaustive_structs, reason = "..")]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DidLogEntry {
-    /// Since v0.2 (see https://identity.foundation/trustdidweb/v0.3/#didtdw-version-changelog):
+    /// Since v0.2 (see https://identity.foundation/didwebvh/v0.3/#didtdw-version-changelog):
     ///            The new versionId takes the form <version number>-<entryHash>, where <version number> is the incrementing integer of version of the entry: 1, 2, 3, etc.
     pub version_id: String,
     #[serde(skip)]
@@ -67,7 +79,7 @@ pub struct DidLogEntry {
 }
 
 impl DidLogEntry {
-    /// Import of existing log entry
+    /// Import of existing log entry.
     #[inline]
     #[expect(clippy::too_many_arguments, reason = "..")]
     pub fn new(
@@ -94,7 +106,7 @@ impl DidLogEntry {
         }
     }
 
-    /// Check whether the versionId of this log entry is based on the previous versionId
+    /// Check whether the version id of this log entry is based on the previous version id.
     #[inline]
     pub fn verify_version_id_integrity(&self) -> Result<(), DidResolverError> {
         let version_id = self.build_version_id().map_err(|err| {
@@ -109,7 +121,8 @@ impl DidLogEntry {
         Ok(())
     }
 
-    /// Check whether the integrity proof matches the content of the did document of this log entry
+    /// Check whether the integrity proof matches the content of the DID document of this log
+    /// entry.
     #[inline]
     pub fn verify_data_integrity_proof(&self) -> Result<(), DidResolverError> {
         let Some(proof_vec) = self.proof.to_owned() else {
@@ -211,14 +224,14 @@ impl DidLogEntry {
         // If not, check iteratively previous entries for update keys
 
         // Clone on an Arc only copies the pointer to the data and reference counter, making it a relatively cheap operation
-        let mut entry = self.prev_entry.clone();
-        while let Some(e) = entry {
+        let mut previous_entry = self.prev_entry.clone();
+        while let Some(entry) = previous_entry {
             // If entry contains update keys, return result
-            if let Some(result) = e.parameters.find_authorized_update_key(&update_key) {
+            if let Some(result) = entry.parameters.find_authorized_update_key(&update_key) {
                 return result;
             }
             // Otherwise, move on to previous entry
-            entry = e.prev_entry.clone(); // Same applies to this clone
+            previous_entry = entry.prev_entry.clone(); // Same applies to this clone
         }
 
         // No log entry contains update keys
@@ -553,7 +566,7 @@ impl TrustDidWebDidLog {
 
                     // Verify the entryHash
                     entry.verify_version_id_integrity()?;
-                    previous_entry = Some(entry.clone());
+                    previous_entry = Some(Arc::clone(entry));
 
                     // Verify did document
                     entry
@@ -592,12 +605,12 @@ impl TrustDidWebDidLog {
                         }
                     };
 
-                    if let Some(res) = scid_to_validate.to_owned() {
-                        if res.ne(scid.as_str()) {
-                            return Err(DidResolverError::InvalidDataIntegrityProof(format!(
-                                "The SCID '{scid}' supplied inside the DID document does not match the one supplied for validation: '{res}'"
-                            )));
-                        }
+                    if let Some(res) = scid_to_validate.to_owned()
+                        && res.ne(scid.as_str())
+                    {
+                        return Err(DidResolverError::InvalidDataIntegrityProof(format!(
+                            "The SCID '{scid}' supplied inside the DID document does not match the one supplied for validation: '{res}'"
+                        )));
                     }
 
                     let original_scid =
@@ -611,16 +624,18 @@ impl TrustDidWebDidLog {
                             "Invalid did log. Genesis entry has invalid SCID".to_owned(),
                         ));
                     }
-                    previous_entry = Some(genesis_entry.clone());
+                    previous_entry = Some(Arc::clone(genesis_entry));
                 }
             };
         }
-        match previous_entry {
-            Some(entry) => Ok(entry.did_doc.clone()),
-            None => Err(DidResolverError::InvalidDataIntegrityProof(
-                "Invalid did log. No entries found".to_owned(),
-            )),
-        }
+        previous_entry.map_or_else(
+            || {
+                Err(DidResolverError::InvalidDataIntegrityProof(
+                    "Invalid did log. No entries found".to_owned(),
+                ))
+            },
+            |entry| Ok(entry.did_doc.clone()),
+        )
     }
 
     /// Checks if all entries in the did log are valid (data integrity, versioning etc.)
@@ -687,24 +702,16 @@ impl TrustDidWebId {
     }
 }
 
-/// Implementation for a string denoting did_tdw
+/// Implementation for a string denoting did_tdw.
 impl TryFrom<String> for TrustDidWebId {
     type Error = TrustDidWebIdResolutionError;
 
     /// It basically implements the 'The DID to HTTPS Transformation',
-    /// as specified by https://identity.foundation/didwebvh/v0.3/#the-did-to-https-transformation
+    /// as specified by https://identity.foundation/didwebvh/v0.3/#the-did-to-https-transformation.
     #[inline]
     #[expect(
         clippy::indexing_slicing,
         reason = "panic-free indexing ensured in code"
-    )]
-    #[expect(
-        clippy::unwrap_in_result,
-        reason = "panic-free as long as the regex is valid"
-    )]
-    #[expect(
-        clippy::unwrap_used,
-        reason = "panic-free as long as the regex is valid"
     )]
     fn try_from(did_tdw: String) -> Result<Self, Self::Error> {
         let did_tdw_split: Vec<&str> = did_tdw.splitn(4, ":").collect();
@@ -761,12 +768,12 @@ impl TryFrom<String> for TrustDidWebId {
         // Verify that the host is a valid domain.
         // Special characters were encoded by `Url::parse`.
         // URL without domain, that instead use an ip address are already validated in step 5
-        if let url::Origin::Tuple(_, url::Host::Domain(domain), _) = url.origin() {
-            if DOMAIN_REGEX.captures(domain.as_str()).is_none() {
-                return Err(TrustDidWebIdResolutionError::InvalidMethodSpecificId(
-                    "Domain of provided DID is invalid".to_owned(),
-                ));
-            }
+        if let url::Origin::Tuple(_, url::Host::Domain(domain), _) = url.origin()
+            && DOMAIN_REGEX.captures(domain.as_str()).is_none()
+        {
+            return Err(TrustDidWebIdResolutionError::InvalidMethodSpecificId(
+                "Domain of provided DID is invalid".to_owned(),
+            ));
         }
 
         let has_no_url_path = url.path().is_empty() || url.path() == "/";
@@ -802,35 +809,26 @@ impl TryFrom<(String, Option<bool>)> for TrustDidWebId {
     type Error = TrustDidWebIdResolutionError;
 
     #[inline]
-    #[expect(
-        clippy::indexing_slicing,
-        reason = "panic-free indexing ensured in code"
-    )]
-    #[expect(
-        clippy::unwrap_in_result,
-        reason = "panic-free as long as the regex is valid"
-    )]
-    #[expect(
-        clippy::unwrap_used,
-        reason = "panic-free as long as the regex is valid"
-    )]
     fn try_from(value: (String, Option<bool>)) -> Result<Self, Self::Error> {
         let did_tdw = value.0;
         let allow_http = value.1;
 
         let split: Vec<&str> = did_tdw.splitn(3, ":").collect();
+        #[expect(clippy::indexing_slicing, reason = "size checked in if")]
         if split.len() < 3 || split[2].is_empty() {
             return Err(TrustDidWebIdResolutionError::InvalidMethodSpecificId(
                 did_tdw,
             ));
         };
 
+        #[expect(clippy::indexing_slicing, reason = "size checked in code above")]
         let method_name = format!("{}:{}", split[0], split[1]);
         if method_name != format!("did:{}", Self::DID_METHOD_NAME) {
             return Err(TrustDidWebIdResolutionError::MethodNotSupported(
                 method_name,
             ));
         };
+        #[expect(clippy::indexing_slicing, reason = "size checked in code above")]
         let scid = split[2];
 
         let mut decoded_url = String::from("");
@@ -875,7 +873,14 @@ impl TryFrom<(String, Option<bool>)> for TrustDidWebId {
     }
 }
 
-/// TODO Doc comments missing
+/// The container for any *valid* `did:tdw` DID log in terms of the
+/// [*DID resolution*](https://identity.foundation/didwebvh/v0.3/#read-resolve).
+///
+/// Namely, the struct implements the
+/// [*Read (Resolve)* DID method operation for a `did:webvh` DID](https://identity.foundation/didwebvh/v0.3/#read-resolve)
+/// in its constructor.
+///
+/// A fully UniFFI-compliant struct.
 pub struct TrustDidWeb {
     did: String,
     did_log: String,

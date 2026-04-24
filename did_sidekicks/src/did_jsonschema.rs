@@ -47,7 +47,7 @@ pub enum DidLogEntryValidatorErrorKind {
     DeserializationError,
 }
 
-/// W.r.t. any of specification versions available at https://identity.foundation/didwebvh
+/// W.r.t. any of specification versions available at https://identity.foundation/didwebvh.
 ///
 /// A UniFFI-compliant trait.
 pub trait DidLogEntryJsonSchema: Send + Sync {

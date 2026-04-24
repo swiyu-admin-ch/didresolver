@@ -65,7 +65,7 @@ impl Ed25519Signature {
     ///
     /// Lower case letters are used (e.g. f9b4ca).
     ///
-    /// UniFFI-compliant method
+    /// UniFFI-compliant method.
     #[inline]
     pub fn to_hex(&self) -> String {
         hex::encode(self.signature.to_bytes())
@@ -159,7 +159,7 @@ impl Ed25519SigningKey {
         Self { signing_key }
     }
 
-    /// Generate an ed25519 signing key
+    /// Generate an ed25519 signing key.
     #[inline]
     pub fn generate() -> Self {
         let mut csprng = OsRng;
@@ -167,7 +167,7 @@ impl Ed25519SigningKey {
         Self { signing_key }
     }
 
-    /// Deserialize PKCS#8-encoded private key from PEM
+    /// Deserialize PKCS#8-encoded private key from PEM.
     #[inline]
     pub fn from_pkcs8_pem(pkcs8_pem: &str) -> Result<Self, DidSidekicksError> {
         SigningKey::from_pkcs8_pem(pkcs8_pem).map_or_else(
@@ -181,7 +181,7 @@ impl Ed25519SigningKey {
         )
     }
 
-    /// Load public key object from a PEM-encoded file on the local filesystem
+    /// Load public key object from a PEM-encoded file on the local filesystem.
     #[inline]
     pub fn read_pkcs8_pem_file(pkcs8_pem_file: &str) -> Result<Self, DidSidekicksError> {
         SigningKey::read_pkcs8_pem_file(Path::new(pkcs8_pem_file)).map_or_else(
@@ -194,7 +194,7 @@ impl Ed25519SigningKey {
         )
     }
 
-    /// Write ASN.1 DER-encoded PKCS#8 private key to the given path
+    /// Write ASN.1 DER-encoded PKCS#8 private key to the given path.
     #[inline]
     pub fn write_pkcs8_pem_file(&self, public_key_pem_file: &str) -> Result<(), DidSidekicksError> {
         self.signing_key
@@ -204,13 +204,13 @@ impl Ed25519SigningKey {
 
     /// Sign the given message and return a digital signature.
     ///
-    /// UniFFI-compliant method
+    /// UniFFI-compliant method.
     #[inline]
     pub fn sign(&self, message: &str) -> Arc<Ed25519Signature> {
         self.sign_bytes(message.as_bytes()).into()
     }
 
-    /// The UniFFI-compliant version of [`Self::sign_hex_str`]
+    /// The UniFFI-compliant version of [`Self::sign_hex_str`].
     #[inline]
     pub fn sign_hex(&self, message_hex: &str) -> Result<Arc<Ed25519Signature>, DidSidekicksError> {
         Ok(Arc::new(self.sign_hex_str(message_hex)?))
@@ -236,7 +236,7 @@ impl Ed25519SigningKey {
 
     /// Sign the given message and return a digital signature.
     ///
-    /// UniFFI-irrelevant
+    /// UniFFI-irrelevant.
     #[inline]
     pub fn sign_bytes(&self, message: &[u8]) -> Ed25519Signature {
         let signature = self.signing_key.sign(message);
@@ -253,7 +253,7 @@ impl Ed25519SigningKey {
 
     /// Get the [`Ed25519VerifyingKey`] for this [`Ed25519SigningKey`].
     ///
-    /// UniFFI-compliant getter
+    /// UniFFI-compliant getter.
     #[inline]
     pub fn get_verifying_key(&self) -> Arc<Ed25519VerifyingKey> {
         self.verifying_key().into()
@@ -330,7 +330,7 @@ impl Ed25519VerifyingKey {
         Self { verifying_key }
     }
 
-    /// Deserialize PKCS#8-encoded public key from PEM
+    /// Deserialize PKCS#8-encoded public key from PEM.
     #[inline]
     pub fn from_public_key_pem(public_key_pem: &str) -> Result<Self, DidSidekicksError> {
         VerifyingKey::from_public_key_pem(public_key_pem).map_or_else(
@@ -344,7 +344,7 @@ impl Ed25519VerifyingKey {
         )
     }
 
-    /// Load public key object from a PEM-encoded file on the local filesystem
+    /// Load public key object from a PEM-encoded file on the local filesystem.
     #[inline]
     pub fn read_public_key_pem_file(public_key_pem_file: &str) -> Result<Self, DidSidekicksError> {
         VerifyingKey::read_public_key_pem_file(Path::new(public_key_pem_file)).map_or_else(
@@ -357,7 +357,7 @@ impl Ed25519VerifyingKey {
         )
     }
 
-    /// Write ASN.1 DER-encoded public key to the given path
+    /// Write ASN.1 DER-encoded public key to the given path.
     #[inline]
     pub fn write_public_key_pem_file(
         &self,
@@ -375,7 +375,7 @@ impl Ed25519VerifyingKey {
     ///
     /// # Errors
     ///
-    /// See [`Self::verify_strict_bytes`]
+    /// See [`Self::verify_strict_bytes`].
     #[inline]
     pub fn verify_strict(
         &self,

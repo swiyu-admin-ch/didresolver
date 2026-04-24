@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 /// A simple model of a generic `DID` resolver regardless of specification.
 ///
-/// The trait is `dyn` compatible, as elaborated at https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility
+/// The trait is `dyn` compatible, as elaborated at https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility.
 pub trait DidResolver {
     // CAUTION Beware of "dyn" compatibility for traits,
     //         as elaborated at https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility

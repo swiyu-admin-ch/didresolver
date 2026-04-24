@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 /// An entry in DID log file as shown here
-/// https://bcgov.github.io/trustdidweb/#term:did-log-entry
+/// https://bcgov.github.io/trustdidweb/#term:did-log-entry.
 
 // Implement basic properties related to EC algorithm
 // https://www.rfc-editor.org/rfc/rfc7517#section-4
@@ -463,6 +463,7 @@ impl DidDoc {
     /// (`authentication`, `assertionMethod`, `keyAgreement`, `capabilityInvocation`, `capabilityInvocation`).
     ///
     /// If no such key exists, [`DidSidekicksError::KeyNotFound`] is returned.
+    #[inline]
     pub fn get_key_by_fragment(&self, key_id: String) -> Result<Jwk, DidSidekicksError> {
         // A JWK referenced by the supplied key_id might be anywhere in this DID doc
         match self
@@ -512,10 +513,10 @@ impl DidDoc {
             .chain(self.key_agreement.iter())
             .find(|&key| key.id.eq(&kid))
         {
-            Some(key) => match key.public_key_jwk.to_owned() {
-                Some(jwk) => Ok(jwk),
-                None => Err(DidSidekicksError::NonExistingKeyReferenced(kid)),
-            },
+            Some(key) => key
+                .public_key_jwk
+                .to_owned()
+                .ok_or(DidSidekicksError::NonExistingKeyReferenced(kid)),
             None => Err(DidSidekicksError::KeyNotFound(kid)),
         }
     }
@@ -568,10 +569,8 @@ pub fn get_key_from_did_doc(did_doc: String, key_id: String) -> Result<Jwk, DidS
         },
     };
 
-    match doc.get_key_by_method_id(key_id.clone()) {
-        Ok(key) => Ok(key),
-        Err(_) => doc.get_key_by_fragment(key_id),
-    }
+    doc.get_key_by_method_id(key_id.clone())
+        .map_or_else(|_| doc.get_key_by_fragment(key_id), Ok)
 }
 
 impl DidDocExtended {

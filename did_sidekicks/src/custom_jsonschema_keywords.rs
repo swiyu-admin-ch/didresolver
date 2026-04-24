@@ -8,7 +8,7 @@ use serde_json::{Map, Value};
 /// Yet another custom [`Keyword`] trait implementation able to validate if a JSON array represents
 /// a regular `didwebvh` DID log entry (as defined by https://identity.foundation/didwebvh/v0.3/#overview).
 ///
-/// This [`Keyword`] trait implementation validates instances according to https://identity.foundation/didwebvh/v0.3/#overview
+/// This [`Keyword`] trait implementation validates instances according to https://identity.foundation/didwebvh/v0.3/#overview.
 #[expect(clippy::exhaustive_structs, reason = "..")]
 pub struct DidLogEntryKeyword;
 

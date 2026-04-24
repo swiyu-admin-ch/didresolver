@@ -20,7 +20,7 @@ pub struct WebVerifiableHistoryDidMethodParameters {
     #[serde(default)]
     pub method: Option<String>,
 
-    /// The SCID value for the DID
+    /// The SCID value for the DID.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub scid: Option<String>,
@@ -95,10 +95,10 @@ impl WebVerifiableHistoryDidMethodParameters {
         }
     }
 
-    /// Validation against all the criteria and sets default values described in https://identity.foundation/didwebvh/v1.0/#didwebvh-did-method-parameters
+    /// Validation against all the criteria and sets default values described in https://identity.foundation/didwebvh/v1.0/#didwebvh-did-method-parameters.
     ///
     /// Furthermore, the relevant Swiss profile checks are also taken into account here:
-    /// https://github.com/e-id-admin/open-source-community/blob/main/tech-roadmap/swiss-profile.md#didtdwdidwebvh
+    /// https://github.com/e-id-admin/open-source-community/blob/main/tech-roadmap/swiss-profile.md#didtdwdidwebvh.
     #[inline]
     pub fn validate_initial(&mut self) -> Result<(), DidResolverError> {
         if let Some(method) = self.method.to_owned() {
@@ -159,23 +159,24 @@ impl WebVerifiableHistoryDidMethodParameters {
         // As the DIDs are published on a central base registry the DID controller and the hoster
         // are different actors and the chance that both are compromised is minimized.
         // It would add complexity to the resolving of a DID and the base registry would need to also host did-witness.json file.
-        if let Some(witness) = self.witnesses.to_owned() {
-            if witness.threshold > 0 || !witness.witnesses.is_empty() {
-                // A witness item in the first DID log entry is used to define the witnesses and necessary threshold for that initial log entry.
-                // In all other DID log entries, a witness item becomes active after the publication of its entry.
-                return Err(DidResolverError::InvalidDidParameter(
-                    "Unsupported non-empty 'witness' DID parameter.".to_owned(),
-                ));
-            }
+        if let Some(witness) = self.witnesses.to_owned()
+            && (witness.threshold > 0 || !witness.witnesses.is_empty())
+        {
+            // A witness item in the first DID log entry is used to define the witnesses and necessary threshold for that initial log entry.
+            // In all other DID log entries, a witness item becomes active after the publication of its entry.
+            return Err(DidResolverError::InvalidDidParameter(
+                "Unsupported non-empty 'witness' DID parameter.".to_owned(),
+            ));
         }
 
         // Portable not supported as defined by Swiss profile
-        if let Some(portable) = self.portable {
-            if portable {
-                return Err(DidResolverError::InvalidDidParameter(
-                    "Unsupported 'portable' DID parameter. We currently don't support portable DIDs".to_string(),
-                ));
-            }
+        if let Some(portable) = self.portable
+            && portable
+        {
+            return Err(DidResolverError::InvalidDidParameter(
+                "Unsupported 'portable' DID parameter. We currently don't support portable DIDs"
+                    .to_owned(),
+            ));
         }
 
         Ok(())
@@ -306,7 +307,7 @@ impl WebVerifiableHistoryDidMethodParameters {
         Ok(())
     }
 
-    /// As specified by https://identity.foundation/didwebvh/v0.3/#deactivate-revoke
+    /// As specified by https://identity.foundation/didwebvh/v0.3/#deactivate-revoke.
     #[inline]
     pub fn deactivate(&mut self) {
         self.update_keys = Some(vec![]);
@@ -352,10 +353,10 @@ impl WebVerifiableHistoryDidMethodParameters {
     /// Yet another UniFFI-compliant getter.
     #[inline]
     pub const fn is_deactivated(&self) -> bool {
-        if let Some(val) = self.deactivated {
-            if val {
-                return val;
-            }
+        if let Some(val) = self.deactivated
+            && val
+        {
+            return val;
         }
         false
     }
@@ -482,12 +483,12 @@ pub struct Witness {
     pub witnesses: Vec<String>,
 }
 
-/// This is only used for serialize
+/// This is only used for serialize.
 const fn is_zero(num: &u32) -> bool {
     *num == 0
 }
 
-/// As defined by https://identity.foundation/didwebvh/v1.0/#didwebvh-did-method-parameters
+/// As defined by https://identity.foundation/didwebvh/v1.0/#didwebvh-did-method-parameters.
 const DID_METHOD_PARAMETER_VERSION: &str = "did:webvh:1.0";
 
 #[cfg(test)]

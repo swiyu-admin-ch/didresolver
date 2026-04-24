@@ -48,7 +48,7 @@ impl core::fmt::Display for CryptoSuiteType {
     }
 }
 
-/// As specified by https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022
+/// As specified by https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022.
 #[derive(Clone)]
 #[expect(clippy::exhaustive_structs, reason = "..")]
 pub struct CryptoSuiteProofOptions {
@@ -171,9 +171,9 @@ impl Default for CryptoSuiteProofOptions {
     }
 }
 
-/// See https://www.w3.org/TR/vc-data-integrity/#dataintegrityproof
+/// See https://www.w3.org/TR/vc-data-integrity/#dataintegrityproof.
 ///
-/// For EdDSA Cryptosuites v1.0 suites, see https://www.w3.org/TR/vc-di-eddsa/#dataintegrityproof
+/// For EdDSA Cryptosuites v1.0 suites, see https://www.w3.org/TR/vc-di-eddsa/#dataintegrityproof.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[expect(clippy::exhaustive_structs, reason = "..")]
 pub struct DataIntegrityProof {
@@ -197,9 +197,9 @@ pub struct DataIntegrityProof {
     pub proof_value: String,
 }
 impl DataIntegrityProof {
-    /// The non-empty parsing constructor featuring validation in terms of supported type/proofPurpose/cryptosuite
+    /// The non-empty parsing constructor featuring validation in terms of supported type/proofPurpose/cryptosuite.
     ///
-    /// UniFFI-compliant constructor
+    /// UniFFI-compliant constructor.
     #[inline]
     // TODO Ensure panic-safe indexing
     #[expect(clippy::indexing_slicing, reason = "see TODO")]
@@ -352,7 +352,7 @@ impl DataIntegrityProof {
         })
     }
 
-    /// Converts this [`DataIntegrityProof`] to [`serde_json::Value`]
+    /// Converts this [`DataIntegrityProof`] to [`serde_json::Value`].
     #[inline]
     #[expect(clippy::indexing_slicing, reason = "panic-safe indexing")]
     pub fn to_json_value(&self) -> JsonValue {
@@ -400,16 +400,16 @@ impl DataIntegrityProof {
 /// This is the main entry point for proof generation and validation of a given verifiable credential.
 ///
 /// Function in this class are based on algorithm section in the vc-data-integrity spec
-/// https://www.w3.org/TR/vc-data-integrity/#algorithms
+/// https://www.w3.org/TR/vc-data-integrity/#algorithms.
 pub trait VCDataIntegrity {
-    /// As specified by https://www.w3.org/TR/vc-data-integrity/#add-proof
+    /// As specified by https://www.w3.org/TR/vc-data-integrity/#add-proof.
     fn add_proof_to_json_value(
         &self,
         unsecured_data_document: &JsonValue, // map that contains no proof values
         options: &CryptoSuiteProofOptions,
     ) -> Result<JsonValue, DidSidekicksError>;
 
-    /// As specified by https://www.w3.org/TR/vc-data-integrity/#verify-proof
+    /// As specified by https://www.w3.org/TR/vc-data-integrity/#verify-proof.
     fn verify_proof(
         &self,
         proof: &DataIntegrityProof,
@@ -451,7 +451,7 @@ impl EddsaJcs2022Cryptosuite {
         }
     }
 
-    /// The UniFFI-compliant wrapper of [`Self::add_proof_to_json_value`]
+    /// The UniFFI-compliant wrapper of [`Self::add_proof_to_json_value`].
     #[inline]
     pub fn add_proof(
         &self,
@@ -471,7 +471,7 @@ impl EddsaJcs2022Cryptosuite {
     ///
     /// # Errors
     ///
-    /// [`VCDataIntegrityProofTransformationError`] if [`JcsSha256Hasher::encode_hex_json_value`] fails
+    /// [`VCDataIntegrityProofTransformationError`] if [`JcsSha256Hasher::encode_hex_json_value`] fails.
     #[inline]
     fn encode_hex_json_value(&self, json: &JsonValue) -> Result<String, DidSidekicksError> {
         self.hasher
@@ -491,7 +491,7 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
     ///
     /// # Panics
     ///
-    /// If this [`EddsaJcs2022Cryptosuite`] instance features no signing key (required for proof creation)
+    /// If this [`EddsaJcs2022Cryptosuite`] instance features no signing key (required for proof creation).
     #[inline]
     #[expect(clippy::indexing_slicing, reason = "panic-safe indexing")]
     #[expect(clippy::panic, reason = "..")]

@@ -4,10 +4,10 @@ use crate::errors::DidSidekicksError;
 use bs58::{Alphabet as Alphabet58, decode as base58_decode, encode as base58_encode};
 use core::cmp::PartialEq;
 
-/// See https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html#appendix-D.1
+/// See https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html#appendix-D.1.
 pub const BASE58BTC_MULTIBASE_IDENTIFIER: &str = "z";
 
-/// The trait describes type conversion w.r.t [Multibase Data Format](https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html)
+/// The trait describes type conversion w.r.t [Multibase Data Format](https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html).
 ///
 /// Raw binary data is often encoded using a mechanism that enables the data to be included in human-readable text-based formats.
 /// This mechanism is often referred to as "base-encoding the data" and is often used when expressing binary data in hyperlinks,
@@ -25,25 +25,25 @@ pub trait MultiBaseConvertible {
     /// # Errors
     ///
     /// If a supplied string value is not multibase-encoded as specified by
-    /// [The Multibase Data Format](https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html)
+    /// [The Multibase Data Format](https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html).
     fn from_multibase(multibase: &str) -> Result<Self, DidSidekicksError>
     where
         Self: Sized;
 }
 
-/// See https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html#appendix-D.1
+/// See https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html#appendix-D.1.
 #[derive(PartialEq, Eq, Debug)]
 #[expect(
     clippy::exhaustive_enums,
     reason = "further enum variants may be added in the future"
 )]
 pub enum MultibaseAlgorithm {
-    /// Base58 bitcoin
+    /// Base58 bitcoin.
     Base58btc,
 }
 
 /// A helper capable of encoding/decoding data in Multibase format according to
-/// https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html
+/// https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html.
 pub struct MultibaseEncoderDecoder {
     algorithm: MultibaseAlgorithm,
     alphabet: &'static Alphabet58,
@@ -63,7 +63,7 @@ impl Default for MultibaseEncoderDecoder {
 impl MultibaseEncoderDecoder {
     /// The UniFFI-compliant default constructor featuring [`MultibaseAlgorithm::Base58btc`] algorithm.
     #[inline]
-    #[expect(dead_code)]
+    #[expect(unused, reason = "exported through uniffi")]
     fn build() -> Self {
         Self::default()
     }
