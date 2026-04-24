@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 use crate::errors::DidSidekicksError;
-use bs58::{decode as base58_decode, encode as base58_encode, Alphabet as Alphabet58};
+use bs58::{Alphabet as Alphabet58, decode as base58_decode, encode as base58_encode};
 use core::cmp::PartialEq;
 
 /// See https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html#appendix-D.1
@@ -162,9 +162,10 @@ mod test {
         assert!(res.is_err());
         let err = res.unwrap_err(); // panic-safe unwrap call (see the previous line)
         assert_eq!(err.kind(), DidSidekicksErrorKind::DeserializationFailed);
-        assert!(err
-            .to_string()
-            .contains("Invalid multibase algorithm identifier 'Base58btc'"));
+        assert!(
+            err.to_string()
+                .contains("Invalid multibase algorithm identifier 'Base58btc'")
+        );
     }
 
     #[rstest]
@@ -179,8 +180,9 @@ mod test {
         assert!(res.is_err());
         let err = res.unwrap_err(); // panic-safe unwrap call (see the previous line)
         assert_eq!(err.kind(), DidSidekicksErrorKind::DeserializationFailed);
-        assert!(err
-            .to_string()
-            .contains("buffer provided to decode base58 encoded string into was too small"));
+        assert!(
+            err.to_string()
+                .contains("buffer provided to decode base58 encoded string into was too small")
+        );
     }
 }

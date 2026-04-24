@@ -132,25 +132,25 @@ pub struct DidDoc {
     #[serde(
         rename = "capabilityInvocation",
         skip_serializing_if = "Vec::is_empty",
-        default,
+        default
     )]
     pub capability_invocation: Vec<VerificationMethod>,
     #[serde(
         rename = "capabilityDelegation",
         skip_serializing_if = "Vec::is_empty",
-        default,
+        default
     )]
     pub capability_delegation: Vec<VerificationMethod>,
     #[serde(
         rename = "assertionMethod",
         skip_serializing_if = "Vec::is_empty",
-        default,
+        default
     )]
     pub assertion_method: Vec<VerificationMethod>,
     #[serde(
         rename = "keyAgreement",
         skip_serializing_if = "Vec::is_empty",
-        default,
+        default
     )]
     pub key_agreement: Vec<VerificationMethod>,
     // CAUTION The "controller" property must not be present w.r.t.:

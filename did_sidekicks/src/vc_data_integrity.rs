@@ -8,12 +8,12 @@ use crate::errors::DidSidekicksError::{
 };
 use crate::jcs_sha256_hasher::JcsSha256Hasher;
 use crate::multibase::MultiBaseConvertible as _;
-use chrono::{serde::ts_seconds, DateTime, SecondsFormat, Utc};
+use chrono::{DateTime, SecondsFormat, Utc, serde::ts_seconds};
 use core::ops::Deref as _;
 use serde::{Deserialize, Serialize};
 use serde_json::{
-    from_str as json_from_str, json, Value as JsonValue, Value::Array as JsonArray,
-    Value::Null as JsonNull, Value::String as JsonString,
+    Value as JsonValue, Value::Array as JsonArray, Value::Null as JsonNull,
+    Value::String as JsonString, from_str as json_from_str, json,
 };
 
 #[derive(Clone, Debug)]
@@ -221,19 +221,19 @@ impl DataIntegrityProof {
                     None => {
                         return Err(InvalidDataIntegrityProof(
                             "Empty proof array detected.".to_owned(),
-                        ))
+                        ));
                     }
                 }
             }
             Err(err) => {
                 return Err(InvalidDataIntegrityProof(format!(
                     "Malformed proof format, expected single-element JSON array: {err}"
-                )))
+                )));
             }
             _ => {
                 return Err(InvalidDataIntegrityProof(
                     "Malformed proof format, expected single-element JSON array".to_owned(),
-                ))
+                ));
             }
         };
         Ok(Self {
@@ -389,9 +389,10 @@ impl DataIntegrityProof {
 
             Ok(update_key_split[0].to_owned())
         } else {
-            Err(InvalidDataIntegrityProof(
-                format!("Unsupported proof's 'verificationMethod' (only 'did:key' is currently supported): {}", self.verification_method)
-            ))
+            Err(InvalidDataIntegrityProof(format!(
+                "Unsupported proof's 'verificationMethod' (only 'did:key' is currently supported): {}",
+                self.verification_method
+            )))
         }
     }
 }
@@ -669,36 +670,45 @@ mod test {
         "Unsupported proof's cryptosuite"
     )]
     // invalid created date
-    #[case("[{\"type\":\"DataIntegrityProof\", \"cryptosuite\":\"eddsa-jcs-2022\", \"created\":\"invalidDate\", \"verificationMethod\": \"did:key:123\", \"proofPurpose\":\"authentication\"}]",
+    #[case(
+        "[{\"type\":\"DataIntegrityProof\", \"cryptosuite\":\"eddsa-jcs-2022\", \"created\":\"invalidDate\", \"verificationMethod\": \"did:key:123\", \"proofPurpose\":\"authentication\"}]",
         "Invalid proof's creation datetime format"
     )]
     // invalid verification method
-    #[case("[{\"type\":\"DataIntegrityProof\", \"cryptosuite\":\"eddsa-jcs-2022\", \"created\":\"2012-12-12T12:12:12Z\", \"verificationMethod\": \"invalidMethod\", \"proofPurpose\":\"authentication\"}]",
+    #[case(
+        "[{\"type\":\"DataIntegrityProof\", \"cryptosuite\":\"eddsa-jcs-2022\", \"created\":\"2012-12-12T12:12:12Z\", \"verificationMethod\": \"invalidMethod\", \"proofPurpose\":\"authentication\"}]",
         "Unsupported proof's verificationMethod"
     )]
     // invalid proof purpose
-    #[case("[{\"type\":\"DataIntegrityProof\", \"cryptosuite\":\"eddsa-jcs-2022\", \"created\":\"2012-12-12T12:12:12Z\", \"verificationMethod\": \"did:key:123\", \"proofPurpose\":\"invalidPurpose\"}]",
+    #[case(
+        "[{\"type\":\"DataIntegrityProof\", \"cryptosuite\":\"eddsa-jcs-2022\", \"created\":\"2012-12-12T12:12:12Z\", \"verificationMethod\": \"did:key:123\", \"proofPurpose\":\"invalidPurpose\"}]",
         "Unsupported proof's proofPurpose"
     )]
     // invalid @context
-    #[case("[{\"type\":\"DataIntegrityProof\", \"cryptosuite\":\"eddsa-jcs-2022\", \"created\":\"2012-12-12T12:12:12Z\", \"verificationMethod\": \"did:key:123\", \"proofPurpose\":\"authentication\", \"@context\":\"invalidContext\"}]",
+    #[case(
+        "[{\"type\":\"DataIntegrityProof\", \"cryptosuite\":\"eddsa-jcs-2022\", \"created\":\"2012-12-12T12:12:12Z\", \"verificationMethod\": \"did:key:123\", \"proofPurpose\":\"authentication\", \"@context\":\"invalidContext\"}]",
         "Invalid format of 'context' entry"
     )]
-    #[case("[{\"type\":\"DataIntegrityProof\", \"cryptosuite\":\"eddsa-jcs-2022\", \"created\":\"2012-12-12T12:12:12Z\", \"verificationMethod\": \"did:key:123\", \"proofPurpose\":\"authentication\", \"@context\":[\"validContext\", true, 3]}]",
+    #[case(
+        "[{\"type\":\"DataIntegrityProof\", \"cryptosuite\":\"eddsa-jcs-2022\", \"created\":\"2012-12-12T12:12:12Z\", \"verificationMethod\": \"did:key:123\", \"proofPurpose\":\"authentication\", \"@context\":[\"validContext\", true, 3]}]",
         "Invalid type of 'context' entry"
     )]
     // invalid proof challenge
-    #[case("[{\"type\":\"DataIntegrityProof\", \"cryptosuite\":\"eddsa-jcs-2022\", \"created\":\"2012-12-12T12:12:12Z\", \"verificationMethod\": \"did:key:123\", \"proofPurpose\":\"authentication\"}]",
+    #[case(
+        "[{\"type\":\"DataIntegrityProof\", \"cryptosuite\":\"eddsa-jcs-2022\", \"created\":\"2012-12-12T12:12:12Z\", \"verificationMethod\": \"did:key:123\", \"proofPurpose\":\"authentication\"}]",
         "Missing proofValue parameter. Expected a proofValue of type string."
     )]
-    #[case("[{\"type\":\"DataIntegrityProof\", \"cryptosuite\":\"eddsa-jcs-2022\", \"created\":\"2012-12-12T12:12:12Z\", \"verificationMethod\": \"did:key:123\", \"proofPurpose\":\"authentication\", \"challenge\":[false, 2]}]",
+    #[case(
+        "[{\"type\":\"DataIntegrityProof\", \"cryptosuite\":\"eddsa-jcs-2022\", \"created\":\"2012-12-12T12:12:12Z\", \"verificationMethod\": \"did:key:123\", \"proofPurpose\":\"authentication\", \"challenge\":[false, 2]}]",
         "Wrong format of proof's challenge parameter"
     )]
     // invalid proof challenge
-    #[case("[{\"type\":\"DataIntegrityProof\", \"cryptosuite\":\"eddsa-jcs-2022\", \"created\":\"2012-12-12T12:12:12Z\", \"verificationMethod\": \"did:key:123\", \"proofPurpose\":\"authentication\", \"challenge\":\"1-hash\"}]",
+    #[case(
+        "[{\"type\":\"DataIntegrityProof\", \"cryptosuite\":\"eddsa-jcs-2022\", \"created\":\"2012-12-12T12:12:12Z\", \"verificationMethod\": \"did:key:123\", \"proofPurpose\":\"authentication\", \"challenge\":\"1-hash\"}]",
         "Missing proofValue parameter"
     )]
-    #[case("[{\"type\":\"DataIntegrityProof\", \"cryptosuite\":\"eddsa-jcs-2022\", \"created\":\"2012-12-12T12:12:12Z\", \"verificationMethod\": \"did:key:123\", \"proofPurpose\":\"authentication\", \"challenge\":\"1-hash\", \"proofValue\":5}]",
+    #[case(
+        "[{\"type\":\"DataIntegrityProof\", \"cryptosuite\":\"eddsa-jcs-2022\", \"created\":\"2012-12-12T12:12:12Z\", \"verificationMethod\": \"did:key:123\", \"proofPurpose\":\"authentication\", \"challenge\":\"1-hash\", \"proofValue\":5}]",
         "Wrong format of proofValue parameter"
     )]
     fn test_invalid_proof_parsing(#[case] input_str: String, #[case] error_string: &str) {

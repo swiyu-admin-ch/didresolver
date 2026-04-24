@@ -656,10 +656,16 @@ impl WebVerifiableHistoryDidLog {
                     ) {
                         (Ok(current_did_doc_id), Ok(previous_did_doc_id)) => {
                             if current_did_doc_id.scid != previous_did_doc_id.scid {
-                                return Err(DidResolverError::InvalidDidDocument("SCID may NOT change between DID log entries.".into()))
+                                return Err(DidResolverError::InvalidDidDocument(
+                                    "SCID may NOT change between DID log entries.".into(),
+                                ));
                             }
                         }
-                        _ => return Err(DidResolverError::InvalidDidDocument("DID Document contains invalid id".into())),
+                        _ => {
+                            return Err(DidResolverError::InvalidDidDocument(
+                                "DID Document contains invalid id".into(),
+                            ));
+                        }
                         // Missing validation for alsoKnownAs to include previous entry
                     }
                     // Check that DID Document ID stayed the same
