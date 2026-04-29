@@ -31,7 +31,7 @@ criterion = "0.7.0"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = { version = "1.0.145", features = ["preserve_order"] }
 chrono = { version = "0.4.42", features = ["serde"] }
-rand = "0.8.5"
+rand = "0.8.6"
 regex = "1.12.2"
 url-escape = "0.1.1"
 url = "2.5.7"

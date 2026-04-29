@@ -29,6 +29,9 @@ permissions:
   # to fetch code (actions/checkout)
   contents: write
 
+env:
+  SARIF_FILE: 
+
 jobs:
   snyk-rust-scanner:
     runs-on: ubuntu-latest
@@ -49,5 +52,11 @@ jobs:
           # report only vulnerabilities with level high or critical, as we want to avoid noise in the PR checks
           # NOTE: monitor is an experimental feature and not supported by the organization
           #snyk sbom monitor --file=didresolver.spdx.json --severity-threshold=high --experimental
+          snyk code test --sarif-file-output=didresolver.sarif
+          cat didresolver.sarif
           snyk sbom test --file=didresolver.spdx.json --severity-threshold=high
-          snyk code test
+      - name: Upload code analysis results
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: didresolver.sarif
+          category: snyk
