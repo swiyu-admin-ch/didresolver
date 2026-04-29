@@ -1,4 +1,4 @@
-# A workflow which sets up OSV-Scanner scanning for vulnerabilities.
+# A workflow which sets up Snyk scanning for vulnerabilities.
 name: Monitor Snyk for vulnerabilities in code 📦
 
 on:
@@ -15,11 +15,14 @@ on:
     # Sequence of patterns matched against refs/tags
     tags:
       - "*" # triggers only if push new tag version, like `0.8.4` or else
+  schedule:
+    # Use https://crontab.guru/examples.html
+    # weekly
+    - cron: '0 0 * * 0'
   # Enable it only while debugging
   workflow_dispatch:
 
 permissions:
-  # Required to upload SARIF file to CodeQL. See: https://github.com/github/codeql-action/issues/2117
   actions: read
   # Require writing security events to upload SARIF file to security tab
   security-events: write
@@ -27,7 +30,7 @@ permissions:
   contents: write
 
 jobs:
-  build-and-publish-image:
+  snyk-rust-scanner:
     runs-on: ubuntu-latest
 
     steps:
@@ -45,7 +48,6 @@ jobs:
           # using monitor to get notified when new vulnerabilities are discovered in dependencies
           # report only vulnerabilities with level high or critical, as we want to avoid noise in the PR checks
           # NOTE: monitor is an experimental feature and not supported by the organization
-          # snyk sbom monitor --file=didresolver.spdx.json --severity-threshold=high --experimental
+          #snyk sbom monitor --file=didresolver.spdx.json --severity-threshold=high --experimental
           snyk sbom test --file=didresolver.spdx.json --severity-threshold=high
-          # Snyk code analysis is not enabled by the organization
-          # snyk code test
+          snyk code test
