@@ -1,0 +1,83 @@
+# A workflow which sets up Snyk scanning for vulnerabilities.
+name: Monitor Snyk for vulnerabilities in code 📦
+
+on:
+  release: 
+  pull_request:
+    branches: [ "main" ]
+  merge_group:
+    branches: [ "main" ]
+  push:
+    #branches: [ "main" ]
+    # speed up the CI pipeline, since the audit process will not be performed if no dependencies were changed.
+    paths:
+      - '**/Cargo.toml'
+    # Sequence of patterns matched against refs/tags
+    tags:
+      - "*" # triggers only if push new tag version, like `0.8.4` or else
+  schedule:
+    # Use https://crontab.guru/examples.html
+    # weekly
+    - cron: '0 0 * * 0'
+  # Enable it only while debugging
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  # Require writing security events to upload SARIF file to security tab
+  security-events: write
+  # to fetch code (actions/checkout)
+  contents: write
+
+env:
+  SARIF_FILE: 
+
+jobs:
+  snyk-rust-scanner:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@master
+      - uses: psastras/sbom-rs/actions/install-cargo-sbom@cargo-sbom-v0.10.0
+      - name: Generate sbom
+        run: cargo-sbom  > didresolver.spdx.json
+      - uses: snyk/actions/setup@master
+      - name: Snyk monitor 
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          SNYK_API: https://api.eu.snyk.io
+          SNYK_ORG: ${{ secrets.SNYK_ORG }}
+        run: |
+          # using monitor to get notified when new vulnerabilities are discovered in dependencies
+          # report only vulnerabilities with level high or critical, as we want to avoid noise in the PR checks
+          # NOTE: monitor is an experimental feature and not supported by the organization
+          #snyk sbom monitor --file=didresolver.spdx.json --severity-threshold=high --experimental
+          snyk code test --sarif-file-output=didresolver.sarif
+          snyk sbom test --file=didresolver.spdx.json --severity-threshold=high --json > result.json || true # to continue depsite found vulnerabilites
+
+          # snyk sbom test doesn't read the .snyk file for ignoring vulnerabilities.
+          # This functionality has been implemented with the below commands
+          
+          echo "Ignoring Vulnerabilities:"
+          # Remove vuln from result json
+          for ignoredvuln in $(grep -o -e 'SNYK-RUST-[a-zA-Z]*-[0-9]*' .snyk); do
+          	echo $ignoredvuln
+          	jq "del(.vulnerabilities[] | select(.id == \"$ignoredvuln\"))" result.json > tmp.json
+          	mv tmp.json result.json
+          done
+          
+          echo ""
+          
+          # check if vulnerabilities remained
+          numofvuln=`jq ".vulnerabilities | length" result.json`
+          if [ $numofvuln -ne 0 ]; then
+          	echo "Still has vulnerabilities:"
+          	openvuln=`jq '.vulnerabilities[].id?' result.json -r`
+          	echo $openvuln
+          	exit -1
+          fi
+      - name: Upload code analysis results
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: didresolver.sarif
+          category: snyk
