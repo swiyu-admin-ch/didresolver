@@ -53,8 +53,29 @@ jobs:
           # NOTE: monitor is an experimental feature and not supported by the organization
           #snyk sbom monitor --file=didresolver.spdx.json --severity-threshold=high --experimental
           snyk code test --sarif-file-output=didresolver.sarif
-          cat didresolver.sarif
-          snyk sbom test --file=didresolver.spdx.json --severity-threshold=high
+          snyk sbom test --file=didresolver.spdx.json --severity-threshold=high --json > result.json || true # to continue depsite found vulnerabilites
+
+          # snyk sbom test doesn't read the .snyk file for ignoring vulnerabilities.
+          # This functionality has been implemented with the below commands
+          
+          echo "Ignoring Vulnerabilities:"
+          # Remove vuln from result json
+          for ignoredvuln in $(grep -o -e 'SNYK-RUST-[a-zA-Z]*-[0-9]*' .snyk); do
+          	echo $ignoredvuln
+          	jq "del(.vulnerabilities[] | select(.id == \"$ignoredvuln\"))" result.json > tmp.json
+          	mv tmp.json result.json
+          done
+          
+          echo ""
+          
+          # check if vulnerabilities remained
+          numofvuln=`jq ".vulnerabilities | length" result.json`
+          if [ $numofvuln -ne 0 ]; then
+          	echo "Still has vulnerabilities:"
+          	openvuln=`jq '.vulnerabilities[].id?' result.json -r`
+          	echo $openvuln
+          	exit -1
+          fi
       - name: Upload code analysis results
         uses: github/codeql-action/upload-sarif@v4
         with:
