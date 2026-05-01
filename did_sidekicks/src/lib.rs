@@ -54,10 +54,10 @@ mod test {
     use crate::did_doc;
     use crate::did_doc::DidDocNormalized;
     use crate::errors::*;
-    use rand::distributions::Alphanumeric;
     use rand::Rng as _;
+    use rand::distributions::Alphanumeric;
     use rstest::{fixture, rstest};
-    use serde_json::{json, Value as JsonValue};
+    use serde_json::{Value as JsonValue, json};
     use std::vec;
 
     #[fixture]

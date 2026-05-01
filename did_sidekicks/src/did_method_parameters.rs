@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 use crate::errors::DidSidekicksError;
-use serde_json::{from_str as json_from_str, to_string as json_to_string, Value};
+use serde_json::{Value, from_str as json_from_str, to_string as json_to_string};
 
 /// A generic DID method parameter as seen from the perspective of a JSON deserializer.
 ///
@@ -169,7 +169,8 @@ impl DidMethodParameter {
                     // panic-safe unwrap call: If the Number is an integer
                     //                         represent it as i64 if possible. Returns None otherwise
                     param.i64_value = Some(entry.as_i64().unwrap());
-                } else { //} else if entry.is_u64() {
+                } else {
+                    //} else if entry.is_u64() {
                     param.is_u64 = true;
                     // panic-safe unwrap call: If the Number is an integer,
                     //                         represent it as u64 if possible. Returns None otherwise
@@ -183,7 +184,7 @@ impl DidMethodParameter {
                 param.is_array = true;
                 if !entry.is_empty() {
                     param.is_empty_array = false;
-                    let mut arr= vec![];
+                    let mut arr = vec![];
                     entry.iter().for_each(|err| {
                         if err.is_string() {
                             // panic-safe unwrap call: For any Value on which is_string returns true,
@@ -202,7 +203,7 @@ impl DidMethodParameter {
             Err(err) => {
                 return Err(DidSidekicksError::InvalidDidMethodParameter(format!(
                     "'{json_text}' denoting the DID method parameter '{name}' is not a valid JSON text: {err}"
-                )))
+                )));
             }
         };
 

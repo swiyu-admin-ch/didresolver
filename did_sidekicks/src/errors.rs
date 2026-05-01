@@ -2,60 +2,61 @@
 
 /// Yet another UniFFI-compliant error.
 ///
-/// Resembles ssi::dids::resolution::Error
+/// Resembles ssi::dids::resolution::Error.
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 #[expect(
     clippy::exhaustive_enums,
     reason = "further enum variants may be added in the future"
 )]
 pub enum DidSidekicksError {
-    /// Failed to serialize DID document (to JSON)
+    /// Failed to serialize DID document (to JSON).
     #[error("failed to serialize DID document (to JSON): {0}")]
     SerializationFailed(String),
-    /// The supplied DID document is invalid or contains an argument which isn't part of the DID specification/recommendation
-    #[error("the supplied DID document is invalid or contains an argument which isn't part of the DID specification/recommendation: {0}"
+    /// The supplied DID document is invalid or contains an argument which isn't part of the DID specification/recommendation.
+    #[error(
+        "the supplied DID document is invalid or contains an argument which isn't part of the DID specification/recommendation: {0}"
     )]
     DeserializationFailed(String),
-    /// Failed to create type a from hex-encoded string
+    /// Failed to create type a from hex-encoded string.
     #[error("failed to create type from a hex-encoded string: {0}")]
     HexConversionFailed(String),
-    /// Invalid DID document
+    /// Invalid DID document.
     #[error("invalid DID document: {0}")]
     InvalidDidDocument(String),
-    /// Invalid DID log integration proof
+    /// Invalid DID log integration proof.
     #[error("invalid DID log integration proof: {0}")]
     InvalidDataIntegrityProof(String),
-    /// Invalid DID method parameter
+    /// Invalid DID method parameter.
     #[error("invalid DID method parameter: {0}")]
     InvalidDidMethodParameter(String),
-    /// Failed to calculate SHA2-256 hash of canonical JSON UTF-8 string
+    /// Failed to calculate SHA2-256 hash of canonical JSON UTF-8 string.
     #[error("failed to calculate SHA2-256 hash of canonical JSON UTF-8 string: {0}")]
     JscHashingFailed(String),
-    /// No such JWK in the DID document
+    /// No such JWK in the DID document.
     #[error("no such JWK in the DID document: {0}")]
     KeyNotFound(String),
-    /// Failed to save key
+    /// Failed to save key.
     #[error("failed to save key: {0}")]
     KeySerializationFailed(String),
-    /// Failed to load key
+    /// Failed to load key.
     #[error("failed to load key: {0}")]
     KeyDeserializationFailed(String),
-    /// Failure of a signature to satisfy the verification equation
+    /// Failure of a signature to satisfy the verification equation.
     #[error("failure of a signature to satisfy the verification equation: {0}")]
     KeySignatureError(String),
-    /// Failed to convert type from a multibase-encoded format
+    /// Failed to convert type from a multibase-encoded format.
     #[error("failed to convert type from a multibase-encoded format: {0}")]
     MultibaseConversionFailed(String),
-    /// Non-existing key referenced in the DID document
+    /// Non-existing key referenced in the DID document.
     #[error("non-existing key referenced in the DID document: {0}")]
     NonExistingKeyReferenced(String),
-    /// A request to generate a proof failed, as specified by https://www.w3.org/TR/vc-data-integrity/#processing-errors
+    /// A request to generate a proof failed, as specified by https://www.w3.org/TR/vc-data-integrity/#processing-errors.
     #[error("a request to generate a proof failed: {0}")]
     VCDataIntegrityProofGenerationError(String),
-    /// An error was encountered during proof verification, as specified by https://www.w3.org/TR/vc-data-integrity/#processing-errors
+    /// An error was encountered during proof verification, as specified by https://www.w3.org/TR/vc-data-integrity/#processing-errors.
     #[error("an error was encountered during proof verification: {0}")]
     VCDataIntegrityProofVerificationError(String),
-    /// An error was encountered during the transformation process, as specified by https://www.w3.org/TR/vc-data-integrity/#processing-errors
+    /// An error was encountered during the transformation process, as specified by https://www.w3.org/TR/vc-data-integrity/#processing-errors.
     #[error("an error was encountered during the transformation process: {0}")]
     VCDataIntegrityProofTransformationError(String),
     /*
@@ -142,23 +143,24 @@ pub enum DidSidekicksErrorKind {
     reason = "further enum variants may be added in the future"
 )]
 pub enum DidResolverError {
-    /// Invalid method-specific identifier
+    /// Invalid method-specific identifier.
     #[error("invalid method specific identifier: {0}")]
     InvalidMethodSpecificId(String),
-    /// Failed to serialize DID document (to JSON)
+    /// Failed to serialize DID document (to JSON).
     #[error("failed to serialize DID document (to JSON): {0}")]
     SerializationFailed(String),
-    /// The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation
-    #[error("the supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation: {0}"
+    /// The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation.
+    #[error(
+        "the supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation: {0}"
     )]
     DeserializationFailed(String),
-    /// Invalid DID parameter
+    /// Invalid DID parameter.
     #[error("invalid DID parameter: {0}")]
     InvalidDidParameter(String),
-    /// Invalid DID document
+    /// Invalid DID document.
     #[error("invalid DID document: {0}")]
     InvalidDidDocument(String),
-    /// Invalid DID log integration proof
+    /// Invalid DID log integration proof.
     #[error("invalid DID log integration proof: {0}")]
     InvalidDataIntegrityProof(String),
 }

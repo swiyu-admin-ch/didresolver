@@ -4,7 +4,7 @@
 
 /// Yet another UniFFI-compliant error.
 ///
-/// Resembles ssi::dids::resolution::Error
+/// Resembles ssi::dids::resolution::Error.
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 #[expect(clippy::exhaustive_enums, reason = "..")]
 pub enum WebVerifiableHistoryIdResolutionError {

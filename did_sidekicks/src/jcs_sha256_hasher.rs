@@ -2,13 +2,13 @@
 
 use crate::errors::DidSidekicksError;
 use crate::errors::DidSidekicksError::JscHashingFailed;
-use bs58::{encode as base58_encode, Alphabet as Alphabet58};
+use bs58::{Alphabet as Alphabet58, encode as base58_encode};
 use hex;
 use hex::ToHex as _;
 // CAUTION Beware that using the "serde_jcs" crate here may cause
 //         "not yet implemented: Handle number str (u128/i128)" error
 //         in case of numeric json properties, e.g. "witnessThreshold".
-use serde_json::{from_str as json_from_str, Value as JsonValue};
+use serde_json::{Value as JsonValue, from_str as json_from_str};
 use serde_json_canonicalizer::to_string as jcs_to_string;
 use sha2::{Digest as _, Sha256};
 
@@ -23,13 +23,13 @@ pub struct JcsSha256Hasher {
     hasher: Sha256,
 }
 impl JcsSha256Hasher {
-    /// The UniFFI-compliant empty (default) constructor
+    /// The UniFFI-compliant empty (default) constructor.
     #[inline]
     pub fn build() -> Self {
         Self::default()
     }
 
-    /// The UniFFI-compliant wrapper of [`Self::encode_hex_json_value`] method
+    /// The UniFFI-compliant wrapper of [`Self::encode_hex_json_value`] method.
     #[inline]
     pub fn encode_hex(&self, json: &str) -> Result<String, DidSidekicksError> {
         let json_value: JsonValue =
@@ -43,7 +43,7 @@ impl JcsSha256Hasher {
     }
 
     /// Serialize the given data structure as a JCS UTF-8 string and calculate SHA2-256 hash out of it.
-    /// The hash encoded as hex strict representation is returned. Lower case letters are used (e.g. f9b4ca)
+    /// The hash encoded as hex strict representation is returned. Lower case letters are used (e.g. f9b4ca).
     ///
     /// # Errors
     ///
@@ -87,7 +87,7 @@ impl JcsSha256Hasher {
         [multihash_header, digest.as_slice()].concat()
     }
 
-    /// The UniFFI-compliant wrapper of [`Self::base58btc_encode_multihash_json_value`] method
+    /// The UniFFI-compliant wrapper of [`Self::base58btc_encode_multihash_json_value`] method.
     #[inline]
     pub fn base58btc_encode_multihash(&self, json: &str) -> Result<String, DidSidekicksError> {
         let json_value: JsonValue = json_from_str(json).map_err(|err| {
@@ -108,7 +108,7 @@ impl JcsSha256Hasher {
     }
 
     /// Serialize the given data structure as a JCS UTF-8 string and calculate SHA2-256 multihash out of it.
-    /// The multihash encoded in base58btc format is returned
+    /// The multihash encoded in base58btc format is returned.
     #[inline]
     pub fn base58btc_encode_multihash_json_value(
         &mut self,

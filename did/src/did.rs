@@ -16,7 +16,11 @@ use thiserror::Error;
 
 static FRAGMENT_REGEX_STR: &str = "^([-?/:@._~!$&'()*+,;=a-zA-Z0-9]|%[0-9a-fA-F]{2})*$";
 lazy_static! {
-    static ref FRAGMENT_REGEX: Regex = Regex::new(FRAGMENT_REGEX_STR).unwrap();
+    static ref FRAGMENT_REGEX: Regex = #[expect(
+        clippy::unwrap_used,
+        reason = "string manually checked that it compiles"
+    )]
+    Regex::new(FRAGMENT_REGEX_STR).unwrap();
 }
 
 #[derive(Error, Debug, PartialEq, Eq)]
@@ -25,36 +29,36 @@ lazy_static! {
     reason = "further enum variants might be added in the future"
 )]
 pub enum DidResolveError {
-    /// The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation
+    /// The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation.
     #[error(
         "The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation: {0}"
     )]
     DeserializationFailed(String),
-    /// The supplied DID is not supported (currently supported are: did:tdw, did:webvh)
+    /// The supplied DID is not supported (currently supported are: did:tdw, did:webvh).
     #[error("The supplied DID is not supported (currently supported are: did:tdw, did:webvh): {0}")]
     DidNotSupported(String),
-    /// Invalid DID log integration proof
+    /// Invalid DID log integration proof.
     #[error("invalid DID log integration proof: {0}")]
     InvalidDataIntegrityProof(String),
-    /// The supplied DID log is valid, but it features invalid DID Doc
+    /// The supplied DID log is valid, but it features invalid DID Doc.
     #[error("the supplied DID log is valid, but it features invalid DID Doc: {0}")]
     InvalidDidDoc(String),
-    /// Alias for [`DidResolveError::InvalidDidDoc`]
+    /// Alias for [`DidResolveError::InvalidDidDoc`].
     #[error("invalid DID document: {0}")]
     InvalidDidDocument(String),
-    /// The supplied DID log is invalid
+    /// The supplied DID log is invalid.
     #[error("the supplied DID log is invalid: {0}")]
     InvalidDidLog(String),
-    /// Invalid DID method parameter
+    /// Invalid DID method parameter.
     #[error("invalid DID method parameter: {0}")]
     InvalidDidParameter(String),
-    /// Invalid method-specific identifier
+    /// Invalid method-specific identifier.
     #[error("invalid method specific identifier: {0}")]
     InvalidMethodSpecificId(String),
-    /// The supplied DID is supported, but is malformed
+    /// The supplied DID is supported, but is malformed.
     #[error("the supplied DID is supported, but is malformed: {0}")]
     MalformedDid(String),
-    /// Failed to serialize DID document (to JSON)
+    /// Failed to serialize DID document (to JSON).
     #[error("failed to serialize DID document (to JSON): {0}")]
     SerializationFailed(String),
 }
@@ -125,7 +129,7 @@ pub enum DidResolveErrorKind {
     SerializationFailed,
 }
 
-/// The DID methods supported by [`Did`]
+/// The DID methods supported by [`Did`].
 #[derive(Debug, Clone, PartialEq, Eq, Default, EnumDisplay, EnumAsRefStr)]
 #[expect(
     clippy::exhaustive_enums,
@@ -142,7 +146,7 @@ pub enum DidMethod {
 
 impl DidMethod {
     /// # Panics
-    /// In case of [`UNKNOWN`]
+    /// In case of [`UNKNOWN`].
     #[inline]
     #[expect(clippy::panic, reason = "..")]
     #[expect(clippy::pattern_type_mismatch, reason = "..")]
@@ -154,7 +158,7 @@ impl DidMethod {
     }
 
     /// # Panics
-    /// In case of [`UNKNOWN`]
+    /// In case of [`UNKNOWN`].
     #[inline]
     #[expect(clippy::panic, reason = "..")]
     #[expect(clippy::pattern_type_mismatch, reason = "..")]
@@ -255,7 +259,7 @@ impl Did {
         self.https_url.to_owned()
     }
 
-    /// The DID method matching the DID supplied via constructor, if supported. Otherwise, [`UNKNOWN`]
+    /// The DID method matching the DID supplied via constructor, if supported. Otherwise, [`UNKNOWN`].
     ///
     /// A UniFFI-compliant method.
     #[inline]
@@ -332,7 +336,7 @@ impl Did {
     ///
     /// Compared to `Did::resolve` method, it delivers some additional information
     /// (the DID processing parameters) used by the `DID Controller`
-    /// when publishing the current and subsequent `DID log entries`. [`DidDocExtended::get_did_method_parameters`]
+    /// when publishing the current and subsequent `DID log entries` [`DidDocExtended::get_did_method_parameters`].
     ///
     /// A UniFFI-compliant method.
     #[inline]
