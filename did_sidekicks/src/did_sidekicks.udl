@@ -126,7 +126,7 @@ enum DidResolverError {
     /// Invalid DID document.
     "InvalidDidDocument",
     /// Invalid DID log integration proof.
-    "InvalidDataIntegrityProof"
+    "InvalidDataIntegrityProof",
 };
 
 interface DidDoc {

@@ -353,9 +353,7 @@ impl WebVerifiableHistoryDidMethodParameters {
     /// Yet another UniFFI-compliant getter.
     #[inline]
     pub const fn is_deactivated(&self) -> bool {
-        if let Some(val) = self.deactivated
-            && val
-        {
+        if let Some(val) = self.deactivated {
             return val;
         }
         false
