@@ -13,9 +13,9 @@ DID_URL=https://identifier-reg.trust-infra.swiyu-int.admin.ch/api/v1/did/18fa7c7
 
 # a handy shell function for all didtoolbox versions available on Maven Central (Repository) 
 create_did_log_using_didtoolbox_ver () {
-	local ver=$1; local url=$2
+	local mvn_base_url=$1; local ver=$2; local url=$3
 	# download the exact version
-	wget -q https://repo1.maven.org/maven2/io/github/swiyu-admin-ch/didtoolbox/$ver/didtoolbox-$ver-jar-with-dependencies.jar -O didtoolbox-$ver.jar
+	wget -q $mvn_base_url/$ver/didtoolbox-$ver-jar-with-dependencies.jar -O didtoolbox-$ver.jar
 	
 	rm -fr .didtoolbox* &>/dev/null
 	
@@ -42,8 +42,16 @@ create_did_log_using_didtoolbox_ver () {
 }
 
 # All versions available on Maven Central Repository that support creation of did:webvh:1.0 DID logs.
+# Old groupId (io.github.swiyu-admin-ch) until 1.7.0.
 # Further versions will be added here as soon as they get released
 for ver in 1.6.0 1.7.0; do \
-	create_did_log_using_didtoolbox_ver $ver $DID_URL
+	create_did_log_using_didtoolbox_ver https://repo1.maven.org/maven2/io/github/swiyu-admin-ch/didtoolbox $ver $DID_URL
+done
+
+# All versions available on Maven Central Repository that support creation of did:webvh:1.0 DID logs.
+# New groupId (ch.admin.swiyu) since 1.8.0.
+# Further versions will be added here as soon as they get released
+for ver in 1.8.0 1.9.0 1.9.1 2.0.0; do \
+	create_did_log_using_didtoolbox_ver https://repo1.maven.org/maven2/ch/admin/swiyu/didtoolbox $ver $DID_URL
 done
 ```

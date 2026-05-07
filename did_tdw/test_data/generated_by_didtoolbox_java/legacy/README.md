@@ -36,16 +36,22 @@ java -jar didtoolbox-1.3.0.jar create -u $DID_URL -f > did-1.3.0.jsonl
 
 # a handy shell function for all didtoolbox versions available on Maven Central (Repository) 
 create_did_log_using_didtoolbox_ver () {
-	local ver=$1; local url=$2
+	local mvn_base_url=$1; local ver=$2; local url=$3
 	# download the exact version
-	wget -q https://repo1.maven.org/maven2/io/github/swiyu-admin-ch/didtoolbox/$ver/didtoolbox-$ver-jar-with-dependencies.jar -O didtoolbox-$ver.jar
+	wget -q $mvn_base_url/$ver/didtoolbox-$ver-jar-with-dependencies.jar -O didtoolbox-$ver.jar
 	# DID log creation
 	java -jar didtoolbox-$ver.jar create -u $url -m did:tdw:0.3 -f > did-$ver.jsonl
 }
 
-# All versions available on Maven Central Repository.
+# All groupId=io.github.swiyu-admin-ch versions available on Maven Central Repository.
 # Further versions will be added here as soon as they get released
 for ver in 1.3.1 1.4.0 1.4.1 1.4.2 1.5.0 1.6.0 1.7.0; do \
-  create_did_log_using_didtoolbox_ver $ver $DID_URL
+  create_did_log_using_didtoolbox_ver https://repo1.maven.org/maven2/io/github/swiyu-admin-ch/didtoolbox $ver $DID_URL
+done
+
+# All groupId=ch.admin.swiyu versions available on Maven Central Repository.
+# Further versions will be added here as soon as they get released
+for ver in 1.8.0 1.9.0 1.9.1 2.0.0; do \
+  create_did_log_using_didtoolbox_ver https://repo1.maven.org/maven2/ch/admin/swiyu/didtoolbox $ver $DID_URL
 done
 ```
