@@ -50,6 +50,7 @@ pub enum DidLogEntryValidatorErrorKind {
 /// W.r.t. any of specification versions available at https://identity.foundation/didwebvh.
 ///
 /// A UniFFI-compliant trait.
+#[uniffi::trait_interface]
 pub trait DidLogEntryJsonSchema: Send + Sync {
     /// Delivers a proper JSON schema (in UTF-8 format) fully describing a DID log entry.
     fn get_json_schema(&self) -> String;

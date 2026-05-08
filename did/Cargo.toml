@@ -36,7 +36,7 @@ uniffi = { workspace = true, features = ["build"] }
 [dev-dependencies]
 uniffi = { workspace = true, features = ["bindgen-tests"] }
 rstest.workspace = true
-ureq = "3.1.2"
+ureq = "3.3.0"
 
 [lib]
 crate-type = ["lib", "cdylib", "staticlib"]
