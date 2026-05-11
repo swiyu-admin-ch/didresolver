@@ -7,9 +7,4 @@ ignore:
         reason: None Given
         expires: 2026-05-29T12:23:50.015Z
         created: 2026-04-29T12:23:50.023Z
-  SNYK-RUST-RUSTLSWEBPKI-16300213:
-    - '*':
-        reason: None Given
-        expires: 2026-05-29T13:04:45.467Z
-        created: 2026-04-29T13:04:45.479Z
 patch: {}

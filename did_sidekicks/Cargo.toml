@@ -28,11 +28,11 @@ serde_json_canonicalizer = "0.3.1"
 chrono = { workspace = true, features = ["serde"] }
 ed25519-dalek = { version = "2.2.0", features = ["rand_core", "pkcs8", "pem", "std"] }
 rand.workspace = true
-sha2 = "0.10.9"
+sha2 = "0.11.0"
 hex = "0.4.3"
 bs58 = { version = "0.5.1", features = ["check", "cb58"] }
 thiserror.workspace = true
-jsonschema = "0.40.0"
+jsonschema = "0.46.4"
 
 [build-dependencies]
 uniffi = { workspace = true, features = ["build"] }
