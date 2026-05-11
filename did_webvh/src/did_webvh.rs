@@ -1082,8 +1082,11 @@ impl DidResolver for WebVerifiableHistory {
     }
 
     #[inline]
-    fn get_did_doc_obj(&self) -> DidDoc {
-        self.get_did_doc_obj()
+    fn get_did_doc_obj(&self) -> Result<DidDoc, DidResolverError> {
+        if self.did_method_parameters.is_deactivated() {
+            return Err(DidResolverError::InvalidDidDocument("Document has been deactivated.".into()))
+        }
+        Ok(self.get_did_doc_obj())
     }
 }
 

@@ -126,7 +126,7 @@ enum DidResolverError {
     /// Invalid DID document.
     "InvalidDidDocument",
     /// Invalid DID log integration proof.
-    "InvalidDataIntegrityProof"
+    "InvalidDataIntegrityProof",
 };
 
 interface DidDoc {
@@ -152,6 +152,8 @@ interface DidDoc {
     sequence<VerificationMethod> get_assertion_method();
     string? get_controller();
     string? get_profile_version();
+    /// Returns true if the did document contains an entry `deactivated` with the value true.
+    /// This is not part of the did specification and should NOT be used.
     boolean get_deactivated();
 
     /// Returns a cryptographic public key ([`Jwk`]) referenced by the supplied fragment (`key_id`), if any.

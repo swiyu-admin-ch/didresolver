@@ -160,6 +160,7 @@ pub struct DidDoc {
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub controller: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[deprecated(note = "not part of specification, should not be used")]
     pub deactivated: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub profile_version: Option<String>,
@@ -380,6 +381,7 @@ impl DidDoc {
     }
 
     #[inline]
+    #[deprecated(note = "not part of specification, should not be used")]
     pub fn get_deactivated(&self) -> bool {
         self.deactivated.unwrap_or(false)
     }

@@ -59,14 +59,6 @@ pub enum DidSidekicksError {
     /// An error was encountered during the transformation process, as specified by https://www.w3.org/TR/vc-data-integrity/#processing-errors.
     #[error("an error was encountered during the transformation process: {0}")]
     VCDataIntegrityProofTransformationError(String),
-    /*
-    /// The domain value in a proof did not match the expected value, as specified by https://www.w3.org/TR/vc-data-integrity/#processing-errors
-    #[error("the domain value in a proof did not match the expected value: {0}")]
-    VCDataIntegrityInvalidDomainError(String),
-    /// The challenge value in a proof did not match the expected value, as specified by https://www.w3.org/TR/vc-data-integrity/#processing-errors
-    #[error("the challenge value in a proof did not match the expected value: {0}")]
-    VCDataIntegrityInvalidChallengeError(String),
-     */
 }
 
 impl DidSidekicksError {
@@ -95,10 +87,7 @@ impl DidSidekicksError {
             }
             Self::VCDataIntegrityProofTransformationError(_) => {
                 DidSidekicksErrorKind::VCDataIntegrityProofTransformationError
-            } /*
-              Self::VCDataIntegrityInvalidDomainError(_) => DidSidekicksErrorKind::VCDataIntegrityInvalidDomainError,
-              Self::VCDataIntegrityInvalidChallengeError(_) => DidSidekicksErrorKind::VCDataIntegrityInvalidChallengeError,
-               */
+            }
         }
     }
 }
@@ -128,10 +117,6 @@ pub enum DidSidekicksErrorKind {
     VCDataIntegrityProofGenerationError,
     VCDataIntegrityProofVerificationError,
     VCDataIntegrityProofTransformationError,
-    /*
-    VCDataIntegrityInvalidDomainError,
-    VCDataIntegrityInvalidChallengeError,
-     */
 }
 
 /// The error accompanying [`DidResolver`] trait.
