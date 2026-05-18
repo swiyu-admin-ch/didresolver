@@ -38,6 +38,7 @@ rayon.workspace = true
 lazy_static.workspace = true
 
 [features]
+default = ["debug-embed"]
 debug-embed = ["rust-embed/debug-embed"]
 
 [build-dependencies]
