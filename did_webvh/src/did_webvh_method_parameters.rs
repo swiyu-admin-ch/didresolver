@@ -179,7 +179,7 @@ impl WebVerifiableHistoryDidMethodParameters {
             ));
         }
 
-        Ok(())
+        self.validate()
     }
 
     #[inline]
@@ -304,6 +304,27 @@ impl WebVerifiableHistoryDidMethodParameters {
 
         self.ttl = new_params.ttl.or(self.ttl);
 
+        self.validate()
+    }
+
+    fn validate(&self) -> Result<(), DidResolverError> {
+        // Ensure no update_key is in next_key hashes, as this would defeat the purpose of key
+        // rotation
+        let mut hasher = JcsSha256Hasher::default();
+        for update_key in self.update_keys.iter().flatten() {
+            // Reusing the same hasher, as it resets the internal state
+            let hashed_update_key = hasher.base58btc_encode_multihash_multikey(update_key);
+            if self
+                .next_keys
+                .iter()
+                .flatten()
+                .any(|next_key_hash| *next_key_hash == hashed_update_key)
+            {
+                return Err(DidResolverError::InvalidDidParameter(format!(
+                    "Illegal next key hash detected: {update_key}. Next key must not be a current update key."
+                )));
+            }
+        }
         Ok(())
     }
 
@@ -829,13 +850,16 @@ mod test {
             "new_update_key".to_owned(),
             "another_new_update_key".to_owned(),
         ]);
-        new_params.next_keys = None;
+        new_params.next_keys = Some(vec![]);
+        // key rotation
 
         old_params.merge_from(&new_params).unwrap(); // should not panic
         new_params = base_params;
-        new_params.update_keys = Some(vec!["another_new_update_key".to_owned()]);
+        new_params.update_keys = Some(vec!["update_key".to_owned()]);
 
-        old_params.merge_from(&new_params).unwrap(); // should not panic
+        // should fail, as key prerotation was deactivated in previous entry
+        let result = old_params.merge_from(&new_params);
+        assert!(result.is_err());
     }
 
     #[rstest]

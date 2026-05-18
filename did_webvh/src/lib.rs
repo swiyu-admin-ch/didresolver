@@ -268,7 +268,7 @@ mod test {
     )]
     #[case(
         "test_data/generated_by_didtoolbox_java/key_prerotation.jsonl",
-        "did:webvh:Qmeyw5eZhD7SKqaJDXkEuMEQSR3m5kBorXDbWHA1zE8jeX:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
+        "did:webvh:QmT7NSSW37EWkXnhiYCzdUSZJ27af6RuJtgkYsX5nhtmjt:example.com"
     )]
     /* Test case not supported since it sets watchers to null, which causes problem with hash
     * generation
