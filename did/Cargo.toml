@@ -51,7 +51,9 @@ name = "uniffi-bindgen-swift"
 path = "uniffi-bindgen-swift.rs"
 
 [features]
+default = ["debug-embed"]
 ffi-trace = ["uniffi/ffi-trace"]
+debug-embed = ["did_tdw/debug-embed", "did_webvh/debug-embed"]
 
 # See [workspace.lints.clippy] in ../Cargo.toml
 # (w.r.t. https://doc.rust-lang.org/cargo/reference/workspaces.html#the-lints-table)

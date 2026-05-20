@@ -37,6 +37,10 @@ rust-embed = { workspace = true , features = ["include-exclude"]}
 rayon.workspace = true
 lazy_static.workspace = true
 
+[features]
+default = ["debug-embed"]
+debug-embed = ["rust-embed/debug-embed"]
+
 [build-dependencies]
 uniffi = { workspace = true, features = ["build"] }
 
