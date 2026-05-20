@@ -201,7 +201,7 @@ impl DidLogEntry {
         })?;
         if calculated_hash != *hash {
             return Err(DidResolverError::InvalidDataIntegrityProof(format!(
-                "Invalid DID log. The DID log entry has invalid entry hash: {}. Expected: {}",
+                "The DID log entry has invalid entry hash: {}. Expected: {}",
                 hash, calculated_hash,
             )));
         }
@@ -215,13 +215,13 @@ impl DidLogEntry {
     pub fn verify_data_integrity_proof(&self) -> Result<(), DidResolverError> {
         let Some(proof_vec) = self.proof.to_owned() else {
             return Err(DidResolverError::InvalidDataIntegrityProof(
-                "Invalid did log. Proof is empty.".to_owned(),
+                "Proof is empty.".to_owned(),
             ));
         };
 
         if proof_vec.is_empty() {
             return Err(DidResolverError::InvalidDataIntegrityProof(
-                "Invalid did log. Proof is empty.".to_owned(),
+                "Proof is empty.".to_owned(),
             ));
         }
 
@@ -1084,7 +1084,9 @@ impl DidResolver for WebVerifiableHistory {
     #[inline]
     fn get_did_doc_obj(&self) -> Result<DidDoc, DidResolverError> {
         if self.did_method_parameters.is_deactivated() {
-            return Err(DidResolverError::InvalidDidDocument("Document has been deactivated.".into()))
+            return Err(DidResolverError::InvalidDidDocument(
+                "Document has been deactivated.".into(),
+            ));
         }
         Ok(self.get_did_doc_obj())
     }
@@ -1160,7 +1162,7 @@ mod test {
         "test_data/manually_created/unhappy_path/invalid_scid.jsonl",
         "did:webvh:QmT7BM5RsM9SoaqAQKkNKHBzSEzpS2NRzT2oKaaaPYPpGr:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
         DidResolverErrorKind::InvalidIntegrityProof,
-        "invalid DID log integration proof: The SCID"
+        "invalid DID log data integrity proof: The SCID"
     )]
     #[case(
         "test_data/manually_created/unhappy_path/signed_with_unauthorized_key.jsonl",
@@ -1172,7 +1174,7 @@ mod test {
         "test_data/manually_created/unhappy_path/invalid_scid.jsonl",
         "did:webvh:QmT7BM5RsM9SoaqAQKkNKHBzSEzpS2NRzT2oKaaaPYPpGr:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
         DidResolverErrorKind::InvalidIntegrityProof,
-        "invalid DID log integration proof: The SCID"
+        "invalid DID log data integrity proof: The SCID"
     )]
     #[case(
         "test_data/generated_by_didtoolbox_java/unhappy_path/descending_version_datetime_did.jsonl",

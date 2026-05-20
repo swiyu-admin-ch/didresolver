@@ -27,7 +27,7 @@ pub enum DidSidekicksError {
     #[error("invalid DID log integration proof: {0}")]
     InvalidDataIntegrityProof(String),
     /// Invalid DID method parameter.
-    #[error("invalid DID method parameter: {0}")]
+    #[error("invalid DID method parameter: {0:.256}")]
     InvalidDidMethodParameter(String),
     /// Failed to calculate SHA2-256 hash of canonical JSON UTF-8 string.
     #[error("failed to calculate SHA2-256 hash of canonical JSON UTF-8 string: {0}")]
@@ -146,7 +146,7 @@ pub enum DidResolverError {
     #[error("invalid DID document: {0}")]
     InvalidDidDocument(String),
     /// Invalid DID log integration proof.
-    #[error("invalid DID log integration proof: {0}")]
+    #[error("invalid DID log data integrity proof: {0}")]
     InvalidDataIntegrityProof(String),
 }
 

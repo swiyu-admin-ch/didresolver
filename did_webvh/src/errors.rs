@@ -9,10 +9,10 @@
 #[expect(clippy::exhaustive_enums, reason = "..")]
 pub enum WebVerifiableHistoryIdResolutionError {
     /// Invalid method-specific identifier.
-    #[error("invalid method specific identifier: {0}")]
+    #[error("invalid method specific identifier: {0:.256}")]
     InvalidMethodSpecificId(String),
     /// DID method is not supported by this resolver.
-    #[error("DID method `{0}` not supported")]
+    #[error("DID method `{0:.256}` not supported")]
     MethodNotSupported(String),
 }
 

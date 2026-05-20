@@ -2,7 +2,7 @@
 
 //use std::cmp::PartialEq;
 
-use did_sidekicks::errors::{DidResolverError, DidResolverErrorKind};
+use did_sidekicks::errors::DidResolverError;
 
 /// Yet another UniFFI-compliant error.
 ///
@@ -11,10 +11,10 @@ use did_sidekicks::errors::{DidResolverError, DidResolverErrorKind};
 #[expect(clippy::exhaustive_enums, reason = "..")]
 pub enum TrustDidWebIdResolutionError {
     /// DID method is not supported by this resolver.
-    #[error("DID method `{0}` not supported")]
+    #[error("DID method `{0:.256}` not supported")]
     MethodNotSupported(String),
     /// Invalid method-specific identifier.
-    #[error("invalid method specific identifier: {0}")]
+    #[error("invalid method specific identifier: {0:.256}")]
     InvalidMethodSpecificId(String),
 }
 
@@ -97,24 +97,24 @@ impl TrustDidWebError {
 impl From<DidResolverError> for TrustDidWebError {
     #[inline]
     fn from(value: DidResolverError) -> Self {
-        match value.kind() {
-            DidResolverErrorKind::InvalidMethodSpecificId => {
-                Self::InvalidMethodSpecificId(format!("{value}"))
+        match value {
+            DidResolverError::InvalidMethodSpecificId(invalid_method_id) => {
+                Self::InvalidMethodSpecificId(invalid_method_id)
             }
-            DidResolverErrorKind::SerializationFailed => {
-                Self::SerializationFailed(format!("{value}"))
+            DidResolverError::SerializationFailed(serialization_error) => {
+                Self::SerializationFailed(serialization_error)
             }
-            DidResolverErrorKind::DeserializationFailed => {
-                Self::DeserializationFailed(format!("{value}"))
+            DidResolverError::DeserializationFailed(deserialization_error) => {
+                Self::DeserializationFailed(deserialization_error)
             }
-            DidResolverErrorKind::InvalidDidParameter => {
-                Self::InvalidDidParameter(format!("{value}"))
+            DidResolverError::InvalidDidParameter(invalid_parameter) => {
+                Self::InvalidDidParameter(invalid_parameter)
             }
-            DidResolverErrorKind::InvalidDidDocument => {
-                Self::InvalidDidDocument(format!("{value}"))
+            DidResolverError::InvalidDidDocument(document_error) => {
+                Self::InvalidDidDocument(document_error)
             }
-            DidResolverErrorKind::InvalidIntegrityProof => {
-                Self::InvalidDataIntegrityProof(format!("{value}"))
+            DidResolverError::InvalidDataIntegrityProof(error) => {
+                Self::InvalidDataIntegrityProof(error)
             }
         }
     }

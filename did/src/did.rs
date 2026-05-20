@@ -4,11 +4,11 @@ use crate::did::DidMethod::{TDW, UNKNOWN, WEBVH};
 use core::fmt::{Display, Formatter};
 use did_sidekicks::did_doc::{DidDoc, DidDocExtended};
 use did_sidekicks::did_resolver::DidResolver;
-use did_sidekicks::errors::{DidResolverError, DidResolverErrorKind};
+use did_sidekicks::errors::DidResolverError;
 use did_tdw::did_tdw::{TrustDidWeb, TrustDidWebId};
-use did_tdw::errors::TrustDidWebIdResolutionErrorKind;
+use did_tdw::errors::TrustDidWebIdResolutionError;
 use did_webvh::did_webvh::{WebVerifiableHistory, WebVerifiableHistoryId};
-use did_webvh::errors::WebVerifiableHistoryIdResolutionErrorKind;
+use did_webvh::errors::WebVerifiableHistoryIdResolutionError;
 use regex::Regex;
 use std::sync::Arc;
 use strum::{AsRefStr as EnumAsRefStr, Display as EnumDisplay};
@@ -35,7 +35,9 @@ pub enum DidResolveError {
     )]
     DeserializationFailed(String),
     /// The supplied DID is not supported (currently supported are: did:tdw, did:webvh).
-    #[error("The supplied DID is not supported (currently supported are: did:tdw, did:webvh): {0}")]
+    #[error(
+        "The supplied DID is not supported (currently supported are: did:tdw, did:webvh): {0:.256}"
+    )]
     DidNotSupported(String),
     /// Invalid DID log integration proof.
     #[error("invalid DID log integration proof: {0}")]
@@ -53,10 +55,10 @@ pub enum DidResolveError {
     #[error("invalid DID method parameter: {0}")]
     InvalidDidParameter(String),
     /// Invalid method-specific identifier.
-    #[error("invalid method specific identifier: {0}")]
+    #[error("invalid method specific identifier: {0:.256}")]
     InvalidMethodSpecificId(String),
     /// The supplied DID is supported, but is malformed.
-    #[error("the supplied DID is supported, but is malformed: {0}")]
+    #[error("the supplied DID is supported, but is malformed: {0:.256}")]
     MalformedDid(String),
     /// Failed to serialize DID document (to JSON).
     #[error("failed to serialize DID document (to JSON): {0}")]
@@ -85,24 +87,22 @@ impl DidResolveError {
 impl From<DidResolverError> for DidResolveError {
     #[inline]
     fn from(value: DidResolverError) -> Self {
-        match value.kind() {
-            DidResolverErrorKind::InvalidMethodSpecificId => {
-                Self::InvalidMethodSpecificId(format!("{value}"))
+        match value {
+            DidResolverError::InvalidMethodSpecificId(method_id) => {
+                Self::InvalidMethodSpecificId(method_id)
             }
-            DidResolverErrorKind::SerializationFailed => {
-                Self::SerializationFailed(format!("{value}"))
+            DidResolverError::SerializationFailed(serialization_error) => {
+                Self::SerializationFailed(serialization_error)
             }
-            DidResolverErrorKind::DeserializationFailed => {
-                Self::DeserializationFailed(format!("{value}"))
+            DidResolverError::DeserializationFailed(deserialization_error) => {
+                Self::DeserializationFailed(deserialization_error)
             }
-            DidResolverErrorKind::InvalidDidParameter => {
-                Self::InvalidDidParameter(format!("{value}"))
+            DidResolverError::InvalidDidParameter(parameter) => {
+                Self::InvalidDidParameter(parameter)
             }
-            DidResolverErrorKind::InvalidDidDocument => {
-                Self::InvalidDidDocument(format!("{value}"))
-            }
-            DidResolverErrorKind::InvalidIntegrityProof => {
-                Self::InvalidDataIntegrityProof(format!("{value}"))
+            DidResolverError::InvalidDidDocument(doc_error) => Self::InvalidDidDocument(doc_error),
+            DidResolverError::InvalidDataIntegrityProof(err) => {
+                Self::InvalidDataIntegrityProof(err)
             }
         }
     }
@@ -190,7 +190,7 @@ impl DidMethod {
                 Err(err) => Err(err),
             },
             UNKNOWN => Err(DidResolverError::InvalidMethodSpecificId(format!(
-                "Unsupported DID method denoted by DID: {did_str}"
+                "Unsupported DID method denoted by DID: {did_str:.256}"
             ))),
         }
     }
@@ -206,27 +206,25 @@ impl TryFrom<String> for DidMethod {
                 scid: did_id.get_scid(),
                 https_url: did_id.get_url(),
             }),
-            Err(err) => match err.kind() {
-                TrustDidWebIdResolutionErrorKind::InvalidMethodSpecificId => {
-                    Err(DidResolveError::MalformedDid(format!("{err}")))
-                }
-                TrustDidWebIdResolutionErrorKind::MethodNotSupported => {
-                    match WebVerifiableHistoryId::try_from(value.clone()) {
+            Err(err) => match err {
+                TrustDidWebIdResolutionError::MethodNotSupported(_) => {
+                    match WebVerifiableHistoryId::try_from(value) {
                         Ok(did_id) => Ok(WEBVH {
                             scid: did_id.get_scid(),
                             https_url: did_id.get_url(),
                         }),
-                        Err(webvh_err) => match webvh_err.kind() {
-                            WebVerifiableHistoryIdResolutionErrorKind::InvalidMethodSpecificId => {
-                                Err(DidResolveError::MalformedDid(format!("{webvh_err}")))
+                        Err(webvh_err) => Err(match webvh_err {
+                            WebVerifiableHistoryIdResolutionError::InvalidMethodSpecificId(_) => {
+                                DidResolveError::MalformedDid(format!("{webvh_err}"))
                             }
-                            WebVerifiableHistoryIdResolutionErrorKind::MethodNotSupported => {
-                                Err(DidResolveError::DidNotSupported(format!(
-                                    "Unsupported DID method denoted by DID: {value}"
-                                )))
-                            }
-                        },
+                            WebVerifiableHistoryIdResolutionError::MethodNotSupported(
+                                unsupported_method,
+                            ) => DidResolveError::DidNotSupported(unsupported_method),
+                        }),
                     }
+                }
+                TrustDidWebIdResolutionError::InvalidMethodSpecificId(_) => {
+                    Err(DidResolveError::MalformedDid(format!("{err}")))
                 }
             },
         }
@@ -653,22 +651,22 @@ mod tests {
     #[case(
         "did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
         r#"["Invalid Log"]"#,
-        "the supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation"
+        "The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation"
     )]
     #[case(
         "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com",
         "{}",
-        "the supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation"
+        "The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation"
     )]
     #[case("did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
         r#"{ "versionId": "1-QmQNjSbRroDtnctDN57Fjvd4e5jYHWVTgMZpzJiTbPfQ5K", "versionTime": "2025-08-06T08:55:01Z", "parameters": { "method": "did:webvh:1.0", "scid": "QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX", "updateKeys": [ "z6MkkkjG6shmZk6D2ghgDbpJQHD4xvpZhzYiWSLKDeznibiJ" ], "portable": false }, "state": { "@context": [ "https://www.w3.org/ns/did/v1", "https://w3id.org/security/jwk/v1" ], "id": "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com", "authentication": [ "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#auth-key-01" ], "assertionMethod": [ "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#assert-key-01" ], "verificationMethod": [ { "id": "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#auth-key-01", "type": "JsonWebKey2020", "publicKeyJwk": { "kty": "EC", "crv": "P-256", "x": "5d-hJaS_UKIU1c05hEBhZa8Xkj_AqBDmqico_PSrRfU", "y": "TK5YKD_osEaVrDBnah-jUDXI27yqFVIo6ZYTfWp-NbY", "kid": "auth-key-01" } }, { "id": "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#assert-key-01", "type": "JsonWebKey2020", "publicKeyJwk": { "kty": "EC", "crv": "P-256", "x": "7jWgolr5tQIUIGp9sDaB0clAiXcFwVYXUhEiXXLkmKg", "y": "NYGIxi2VGEv2OL_WqzVOd_VKjOQbl1kaERYbpAjWo58", "kid": "assert-key-01" } } ] }, "proof": [ { "type": "DataIntegrityProof", "cryptosuite": "eddsa-jcs-2022", "created": "2025-08-13T05:43:17Z", "verificationMethod": "did:key:z6MkkkjG6shmZk6D2ghgDbpJQHD4xvpZhzYiWSLKDeznibiJ#z6MkkkjG6shmZk6D2ghgDbpJQHD4xvpZhzYiWSLKDeznibiJ", "proofPurpose": "assertionMethod", "proofValue": "z3L7j2siRiZ4zziQQmRqLY5qH2RfVz6VTC5gbDE6vntw1De5Ej5DNR3wDU6m9KRiUYPm9o8P89yMzNk5EhWVTo4Tn" } ] }
 { "versionId": "2-QmYkDQ83oPnBqyUEjdUdZZCc8VjQY7aE5BikRaa8cZAxVS", "versionTime": "2025-08-13T08:46:50Z", "parameters": {}, "state": { "@context": [ "https://www.w3.org/ns/did/v1", "https://w3id.org/security/jwk/v1" ], "id": "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com", "authentication": [ "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#auth-key-01" ], "assertionMethod": [ "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#assert-key-01" ], "verificationMethod": [ { "id": "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#auth-key-01", "type": "JsonWebKey2020", "publicKeyJwk": { "kty": "EC", "crv": "P-256", "kid": "auth-key-01", "x": "Ow_aAo2hbAYgEhKAOeu3TYO8bbKOxgJ2gndk46AaXF0", "y": "hdVPThXbmadBl3L5HaYjiz8ewIAve4VHqOgs98MdV5M" } }, { "id": "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com#assert-key-01", "type": "JsonWebKey2020", "publicKeyJwk": { "kty": "EC", "crv": "P-256", "kid": "assert-key-02", "x": "oZq9zqDbbYfRV9gdXbLJaaKWF9G27P4CQfTEyC1aT0I", "y": "QS-uHvmj1mVLB5zJtnwTyWYRZIML4RzvCf4qOrsqfWQ" } } ] }, "proof": [ { "type": "DataIntegrityProof", "cryptosuite": "eddsa-jcs-2022", "created": "2025-08-13T09:02:55Z", "verificationMethod": "did:key:z6MkkkjG6shmZk6D2ghgDbpJQHD4xvpZhzYiWSLKDeznibiJ#z6MkkkjG6shmZk6D2ghgDbpJQHD4xvpZhzYiWSLKDeznibiJ", "proofPurpose": "assertionMethod", "proofValue": "z2tZe9tFzyTKWRX7NEpf3ARRs7yZqu5Kq8jzr5qzzffeN9FeJPzmKs6Jb1TMNfpn8Nar6WEfifvMT5SVWozJruTwD" } ] }
-"#, "the supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation"
+"#, "The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation"
     )]
     #[case("did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com",
         r#"["1-QmdFXCA7RgH2NszV3WgnbemHqLxpXeE66FswLjpTC2hcvV","2025-05-31T14:36:53Z",{"method":"did:tdw:0.3","scid":"QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7","updateKeys":["z6Mkvk4RpEvivSnpEp6zyVW7x3WpLVLs38iAYGFdXvbUJSz8"],"portable":false},{"value":{"@context":["https://www.w3.org/ns/did/v1","https://w3id.org/security/jwk/v1"],"id":"did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085","authentication":["did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01"],"assertionMethod":["did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#assert-key-01"],"verificationMethod":[{"id":"did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01","controller":"did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085","type":"JsonWebKey2020","publicKeyJwk":{"kty":"EC","crv":"P-256","x":"cMuIogOIny4VcE92-KK4Y9AuwSmCX3Ot8MY80aRz__4","y":"ln1g0wrq0IKT3D_GjnBmZhA_tbqlG5p7-7OCk-xMC1g","kid":"auth-key-01"}},{"id":"did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#assert-key-01","controller":"did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085","type":"JsonWebKey2020","publicKeyJwk":{"kty":"EC","crv":"P-256","x":"IXXoOILwuY2Z-e3md2vazPghS3cGJEJt8DY7Xcc28NY","y":"vyyaOaGu6ck1uEYjFChLu-cHCoxJ71L8UCQn3mM8xn4","kid":"assert-key-01"}}]}},[{"type":"DataIntegrityProof","cryptosuite":"eddsa-jcs-2022","created":"2025-05-31T14:36:53Z","verificationMethod":"did:key:z6Mkvk4RpEvivSnpEp6zyVW7x3WpLVLs38iAYGFdXvbUJSz8#z6Mkvk4RpEvivSnpEp6zyVW7x3WpLVLs38iAYGFdXvbUJSz8","proofPurpose":"authentication","challenge":"1-QmdFXCA7RgH2NszV3WgnbemHqLxpXeE66FswLjpTC2hcvV","proofValue":"z2JthfEzDiUejxU5ug2MLGJNykDUWPzYGAHDHCUgp25n4cyq3kJwXdJV4QoviFUJwxfT3dbbWY7GPpANz9uq2KTRL"}]]
 ["2-QmVA5UuLakpdb7yW32Ay1WW1PC1WPRtFNsn86vf1de9djE","2025-05-31T14:36:53Z",{},{"value":{"@context":["https://www.w3.org/ns/did/v1","https://w3id.org/security/jwk/v1"],"id":"did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085","authentication":["did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#my-auth-key-01"],"assertionMethod":["did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#my-assert-key-01"],"verificationMethod":[{"id":"did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#my-auth-key-01","controller":"did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085","type":"JsonWebKey2020","publicKeyJwk":{"kty":"EC","crv":"P-256","kid":"my-auth-key-01","x":"cMuIogOIny4VcE92-KK4Y9AuwSmCX3Ot8MY80aRz__4","y":"ln1g0wrq0IKT3D_GjnBmZhA_tbqlG5p7-7OCk-xMC1g"}},{"id":"did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#my-assert-key-01","controller":"did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085","type":"JsonWebKey2020","publicKeyJwk":{"kty":"EC","crv":"P-256","kid":"my-assert-key-01","x":"IXXoOILwuY2Z-e3md2vazPghS3cGJEJt8DY7Xcc28NY","y":"vyyaOaGu6ck1uEYjFChLu-cHCoxJ71L8UCQn3mM8xn4"}}]}},[{"type":"DataIntegrityProof","cryptosuite":"eddsa-jcs-2022","created":"2025-05-31T14:36:53Z","verificationMethod":"did:key:z6Mkvk4RpEvivSnpEp6zyVW7x3WpLVLs38iAYGFdXvbUJSz8#z6Mkvk4RpEvivSnpEp6zyVW7x3WpLVLs38iAYGFdXvbUJSz8","proofPurpose":"authentication","challenge":"2-QmVA5UuLakpdb7yW32Ay1WW1PC1WPRtFNsn86vf1de9djE","proofValue":"zVjuRUjoWM2aFiFDqqQqtQ6J4Zg4AL3qvoa1oJSFh22TMGUVErtE4XJKNPa8Xr1XXs5nPiqWPYsNC4dzSvdvPd5G"}]]
-"#, "the supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation"
+"#, "The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation"
     )]
     #[case("did:webvh:QmcsCNmYfm2rYLRLt4Amia97d6s8fJwkiejcQKdFDVNYQp:example.com",
         r#"{ "versionId": "1-QmYQeiACALYTGYbxd5KhNAQp1s556EyAwYowR1UD6NmN3p", "versionTime": "2026-03-11T09:24:01Z", "parameters": { "method": "did:webvh:1.0", "scid": "QmcsCNmYfm2rYLRLt4Amia97d6s8fJwkiejcQKdFDVNYQp", "updateKeys": [ "z6MkwHA2dajfqqbfEinRuPEmLc7XwKQ18a21NK8zPyjVUnFM" ], "portable": false }, "state": { "@context": [ "https://www.w3.org/ns/did/v1", "https://w3id.org/security/multikey/v1" ], "id": "did:webvh:QmcsCNmYfm2rYLRLt4Amia97d6s8fJwkiejcQKdFDVNYQp:example.com", "verificationMethod": [ { "id": "did:webvh:QmcsCNmYfm2rYLRLt4Amia97d6s8fJwkiejcQKdFDVNYQp:example.com#key-1", "type": "Multikey", "controller": "did:webvh:QmcsCNmYfm2rYLRLt4Amia97d6s8fJwkiejcQKdFDVNYQp:example.com", "publicKeyMultibase": "z6MkwHA2dajfqqbfEinRuPEmLc7XwKQ18a21NK8zPyjVUnFM" } ], "authentication": ["did:webvh:QmcsCNmYfm2rYLRLt4Amia97d6s8fJwkiejcQKdFDVNYQp:example.com#key-1"] }, "proof": [ { "type": "DataIntegrityProof", "cryptosuite": "eddsa-jcs-2022", "created": "2026-03-11T09:24:01Z", "verificationMethod": "did:key:z6MkwHA2dajfqqbfEinRuPEmLc7XwKQ18a21NK8zPyjVUnFM#z6MkwHA2dajfqqbfEinRuPEmLc7XwKQ18a21NK8zPyjVUnFM", "proofPurpose": "authentication", "proofValue": "z4Qh4TCx3GYyKX5Xds1SVtcYqHpda5FxteEVETg7quTs9PKCKjbRxfYNQeEksmR9hFnS5TH63ev5nwSUqyfV8GK4B" } ] }
