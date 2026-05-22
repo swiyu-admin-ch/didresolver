@@ -13,6 +13,7 @@ use did_sidekicks::did_resolver::DidResolver;
 use did_sidekicks::ed25519::*;
 use did_sidekicks::errors::DidResolverError;
 use did_sidekicks::jcs_sha256_hasher::JcsSha256Hasher;
+use did_sidekicks::multibase::MultiBaseConvertible as _;
 use did_sidekicks::vc_data_integrity::{
     CryptoSuiteType, DataIntegrityProof, EddsaJcs2022Cryptosuite, VCDataIntegrity as _,
 };
@@ -209,28 +210,21 @@ impl DidLogEntry {
     }
 
     /// Check whether the integrity proof matches the content of the did document of this log
-    /// entry.
+    /// entry. Update keys must be validated outside of this function.
     #[inline]
-    //#[expect(clippy::unwrap_in_result, reason = "..")]
-    pub fn verify_data_integrity_proof(&self) -> Result<(), DidResolverError> {
-        let Some(proof_vec) = self.proof.to_owned() else {
+    pub fn verify_data_integrity_proof(
+        &self,
+        update_keys: &[String],
+    ) -> Result<(), DidResolverError> {
+        let proof_vec = if let Some(proof_vec) = self.proof.as_ref()
+            && !proof_vec.is_empty()
+        {
+            proof_vec
+        } else {
             return Err(DidResolverError::InvalidDataIntegrityProof(
                 "Invalid did log. Proof is empty.".to_owned(),
             ));
         };
-
-        if proof_vec.is_empty() {
-            return Err(DidResolverError::InvalidDataIntegrityProof(
-                "Invalid did log. Proof is empty.".to_owned(),
-            ));
-        }
-
-        let mut prev = self.prev_entry.as_ref().map_or(self, |err| err);
-        // In all entries with active Key Pre-Rotation, the update keys of the current log
-        // entry are used.
-        if prev.parameters.is_key_pre_rotation_active() {
-            prev = self;
-        }
 
         for proof in proof_vec {
             let update_key = proof.extract_update_key().map_err(|err| {
@@ -239,7 +233,18 @@ impl DidLogEntry {
                 ))
             })?;
 
-            let verifying_key = prev.is_key_authorized_for_update(update_key)?;
+            if !update_keys.contains(&update_key) {
+                return Err(DidResolverError::InvalidDataIntegrityProof(
+                    "Data Integrity Proof signed with unauthorized key".into(),
+                ));
+            }
+
+            let verifying_key =
+                Ed25519VerifyingKey::from_multibase(update_key.as_str()).map_err(|err| {
+                    DidResolverError::InvalidDataIntegrityProof(format!(
+                        "Failed to convert update key (from its multibase representation): {err}"
+                    ))
+                })?;
 
             if !matches!(proof.crypto_suite_type, Some(CryptoSuiteType::EddsaJcs2022)) {
                 return Err(DidResolverError::InvalidDataIntegrityProof(format!(
@@ -264,16 +269,13 @@ impl DidLogEntry {
                 .encode_hex_json_value(&did_log_entry)
                 .map_err(|err| DidResolverError::SerializationFailed(format!("{err}")))?;
 
-            match EddsaJcs2022Cryptosuite::from_verifying_key(&verifying_key)
-                .verify_proof(&proof, doc_hash.as_str())
+            if let Err(err) = EddsaJcs2022Cryptosuite::from_verifying_key(&verifying_key)
+                .verify_proof(proof, doc_hash.as_str())
             {
-                Ok(_) => (),
-                Err(err) => {
-                    return Err(DidResolverError::InvalidDataIntegrityProof(format!(
-                        "Failed to verify proof due to: {err}"
-                    )));
-                }
-            };
+                return Err(DidResolverError::InvalidDataIntegrityProof(format!(
+                    "Failed to verify proof due to: {err}"
+                )));
+            }
         }
 
         Ok(())
@@ -315,34 +317,6 @@ impl DidLogEntry {
                 DidResolverError::SerializationFailed(format!("Failed to base58btc-encode SHA2-256 multihash of canonical JSON UTF-8 string: {err}"))
             })?;
         Ok(calculated_hash)
-    }
-
-    fn is_key_authorized_for_update(
-        &self,
-        update_key: String,
-    ) -> Result<Ed25519VerifyingKey, DidResolverError> {
-        // Check if current log entry contains keys
-        if let Some(result) = self.parameters.find_authorized_update_key(&update_key) {
-            return result;
-        }
-
-        // If not, check iteratively previous entries for update keys
-
-        // Clone on an Arc only copies the pointer to the data and reference counter, making it a relatively cheap operation
-        let mut previous_entry = self.prev_entry.clone();
-        while let Some(entry) = previous_entry {
-            // If entry contains update keys, return result
-            if let Some(result) = entry.parameters.find_authorized_update_key(&update_key) {
-                return result;
-            }
-            // Otherwise, move on to previous entry
-            previous_entry = entry.prev_entry.clone(); // Same applies to this clone
-        }
-
-        // No log entry contains update keys
-        Err(DidResolverError::InvalidDataIntegrityProof(
-            "No update keys detected".to_owned(),
-        ))
     }
 
     #[expect(
@@ -494,7 +468,7 @@ impl TryFrom<String> for WebVerifiableHistoryDidLog {
                     }
 
                     let mut new_params: Option<WebVerifiableHistoryDidMethodParameters> = None;
-                    current_params = match entry[DID_LOG_ENTRY_PARAMETERS].to_owned() {
+                    current_params = Some(match entry[DID_LOG_ENTRY_PARAMETERS].to_owned() {
                         JsonObject(obj) => {
                             if !obj.is_empty() {
                                 new_params = Some(WebVerifiableHistoryDidMethodParameters::from_json(&entry[DID_LOG_ENTRY_PARAMETERS].to_string())?);
@@ -507,16 +481,15 @@ impl TryFrom<String> for WebVerifiableHistoryDidLog {
                                 (None, Some(mut new_par)) => {
                                     // this is the first entry, therefore we check for the base configuration
                                     new_par.validate_initial()?;
-
-                                    Some(new_par) // from the initial log entry
+                                    new_par // from the initial log entry
                                 }
                                 (Some(current_par), None) => {
                                     new_params = Some(WebVerifiableHistoryDidMethodParameters::empty());
-                                    Some(current_par)
+                                    current_par
                                 }
                                 (Some(mut current_par), Some(new_par)) => {
                                     current_par.merge_from(&new_par)?;
-                                    Some(current_par)
+                                    current_par
                                 }
                             }
                         }
@@ -525,7 +498,7 @@ impl TryFrom<String> for WebVerifiableHistoryDidLog {
                                 "Missing DID method parameters.".to_owned(),
                             ))
                         }
-                    };
+                    });
 
                     is_deactivated = current_params.to_owned().is_some_and(|par| par.deactivated.is_some_and(|dct| dct));
                     if is_deactivated {
@@ -643,21 +616,58 @@ impl WebVerifiableHistoryDidLog {
         &self,
         scid_to_validate: Option<String>,
     ) -> Result<DidDoc, DidResolverError> {
-        let mut expected_version_index = 0;
-        for entry in &self.did_log_entries {
-            expected_version_index += 1;
+        let Some(first_entry) = self.did_log_entries.first() else {
+            return Err(DidResolverError::InvalidDataIntegrityProof(
+                "Invalid did log. No entries found".to_owned(),
+            ));
+        };
 
-            if entry.version.index != expected_version_index {
-                return if expected_version_index == 1 {
-                    Err(DidResolverError::InvalidDataIntegrityProof(
-                        "Invalid did log. First entry has to have version id 1".to_owned(),
-                    ))
+        // Validation specific to the first entry (namely SCID)
+        let Some(scid) = first_entry.parameters.get_scid_option() else {
+            return Err(DidResolverError::InvalidDataIntegrityProof(
+                "Missing SCID inside the DID document.".to_owned(),
+            ));
+        };
+
+        if let Some(res) = scid_to_validate
+            && res != scid.as_str()
+        {
+            return Err(DidResolverError::InvalidDataIntegrityProof(format!(
+                "The SCID '{scid}' supplied inside the DID document does not match the one supplied for validation: '{res}'"
+            )));
+        }
+
+        let original_scid = first_entry.build_original_scid(&scid).map_err(|err| {
+            DidResolverError::InvalidDataIntegrityProof(format!(
+                "Failed to build original SCID: {err}"
+            ))
+        })?;
+        if original_scid != scid {
+            return Err(DidResolverError::InvalidDataIntegrityProof(
+                "Invalid did log. Genesis entry has invalid SCID".to_owned(),
+            ));
+        }
+
+        // keep track of update keys
+        let Some(mut update_keys) = first_entry.parameters.update_keys.as_ref() else {
+            return Err(DidResolverError::InvalidDidParameter(
+                "No update keys found in initial log entry".into(),
+            ));
+        };
+        let mut next_key_hashes: &Vec<String> = &Vec::new();
+
+        // Validation for all entries
+        for (index, entry) in self.did_log_entries.iter().enumerate() {
+            if entry.version.index != index + 1 {
+                // +1 because logs start at index 1 not 0
+                return Err(DidResolverError::InvalidDataIntegrityProof(if index == 0 {
+                    "Invalid did log. First entry has to have version id 1".to_owned()
                 } else {
-                    Err(DidResolverError::InvalidDataIntegrityProof(format!(
+                    format!(
                         "Invalid did log for version {}. Version id has to be incremented",
                         entry.version.index,
-                    )))
-                };
+                    )
+                }));
             }
 
             if let Some(prev_entry) = entry.prev_entry.to_owned() {
@@ -689,67 +699,46 @@ impl WebVerifiableHistoryDidLog {
                 }
             }
 
+            if let Some(new_update_keys) = entry.parameters.update_keys.as_ref() {
+                // Check if incoming update_keys are authorized
+                if index != 0
+                    && new_update_keys.iter().any(|new_update_key| {
+                        let new_update_key_hash = hash_update_key(new_update_key.as_str());
+                        !next_key_hashes.contains(&new_update_key_hash)
+                    })
+                {
+                    return Err(DidResolverError::InvalidDidParameter(
+                        "Unauthorized update key detected.".into(),
+                    ));
+                }
+                update_keys = new_update_keys;
+            }
+
             // Verify data integrity proof
-            entry.verify_data_integrity_proof()?;
+            entry.verify_data_integrity_proof(update_keys)?;
 
             // Verify the entryHash
             entry.verify_version_id_integrity()?;
+
+            // Update next_key_hashes when the entry is valid
+            if let Some(new_next_keys) = entry.parameters.next_keys.as_ref() {
+                next_key_hashes = new_next_keys;
+            }
 
             // Verify did document
             entry
                 .did_doc
                 .validate()
                 .map_err(|err| DidResolverError::InvalidDidDocument(err.to_string()))?;
-
-            if expected_version_index == 1 {
-                // Verify that the SCID is correct
-                let scid = match entry.parameters.get_scid_option() {
-                    Some(scid_value) => scid_value,
-                    None => {
-                        return Err(DidResolverError::InvalidDataIntegrityProof(
-                            "Missing SCID inside the DID document.".to_owned(),
-                        ));
-                    }
-                };
-
-                if let Some(res) = scid_to_validate.to_owned()
-                    && res.ne(scid.as_str())
-                {
-                    return Err(DidResolverError::InvalidDataIntegrityProof(format!(
-                        "The SCID '{scid}' supplied inside the DID document does not match the one supplied for validation: '{res}'"
-                    )));
-                }
-
-                let original_scid = entry.build_original_scid(&scid).map_err(|err| {
-                    DidResolverError::InvalidDataIntegrityProof(format!(
-                        "Failed to build original SCID: {err}"
-                    ))
-                })?;
-                if original_scid != scid {
-                    return Err(DidResolverError::InvalidDataIntegrityProof(
-                        "Invalid did log. Genesis entry has invalid SCID".to_owned(),
-                    ));
-                }
-            }
         }
 
-        self.did_log_entries.last().map_or_else(
-            || {
-                Err(DidResolverError::InvalidDataIntegrityProof(
-                    "Invalid did log. No entries found".to_owned(),
-                ))
-            },
-            |entry| Ok(entry.did_doc.clone()),
-        )
+        #[expect(clippy::unwrap_used, reason = "checked at start of function")]
+        Ok(self.did_log_entries.last().unwrap().did_doc.clone())
     }
 }
 
 impl core::fmt::Display for WebVerifiableHistoryDidLog {
     #[inline]
-    /*#[expect(
-        clippy::min_ident_chars,
-        reason = "using default name (f) to prevent 'renamed function parameter of trait impl' warning"
-    )]*/
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         let mut log = String::new();
         for entry in &self.did_log_entries {
@@ -1084,7 +1073,9 @@ impl DidResolver for WebVerifiableHistory {
     #[inline]
     fn get_did_doc_obj(&self) -> Result<DidDoc, DidResolverError> {
         if self.did_method_parameters.is_deactivated() {
-            return Err(DidResolverError::InvalidDidDocument("Document has been deactivated.".into()))
+            return Err(DidResolverError::InvalidDidDocument(
+                "Document has been deactivated.".into(),
+            ));
         }
         Ok(self.get_did_doc_obj())
     }
@@ -1164,9 +1155,9 @@ mod test {
     )]
     #[case(
         "test_data/manually_created/unhappy_path/signed_with_unauthorized_key.jsonl",
-        "did:webvh:QmT7BM5RsM9SoaqAQKkNKHBzSEzpS2NRzT2oKaaaPYPpGr:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+        "did:webvh:QmYPmKXuvwHeVF8zWdcMvU3UNksUZnR5kUJbhDjEjbZYvX:example.com",
         DidResolverErrorKind::InvalidIntegrityProof,
-        "Key extracted from proof is not authorized for update"
+        "signed with unauthorized key"
     )]
     #[case(
         "test_data/manually_created/unhappy_path/invalid_scid.jsonl",
@@ -1212,7 +1203,7 @@ mod test {
     )]
     #[case(
         "test_data/manually_created/unhappy_path/invalid_verificationmethod_controller.jsonl",
-        "did:webvh:QmatFaFi9pzYrydbganNoRcvrR5VoqFyBjj5uoQqmfuHCE:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+        "did:webvh:QmQtTBGPKkDjYtJbAAumUTRUXX6BEc6k7Z14mA9Kt9DKVL:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
         DidResolverErrorKind::InvalidDidDocument,
         "must be set to the id of the DID log"
     )]
