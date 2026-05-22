@@ -114,7 +114,7 @@ impl DidLogEntry {
         })?;
         if version_id != self.version_id {
             return Err(DidResolverError::InvalidDataIntegrityProof(format!(
-                "Invalid DID log. The DID log entry has invalid entry hash: {}. Expected: {}",
+                "The DID log entry contains an invalid entry hash: {}. Expected: {}",
                 self.version_id, version_id
             )));
         }
@@ -127,13 +127,13 @@ impl DidLogEntry {
     pub fn verify_data_integrity_proof(&self) -> Result<(), DidResolverError> {
         let Some(proof_vec) = self.proof.to_owned() else {
             return Err(DidResolverError::InvalidDataIntegrityProof(
-                "Invalid did log. Proof is empty.".to_owned(),
+                "Proof is empty.".to_owned(),
             ));
         };
 
         if proof_vec.is_empty() {
             return Err(DidResolverError::InvalidDataIntegrityProof(
-                "Invalid did log. Proof is empty.".to_owned(),
+                "Proof is empty.".to_owned(),
             ));
         }
 
