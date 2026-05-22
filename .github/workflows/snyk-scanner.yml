@@ -27,7 +27,7 @@ permissions:
   # Require writing security events to upload SARIF file to security tab
   security-events: write
   # to fetch code (actions/checkout)
-  contents: write
+  contents: read
 
 env:
   SARIF_FILE: 
@@ -37,11 +37,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@master
-      - uses: psastras/sbom-rs/actions/install-cargo-sbom@cargo-sbom-v0.10.0
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: psastras/sbom-rs/actions/install-cargo-sbom@9ecc460b937ac5558c4f8ebebc9e07d2bdbef67b # cargo-sbom-v0.10.0
       - name: Generate sbom
         run: cargo-sbom  > didresolver.spdx.json
-      - uses: snyk/actions/setup@master
+      - uses: snyk/actions/setup@9cf6ca713d71123d2d229cc3d7f145b96ea3c518 # master
       - name: Snyk monitor 
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -77,7 +77,7 @@ jobs:
           	exit -1
           fi
       - name: Upload code analysis results
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4
         with:
           sarif_file: didresolver.sarif
           category: snyk
