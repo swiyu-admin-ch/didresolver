@@ -321,6 +321,10 @@ mod test {
         "test_data/generated_by_didtoolbox_java/did.jsonl",
         "did:webvh:Qmb8aoucR7eBFKyZHJgKivUTQhYmzSoi8mM1eDZoQYzefo:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
     )]
+    #[case(
+        "test_data/manually_created/change_update_key_without_keyprerotation.jsonl",
+        "did:webvh:QmQsB2tvwedAbrWXgsM7Z4jfzAZM1eNxFziD2sgxAZD8Xe:example.com"
+    )]
     fn test_read_did_webvh(#[case] did_log_raw_filepath: String, #[case] did_url: String) {
         let did_log_raw = fs::read_to_string(Path::new(&did_log_raw_filepath)).unwrap();
 
