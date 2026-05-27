@@ -236,9 +236,8 @@ impl WebVerifiableHistoryDidMethodParameters {
             // MUST match a hash in the array of nextKeyHashes parameter from the previous DID log entry,
             // with exception of the first entry, as defined in the Pre-Rotation[Key Pre-Rotation Hash Generation and
             // Verification](#pre-rotation-key-hash-generation-and-verification) section of this specification.
-            let mut hasher = JcsSha256Hasher::default();
             for update_key in new_params.update_keys.iter().flatten() {
-                let hashed_update_key = hasher.base58btc_encode_multihash_multikey(update_key);
+                let hashed_update_key = hash_update_key(update_key.as_str());
                 if !current_params
                     .next_keys
                     .iter()
@@ -505,6 +504,11 @@ pub struct Witness {
 /// This is only used for serialize.
 const fn is_zero(num: &u32) -> bool {
     *num == 0
+}
+
+#[inline]
+pub fn hash_update_key(update_key: &str) -> String {
+    JcsSha256Hasher::default().base58btc_encode_multihash_multikey(update_key)
 }
 
 /// As defined by https://identity.foundation/didwebvh/v1.0/#didwebvh-did-method-parameters.
