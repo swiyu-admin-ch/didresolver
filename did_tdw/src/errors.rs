@@ -110,7 +110,8 @@ impl From<DidResolverError> for TrustDidWebError {
             DidResolverError::InvalidDidParameter(invalid_parameter) => {
                 Self::InvalidDidParameter(invalid_parameter)
             }
-            DidResolverError::InvalidDidDocument(document_error) => {
+            DidResolverError::InvalidDidLog(document_error)
+            | DidResolverError::InvalidDidDocument(document_error) => {
                 Self::InvalidDidDocument(document_error)
             }
             DidResolverError::InvalidDataIntegrityProof(error) => {

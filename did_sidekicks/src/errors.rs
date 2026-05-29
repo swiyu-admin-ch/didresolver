@@ -148,6 +148,9 @@ pub enum DidResolverError {
     /// Invalid DID log integration proof.
     #[error("invalid DID log data integrity proof: {0}")]
     InvalidDataIntegrityProof(String),
+    // Invalid did log
+    #[error("invalid DID log: {0}")]
+    InvalidDidLog(String),
 }
 
 impl DidResolverError {
@@ -161,6 +164,7 @@ impl DidResolverError {
             Self::InvalidDidParameter(_) => DidResolverErrorKind::InvalidDidParameter,
             Self::InvalidDidDocument(_) => DidResolverErrorKind::InvalidDidDocument,
             Self::InvalidDataIntegrityProof(_) => DidResolverErrorKind::InvalidIntegrityProof,
+            Self::InvalidDidLog(_) => DidResolverErrorKind::InvalidDidLog,
         }
     }
 }
@@ -180,4 +184,5 @@ pub enum DidResolverErrorKind {
     InvalidDidParameter,
     InvalidDidDocument,
     InvalidIntegrityProof,
+    InvalidDidLog,
 }

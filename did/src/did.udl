@@ -46,7 +46,7 @@ enum DidResolveError {
     /// The supplied DID log is valid, but it features invalid DID document. Alias for `InvalidDidDoc`
     "InvalidDidDocument",
     /// Invalid DID log integration proof
-    "InvalidDataIntegrityProof"
+    "InvalidDataIntegrityProof",
 };
 
 // The DID methods supported by `Did` type

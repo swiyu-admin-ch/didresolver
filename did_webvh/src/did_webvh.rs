@@ -63,6 +63,9 @@ lazy_static! {
     Regex::new(HAS_PORT_REGEX_STR).unwrap();
 }
 
+/// 10'000 entries are enough for 25+ years of daily updates.
+pub static MAX_DID_LOG_ENTRIES: usize = 10_000;
+
 /// Entry in a did log file as shown here
 /// https://identity.foundation/didwebvh/v1.0/#term:did-log-entry.
 #[expect(clippy::exhaustive_structs, reason = "..")]
@@ -147,10 +150,6 @@ impl<'de> de::Visitor<'de> for DidLogVersionVisitor {
     }
 
     #[inline]
-    /*#[expect(
-        clippy::min_ident_chars,
-        reason = "using default name to prevent 'renamed function parameter of trait impl' warning"
-    )]*/
     fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
     where
         E: de::Error,
@@ -408,6 +407,7 @@ impl TryFrom<String> for WebVerifiableHistoryDidLog {
         let validator = DidLogEntryValidator::from(sch);
         if let Some(err) = did_log
             .par_lines() // engage a parallel iterator (thanks to 'use rayon::prelude::*;' import)
+            .filter(|line| !line.trim().is_empty())
             // Once a non-None value is produced from the map operation,
             // `find_map_any` will attempt to stop processing the rest of the items in the iterator as soon as possible.
             .find_map_any(|line| validator.validate_str(line).err())
@@ -425,12 +425,17 @@ impl TryFrom<String> for WebVerifiableHistoryDidLog {
 
         let did_log_entries = did_log
                 .lines()
-                .filter(|line| !line.is_empty())
-                .map(|line| {
+                .filter(|line| !line.trim().is_empty())
+                .enumerate()
+                .map(|(line_number, line)| {
                     if is_deactivated {
                         return Err(DidResolverError::InvalidDidDocument(
                             "This DID document is already deactivated. Therefore no additional DID logs are allowed.".to_owned()
                         ));
+                    }
+
+                    if line_number >= MAX_DID_LOG_ENTRIES {
+                        return Err(DidResolverError::InvalidDidDocument(format!("did log contains too many entries, only {MAX_DID_LOG_ENTRIES} entries are allowed")));
                     }
 
                     // CAUTION: It is assumed that the did:webvh JSON schema conformity check (see above)

@@ -104,6 +104,7 @@ impl From<DidResolverError> for DidResolveError {
             DidResolverError::InvalidDataIntegrityProof(err) => {
                 Self::InvalidDataIntegrityProof(err)
             }
+            DidResolverError::InvalidDidLog(error) => Self::InvalidDidLog(error),
         }
     }
 }
