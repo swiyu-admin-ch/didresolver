@@ -32,10 +32,6 @@ pub enum CryptoSuiteType {
 
 impl core::fmt::Display for CryptoSuiteType {
     #[inline]
-    /*#[expect(
-        clippy::min_ident_chars,
-        reason = "to prevent clippy::renamed_function_params warning"
-    )]*/
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match *self {
             Self::Bbs2023 => write!(f, "bbs-2023"),
@@ -201,12 +197,11 @@ impl DataIntegrityProof {
     ///
     /// UniFFI-compliant constructor.
     #[inline]
-    // TODO Ensure panic-safe indexing
-    #[expect(clippy::indexing_slicing, reason = "see TODO")]
     #[expect(
         clippy::wildcard_enum_match_arm,
         reason = "wildcard match ignorable as no further JSON variants are possible"
     )]
+    #[expect(clippy::pattern_type_mismatch, reason = "false positive")]
     pub fn from_json_string(json: String) -> Result<Self, DidSidekicksError> {
         let value = match json_from_str(&json) {
             Ok(JsonArray(entry)) => {
@@ -237,14 +232,14 @@ impl DataIntegrityProof {
             }
         };
         Ok(Self {
-            proof_type: match value["type"].to_owned() {
-                JsonString(str) => {
+            proof_type: match value.get("type") {
+                Some(JsonString(str)) => {
                     if str != "DataIntegrityProof" {
                         return Err(InvalidDataIntegrityProof(
                             "Unsupported proof's type. Expected 'DataIntegrityProof'".to_owned(),
                         ));
                     }
-                    str
+                    str.into()
                 }
                 _ => {
                     return Err(InvalidDataIntegrityProof(
@@ -252,15 +247,15 @@ impl DataIntegrityProof {
                     ))
                 }
             },
-            crypto_suite: match value["cryptosuite"].to_owned() {
-                JsonString(str) => {
+            crypto_suite: match value.get("cryptosuite") {
+                Some(JsonString(str)) => {
                     if str != CryptoSuiteType::EddsaJcs2022.to_string().deref() {
                         return Err(InvalidDataIntegrityProof(format!(
                             "Unsupported proof's cryptosuite. Expected '{}'",
                             CryptoSuiteType::EddsaJcs2022
                         )));
                     }
-                    str
+                    str.into()
                 }
                 _ => {
                     return Err(InvalidDataIntegrityProof(
@@ -269,8 +264,8 @@ impl DataIntegrityProof {
                 }
             },
             crypto_suite_type: Some(CryptoSuiteType::EddsaJcs2022), // the only currently supported cryptosuite
-            created: match value["created"].to_owned() {
-                JsonString(str) => match DateTime::parse_from_rfc3339(&str) {
+            created: match value.get("created") {
+                Some(JsonString(str)) => match DateTime::parse_from_rfc3339(str) {
                     Ok(date) => date.to_utc(),
                     Err(err) => return Err(InvalidDataIntegrityProof(
                         format!("Invalid proof's creation datetime format: {err}"),
@@ -280,15 +275,15 @@ impl DataIntegrityProof {
                     "Missing proof's creation datetime.".to_owned(),
                 )),
             },
-            verification_method: match value["verificationMethod"].to_owned() {
-                JsonString(str) => {
+            verification_method: match value.get("verificationMethod") {
+                Some(JsonString(str)) => {
                     if !str.starts_with("did:key:") {
                         return Err(InvalidDataIntegrityProof(
                             "Unsupported proof's verificationMethod. Expected prefix 'did:key:'"
                                 .to_owned(),
                         ));
                     }
-                    str
+                    str.into()
                 }
                 _ => {
                     return Err(InvalidDataIntegrityProof(
@@ -296,15 +291,15 @@ impl DataIntegrityProof {
                     ))
                 }
             },
-            proof_purpose: match value["proofPurpose"].to_owned() {
-                JsonString(str) => {
+            proof_purpose: match value.get("proofPurpose") {
+                Some(JsonString(str)) => {
                     if str != "authentication" && str != "assertionMethod" {
                         return Err(InvalidDataIntegrityProof(
                             "Unsupported proof's proofPurpose. Expected 'authentication' or 'assertionMethod'"
                                 .to_owned(),
                         ));
                     }
-                    str
+                    str.into()
                 }
                 _ => {
                     return Err(InvalidDataIntegrityProof(
@@ -312,10 +307,10 @@ impl DataIntegrityProof {
                     ))
                 }
             },
-            context: match value["@context"].to_owned() {
-                JsonArray(arr) => {
+            context: match value.get("@context") {
+                Some(JsonArray(arr)) => {
                     Some(
-                        arr.into_iter()
+                        arr.iter().cloned()
                             .try_fold(Vec::new(), |mut acc, val| match val {
                                 JsonString(str) => {
                                     acc.push(str);
@@ -328,21 +323,21 @@ impl DataIntegrityProof {
                             })?,
                     )
                 }
-                JsonNull => None,
+                Some(JsonNull) | None => None,
                 _ => return Err(InvalidDataIntegrityProof(
                     "Invalid format of 'context' entry, expected array of strings.".to_owned(),
                 )),
             },
-            challenge: match value["challenge"].to_owned() {
-                JsonString(str) => Some(str),
-                JsonNull => None,
+            challenge: match value.get("challenge") {
+                Some(JsonString(str)) => Some(str.clone()),
+                Some(JsonNull) | None => None,
                 _ => return Err(InvalidDataIntegrityProof(
                     "Wrong format of proof's challenge parameter. Expected a challenge of type string.".to_owned(),
                 ))
             },
-            proof_value: match value["proofValue"].to_owned() {
-                JsonString(str) => str,
-                JsonNull => return Err(InvalidDataIntegrityProof(
+            proof_value: match value.get("proofValue") {
+                Some(JsonString(str)) => str.clone(),
+                Some(JsonNull) | None => return Err(InvalidDataIntegrityProof(
                     "Missing proofValue parameter. Expected a proofValue of type string.".to_owned(),
                 )),
                 _ => return Err(InvalidDataIntegrityProof(
