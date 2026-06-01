@@ -321,6 +321,10 @@ mod test {
         "test_data/generated_by_didtoolbox_java/did.jsonl",
         "did:webvh:Qmb8aoucR7eBFKyZHJgKivUTQhYmzSoi8mM1eDZoQYzefo:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
     )]
+    #[case(
+        "test_data/manually_created/change_update_key_without_keyprerotation.jsonl",
+        "did:webvh:QmQG4LEzoF7HWJCVcQgiCGQF8F6UgDUzjCp6iEoZAQTWc5:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
+    )]
     #[case( // Related with below case to test file size validation, this log is between 1MB and 1MiB
         "test_data/generated_by_didtoolbox_java/v475_did.jsonl",
         "did:webvh:QmT3TR3M4yj9UQ4QtkNPtNthTrJTDxFcufD5bCq1T6zUah:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
@@ -351,15 +355,24 @@ mod test {
     }
 
     #[rstest]
+    #[case(
+        include_str!("../test_data/manually_created/unhappy_path/change_update_key_keep_using_old.jsonl"),
+        "did:webvh:QmQG4LEzoF7HWJCVcQgiCGQF8F6UgDUzjCp6iEoZAQTWc5:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+        "Proof signed with unauthorized key",
+    )]
     #[case( // Related to above case to ste file size validation, this log exceeds the limit
         include_str!("../test_data/generated_by_didtoolbox_java/v500_did.jsonl"),
         "did:webvh:QmT3TR3M4yj9UQ4QtkNPtNthTrJTDxFcufD5bCq1T6zUah:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
         "DID log must not be bigger than"
     )]
-    fn test_resolve_invalid_did_log(#[case] did_log: &str, #[case] did: &str, #[case] error_message: &str) {
-        let result = WebVerifiableHistory::resolve(did.into(), did_log.into());
-        assert!(result.is_err());
-        let err = result.err().unwrap();
-        assert!(err.to_string().contains(error_message), "Expected error to contain: {:?}\nbut got: {}", error_message, err);
+    fn test_read_invalid_did_webvh(#[case] did_log: &str, #[case] did_url: &str, #[case] error_message: String) {
+        // Read the newly did doc
+        let Err(error) = WebVerifiableHistory::resolve(did_url.into(), did_log.into()) else {
+            panic!("Expected resolving of did {} to fail, but it worked.", did_url);
+        };
+        let message = format!("{error}");
+        if !message.contains(&error_message) {
+            panic!("Expected message to contain: {error_message}\n but got instead: {message}")
+        }
     }
 }
