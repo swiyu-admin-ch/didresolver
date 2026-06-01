@@ -699,7 +699,8 @@ impl WebVerifiableHistoryDidLog {
                 }
             }
 
-            if let Some(new_update_keys) = entry.parameters.update_keys.as_ref() {
+            // If key rotation is active, validate and use incoming update_keys
+            if let Some(new_update_keys) = entry.parameters.update_keys.as_ref() && !next_key_hashes.is_empty() {
                 // Check if incoming update_keys are authorized
                 if index != 0
                     && new_update_keys.iter().any(|new_update_key| {
@@ -719,6 +720,11 @@ impl WebVerifiableHistoryDidLog {
 
             // Verify the entryHash
             entry.verify_version_id_integrity()?;
+
+            // Without key rotation, new update keys only take effect for following log entries
+            if let Some(new_update_keys) = entry.parameters.update_keys.as_ref() && next_key_hashes.is_empty() {
+                update_keys = new_update_keys;
+            }
 
             // Update next_key_hashes when the entry is valid
             if let Some(new_next_keys) = entry.parameters.next_keys.as_ref() {

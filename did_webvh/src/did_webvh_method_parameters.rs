@@ -218,9 +218,8 @@ impl WebVerifiableHistoryDidMethodParameters {
         };
 
         // During key pre-rotation, new log entries
-        // - must have 1 key in updateKeys
-        // - all updateKey must be in nextKeyHashes
-        #[expect(clippy::else_if_without_else, reason = "no else required at the end")]
+        // - must have at least 1 key in updateKeys
+        // - all updateKeys must be in nextKeyHashes of the previous entry
         if current_params.is_key_pre_rotation_active() {
             if new_params
                 .update_keys
@@ -249,16 +248,7 @@ impl WebVerifiableHistoryDidMethodParameters {
                     )));
                 }
             }
-        } else if new_params
-            .update_keys
-            .as_ref()
-            .is_some_and(|update_keys| !update_keys.is_empty())
-        {
-            return Err(DidResolverError::InvalidDidParameter(
-                "Invalid update key found. UpdateKey may only be set during key pre-rotation."
-                    .to_owned(),
-            ));
-        }
+        } 
 
         self.update_keys = new_params.update_keys.or(current_params.update_keys);
 
@@ -815,8 +805,7 @@ mod test {
         new_params = base_params.clone();
         new_params.update_keys = Some(vec!["another_new_update_key".to_owned()]);
 
-        let failed_to_update = old_params.merge_from(&new_params); // should return an error
-        assert!(failed_to_update.is_err());
+        old_params.merge_from(&new_params).unwrap(); // should not panic
 
         // Test "updateKeys" DID parameter with pre-rotation illegal values
         let mut old_params = base_params.clone();
@@ -838,8 +827,7 @@ mod test {
         new_params.update_keys = Some(vec!["another_new_update_key".to_owned()]);
         new_params.next_keys = None;
 
-        let failed_to_update = old_params.merge_from(&new_params); // should return an error
-        assert!(failed_to_update.is_err());
+        old_params.merge_from(&new_params).unwrap(); // should not panic
 
         // Test "updateKeys" DID parameter with pre-rotation twice
         let mut old_params = base_params.clone();
@@ -861,9 +849,8 @@ mod test {
         new_params = base_params;
         new_params.update_keys = Some(vec!["update_key".to_owned()]);
 
-        // should fail, as key prerotation was deactivated in previous entry
-        let result = old_params.merge_from(&new_params);
-        assert!(result.is_err());
+        // should not fail, update keys can change without key prerotation
+        old_params.merge_from(&new_params).unwrap();
     }
 
     #[rstest]

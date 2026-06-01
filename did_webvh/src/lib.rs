@@ -321,6 +321,10 @@ mod test {
         "test_data/generated_by_didtoolbox_java/did.jsonl",
         "did:webvh:Qmb8aoucR7eBFKyZHJgKivUTQhYmzSoi8mM1eDZoQYzefo:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
     )]
+    #[case(
+        "test_data/manually_created/change_update_key_without_keyprerotation.jsonl",
+        "did:webvh:QmQG4LEzoF7HWJCVcQgiCGQF8F6UgDUzjCp6iEoZAQTWc5:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
+    )]
     fn test_read_did_webvh(#[case] did_log_raw_filepath: String, #[case] did_url: String) {
         let did_log_raw = fs::read_to_string(Path::new(&did_log_raw_filepath)).unwrap();
 
@@ -344,6 +348,23 @@ mod test {
         assert!(!did_doc_obj_v1.verification_method.is_empty());
         assert!(!did_doc_obj_v1.authentication.is_empty());
         assert!(did_doc_obj_v1.controller.is_none());
+    }
+
+    #[rstest]
+    #[case(
+        include_str!("../test_data/manually_created/unhappy_path/change_update_key_keep_using_old.jsonl"),
+        "did:webvh:QmQG4LEzoF7HWJCVcQgiCGQF8F6UgDUzjCp6iEoZAQTWc5:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+        "Proof signed with unauthorized key",
+    )]
+    fn test_read_invalid_did_webvh(#[case] did_log: &str, #[case] did_url: &str, #[case] error_message: String) {
+        // Read the newly did doc
+        let Err(error) = WebVerifiableHistory::resolve(did_url.into(), did_log.into()) else {
+            panic!("Expected resolving of did {} to fail, but it worked.", did_url);
+        };
+        let message = format!("{error}");
+        if !message.contains(&error_message) {
+            panic!("Expected message to contain: {error_message}\n but got instead: {message}")
+        }
     }
 
     /* TODO implement the test case using proper input
