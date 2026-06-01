@@ -63,8 +63,10 @@ lazy_static! {
     Regex::new(HAS_PORT_REGEX_STR).unwrap();
 }
 
-/// 10'000 entries are enough for 25+ years of daily updates.
-pub static MAX_DID_LOG_ENTRIES: usize = 10_000;
+/// Limit of 1 MiB, following that of the registry
+pub const MAX_DID_LOG_FILE_SIZE: usize = 1024 * 1024;
+// String here to easily be updated with changes to MAX_DID_LOG_FILE_SIZE
+const MAX_DID_LOG_FILE_SIZE_ERROR_MESSAGE: &str = "DID log must not be bigger than 1MiB";
 
 /// Entry in a did log file as shown here
 /// https://identity.foundation/didwebvh/v1.0/#term:did-log-entry.
@@ -399,6 +401,12 @@ impl TryFrom<String> for WebVerifiableHistoryDidLog {
         reason = "no further variants of serde_json::Value enum are expected in the future"
     )]
     fn try_from(did_log: String) -> Result<Self, Self::Error> {
+        if did_log.as_bytes().len() > MAX_DID_LOG_FILE_SIZE {
+            return Err(DidResolverError::InvalidDidDocument(
+                MAX_DID_LOG_FILE_SIZE_ERROR_MESSAGE.into(),
+            ));
+        }
+
         // CAUTION Despite parallelization, bear in mind that (according to benchmarks) the overall
         //         performance improvement will be considerable only in case of larger DID logs,
         //         featuring at least as many entries as `std::thread::available_parallelism()` would return.
@@ -426,16 +434,11 @@ impl TryFrom<String> for WebVerifiableHistoryDidLog {
         let did_log_entries = did_log
                 .lines()
                 .filter(|line| !line.trim().is_empty())
-                .enumerate()
-                .map(|(line_number, line)| {
+                .map(|line| {
                     if is_deactivated {
                         return Err(DidResolverError::InvalidDidDocument(
                             "This DID document is already deactivated. Therefore no additional DID logs are allowed.".to_owned()
                         ));
-                    }
-
-                    if line_number >= MAX_DID_LOG_ENTRIES {
-                        return Err(DidResolverError::InvalidDidDocument(format!("did log contains too many entries, only {MAX_DID_LOG_ENTRIES} entries are allowed")));
                     }
 
                     // CAUTION: It is assumed that the did:webvh JSON schema conformity check (see above)
