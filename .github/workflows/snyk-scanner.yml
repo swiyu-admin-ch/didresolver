@@ -41,7 +41,7 @@ jobs:
       - uses: psastras/sbom-rs/actions/install-cargo-sbom@9ecc460b937ac5558c4f8ebebc9e07d2bdbef67b # cargo-sbom-v0.10.0
       - name: Generate sbom
         run: cargo-sbom  > didresolver.spdx.json
-      - uses: snyk/actions/setup@9cf6ca713d71123d2d229cc3d7f145b96ea3c518 # master
+      - uses: snyk/actions/setup@8e119fbb6c251787721d34ba683ed48eba792766 # master
       - name: Snyk monitor 
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
