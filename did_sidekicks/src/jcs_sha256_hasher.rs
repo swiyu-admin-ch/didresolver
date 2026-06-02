@@ -114,9 +114,7 @@ impl JcsSha256Hasher {
         &mut self,
         json_value: &JsonValue,
     ) -> serde_json::Result<String> {
-        // WORKAROUND (":ff" -> ":") in case of numeric json properties (e.g. witnessThreshold)
-        let multihash_sha256 =
-            self.encode_multihash(jcs_to_string(json_value)?.replace(":ff", ":"));
+        let multihash_sha256 = self.encode_multihash(jcs_to_string(json_value)?);
 
         //
         // Since v0.3 (https://identity.foundation/trustdidweb/v0.3/#didtdw-version-changelog):
