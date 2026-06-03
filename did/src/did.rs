@@ -104,6 +104,7 @@ impl From<DidResolverError> for DidResolveError {
             DidResolverError::InvalidDataIntegrityProof(err) => {
                 Self::InvalidDataIntegrityProof(err)
             }
+            DidResolverError::InvalidDidLog(error) => Self::InvalidDidLog(error),
         }
     }
 }
@@ -627,9 +628,9 @@ mod tests {
     ) {
         let did_obj = Did::new(did).unwrap(); // panic-safe unwrap call (as long as #case setup is correct)
 
-        let did_doc = did_obj.resolve_all(did_log_raw);
-        assert!(did_doc.is_err());
-        let err = did_doc.err().unwrap();
+        let result = did_obj.resolve_all(did_log_raw);
+        assert!(result.is_err());
+        let err = result.err().unwrap();
         assert!(err.to_string().contains(&error_message), "ERROR: {:?}", err);
     }
 

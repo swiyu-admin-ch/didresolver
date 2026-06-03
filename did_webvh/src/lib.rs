@@ -325,6 +325,10 @@ mod test {
         "test_data/manually_created/change_update_key_without_keyprerotation.jsonl",
         "did:webvh:QmQG4LEzoF7HWJCVcQgiCGQF8F6UgDUzjCp6iEoZAQTWc5:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
     )]
+    #[case( // Related with below case to test file size validation, this log is between 1MB and 1MiB
+        "test_data/generated_by_didtoolbox_java/v475_did.jsonl",
+        "did:webvh:QmT3TR3M4yj9UQ4QtkNPtNthTrJTDxFcufD5bCq1T6zUah:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
+    )]
     fn test_read_did_webvh(#[case] did_log_raw_filepath: String, #[case] did_url: String) {
         let did_log_raw = fs::read_to_string(Path::new(&did_log_raw_filepath)).unwrap();
 
@@ -356,6 +360,11 @@ mod test {
         "did:webvh:QmQG4LEzoF7HWJCVcQgiCGQF8F6UgDUzjCp6iEoZAQTWc5:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
         "Proof signed with unauthorized key",
     )]
+    #[case( // Related to above case to ste file size validation, this log exceeds the limit
+        include_str!("../test_data/generated_by_didtoolbox_java/v500_did.jsonl"),
+        "did:webvh:QmT3TR3M4yj9UQ4QtkNPtNthTrJTDxFcufD5bCq1T6zUah:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+        "DID log must not be bigger than"
+    )]
     fn test_read_invalid_did_webvh(#[case] did_log: &str, #[case] did_url: &str, #[case] error_message: String) {
         // Read the newly did doc
         let Err(error) = WebVerifiableHistory::resolve(did_url.into(), did_log.into()) else {
@@ -366,45 +375,4 @@ mod test {
             panic!("Expected message to contain: {error_message}\n but got instead: {message}")
         }
     }
-
-    /* TODO implement the test case using proper input
-    #[rstest]
-    #[case(
-        "test_data/generated_by_tdw_js/deactivated.jsonl",
-        "did:tdw:QmdSU7F2rF8r4m6GZK7Evi2tthfDDxhw3NppU8pJMbd2hB:example.com"
-    )]
-    fn test_read_did_webvh_deactivated(
-        #[case] did_log_raw_filepath: String,
-        #[case] did_url: String,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        //let did_log_raw_filepath = "test_data/generated_by_tdw_js/deactivated.jsonl";
-        //let did_url: String = String::from("did:tdw:QmdSU7F2rF8r4m6GZK7Evi2tthfDDxhw3NppU8pJMbd2hB:example.com");
-
-        let did_log_raw = fs::read_to_string(Path::new(&did_log_raw_filepath))?;
-
-        // Read the newly did doc
-        let tdw_v1 = TrustDidWeb::read(did_url.clone(), did_log_raw)?;
-        let did_doc_json_v1: JsonValue = serde_json::from_str(&tdw_v1.get_did_doc())?;
-        let did_doc_obj_v1 = DidDoc::from_json(&tdw_v1.get_did_doc())?;
-
-        assert!(!did_doc_json_v1["@context"].to_string().is_empty());
-        match did_doc_json_v1["id"] {
-            JsonValue::String(ref doc_v1) => {
-                assert!(doc_v1.eq(did_url.as_str()), "DID mismatch")
-            }
-            _ => panic!("Invalid did doc"),
-        }
-        assert!(!did_doc_json_v1["verificationMethod"].to_string().is_empty());
-        assert!(!did_doc_json_v1["authentication"].to_string().is_empty());
-        assert!(!did_doc_json_v1["controller"].to_string().is_empty());
-
-        assert_eq!(did_doc_obj_v1.id, tdw_v1.get_did());
-        // CAUTION after deactivation these should be empty
-        assert!(did_doc_obj_v1.verification_method.is_empty());
-        assert!(did_doc_obj_v1.authentication.is_empty());
-        //assert!(!did_doc_v1_obj.controller.is_empty());
-
-        Ok(())
-    }
-     */
 }
