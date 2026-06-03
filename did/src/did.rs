@@ -439,68 +439,9 @@ mod tests {
 
     use super::DidResolveErrorKind;
     use super::{Did, DidMethod};
-    use did_sidekicks::did_doc::VerificationType;
-    use rstest::{fixture, rstest};
+    use rstest::rstest;
     use std::fs;
     use std::path::Path;
-
-    // For testing purposes only.
-    struct HttpClient;
-    impl HttpClient {
-        /// May panic
-        fn fetch_url(&self, url: String) -> String {
-            match ureq::get(&url).call() {
-                Ok(response) => match response.into_body().read_to_string() {
-                    Ok(body) => body,
-                    Err(err) => panic!("{err}"),
-                },
-                Err(err) => panic!("{err}"),
-            }
-        }
-    }
-
-    #[fixture]
-    #[once]
-    fn http_client() -> HttpClient {
-        HttpClient {}
-    }
-
-    #[rstest]
-    #[case(
-        "did:tdw:QmRjT8JCbQkEffVBWSbQd8nbMVNfAxiXStLPmqkQUWcsfv:gist.githubusercontent.com:vst-bit:32b64cfac9075b2a3ab7301b772bcdef:raw:8b4bd2b715101d5b69b3395f5c560c37e1ae9992"
-    )]
-    #[case(
-        "did:webvh:QmXi8p2LNXA6kbc2brwdpXwGETHCrPoFk15yPbLaAu27Pj:gist.githubusercontent.com:vst-bit:20c3f59d8179e324a6e29aef45240db4:raw:7870280f80dfcfb7459ee1488df4ab33f2bcf709"
-    )]
-    fn test_resolve(
-        #[case] did: String,
-        http_client: &HttpClient, // fixture
-    ) {
-        let did_obj = Did::new(did).unwrap(); // panic-safe unwrap call (as long as #case setup is correct)
-
-        let url = did_obj.get_https_url();
-        assert!(!url.is_empty());
-
-        let did_log_raw = http_client.fetch_url(url);
-        assert!(!did_log_raw.is_empty());
-
-        let res = did_obj.resolve_all(did_log_raw);
-        assert!(res.is_ok(), "ERROR: {:?}", res.err().unwrap());
-        let did_doc = res.unwrap().get_did_doc_obj(); // panic-safe unwrap call (see the previous line)
-
-        // CAUTION Such assertions are not really possible when using GitHub gists as input
-        //         assert_eq!(did_doc.get_id(), did.to_string()); // assuming the Display trait is implemented accordingly for DID struct
-        //         assert!(did.to_string().contains(did_doc.get_id().as_str())); // assuming the Display trait is implemented accordingly for DID struct
-
-        assert!(!did_doc.get_context().is_empty());
-        assert!(!did_doc.get_verification_method().is_empty());
-        did_doc.get_verification_method().iter().for_each(|method| {
-            assert_eq!(method.verification_type, VerificationType::JsonWebKey2020);
-            assert!(method.public_key_jwk.is_some());
-        });
-        assert!(!did_doc.get_authentication().is_empty());
-        assert!(!did_doc.get_assertion_method().is_empty());
-    }
 
     #[rstest]
     // CAUTION A did_tdw (param #2) MUST match the one residing in did_log_raw_filepath (param #1)

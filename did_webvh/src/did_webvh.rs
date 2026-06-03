@@ -1045,7 +1045,7 @@ impl WebVerifiableHistory {
         let did_log_obj = WebVerifiableHistoryDidLog::try_from(did_log)?;
 
         // 1. DID-to-HTTPS Transformation
-        let did = WebVerifiableHistoryId::parse_did_webvh(did_webvh)
+        let did = WebVerifiableHistoryId::parse_did_webvh(did_webvh.clone())
             .map_err(|err| DidResolverError::InvalidMethodSpecificId(format!("{err}")))?;
 
         let did_doc_valid = did_log_obj.validate_with_scid(Some(did.get_scid()))?;
@@ -1054,8 +1054,15 @@ impl WebVerifiableHistory {
             Err(err) => return Err(DidResolverError::SerializationFailed(err.to_string())),
         };
 
+        // Verify that the document matches the did
+        if did_webvh.as_str() != did_doc_valid.get_id().as_str() {
+            return Err(DidResolverError::InvalidDidDocument(
+                "id in did document doesn't match did".into(),
+            ));
+        }
+
         Ok(Self {
-            did: did_doc_valid.to_owned().id,
+            did: did_webvh,
             did_log: did_log_obj.to_string(), // the type implements std::fmt::Display trait
             did_doc: did_doc_str,
             did_doc_obj: did_doc_valid,
@@ -1218,6 +1225,12 @@ mod test {
         "did:webvh:QmW48UthNM556Y99qU3mrcYvP9AxtGaQW2L7bRkRCj3QnC:example.com",
         DidResolverErrorKind::InvalidDidDocument,
         "may only change when portable is active"
+    )]
+    #[case(
+        "test_data/generated_by_didtoolbox_java/did.jsonl",
+        "did:webvh:Qmb8aoucR7eBFKyZHJgKivUTQhYmzSoi8mM1eDZoQYzefo:identifier-reg.trust-infra.swiyu-int.admin.ch:changed:url",
+        DidResolverErrorKind::InvalidDidDocument,
+        "id in did document doesn't match did"
     )]
     fn test_read_invalid_did_log(
         #[case] did_log_raw_filepath: String,

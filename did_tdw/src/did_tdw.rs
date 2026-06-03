@@ -945,7 +945,7 @@ impl TrustDidWeb {
     pub fn resolve(did_tdw: String, did_log: String) -> Result<Self, DidResolverError> {
         let did_log_obj = TrustDidWebDidLog::try_from(did_log)?;
 
-        let did = TrustDidWebId::parse_did_tdw(did_tdw)
+        let did = TrustDidWebId::parse_did_tdw(did_tdw.clone())
             .map_err(|err| DidResolverError::InvalidMethodSpecificId(format!("{err}")))?;
 
         let did_doc_valid = did_log_obj.validate_with_scid(Some(did.get_scid()))?;
@@ -953,8 +953,16 @@ impl TrustDidWeb {
             Ok(str) => str,
             Err(err) => return Err(DidResolverError::SerializationFailed(err.to_string())),
         };
+
+        // Verify that the document matches the did
+        if did_tdw.as_str() != did_doc_valid.get_id().as_str() {
+            return Err(DidResolverError::InvalidDidDocument(
+                "id in did document doesn't match did".into(),
+            ));
+        }
+
         Ok(Self {
-            did: did_doc_valid.to_owned().id,
+            did: did_tdw,
             did_log: did_log_obj.to_string(), // the type implements std::fmt::Display trait
             did_doc: did_doc_str,
             did_doc_obj: did_doc_valid,
@@ -1056,6 +1064,12 @@ mod test {
         "did:tdw:QmT7BM5RsM9SoaqAQKkNKHBzSEzpS2NRzT2oKaaaPYPpGr:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
         DidResolverErrorKind::DeserializationFailed,
         "must be before the current datetime"
+    )]
+    #[case(
+        "test_data/generated_by_didtoolbox_java/v_0_3_eid_conform/did_doc_without_controller.jsonl",
+        "did:tdw:QmZf4Pb1GoPdYaZBF3Sc1nVspXef4qc816C7eBzzuXMoGk:domain.com%3A8080:url:mismatch",
+        DidResolverErrorKind::InvalidDidDocument,
+        "id in did document doesn't match did"
     )]
     /* TODO generate a proper test case data using didtoolbox-java
     #[case(
