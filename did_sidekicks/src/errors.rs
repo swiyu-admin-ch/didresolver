@@ -148,7 +148,7 @@ pub enum DidResolverError {
     /// Invalid DID log integration proof.
     #[error("invalid DID log data integrity proof: {0}")]
     InvalidDataIntegrityProof(String),
-    // Invalid did log
+    /// Invalid did log.
     #[error("invalid DID log: {0}")]
     InvalidDidLog(String),
 }

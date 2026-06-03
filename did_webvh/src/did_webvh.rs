@@ -63,7 +63,7 @@ lazy_static! {
     Regex::new(HAS_PORT_REGEX_STR).unwrap();
 }
 
-/// Limit of 1 MiB, following that of the registry
+/// Limit of 1 MiB, following that of the registry.
 pub const MAX_DID_LOG_FILE_SIZE: usize = 1024 * 1024;
 // String here to easily be updated with changes to MAX_DID_LOG_FILE_SIZE
 const MAX_DID_LOG_FILE_SIZE_ERROR_MESSAGE: &str = "DID log must not be bigger than 1MiB";
@@ -401,8 +401,8 @@ impl TryFrom<String> for WebVerifiableHistoryDidLog {
         reason = "no further variants of serde_json::Value enum are expected in the future"
     )]
     fn try_from(did_log: String) -> Result<Self, Self::Error> {
-        if did_log.as_bytes().len() > MAX_DID_LOG_FILE_SIZE {
-            return Err(DidResolverError::InvalidDidDocument(
+        if did_log.len() > MAX_DID_LOG_FILE_SIZE {
+            return Err(DidResolverError::InvalidDidLog(
                 MAX_DID_LOG_FILE_SIZE_ERROR_MESSAGE.into(),
             ));
         }
@@ -708,7 +708,9 @@ impl WebVerifiableHistoryDidLog {
             }
 
             // If key rotation is active, validate and use incoming update_keys
-            if let Some(new_update_keys) = entry.parameters.update_keys.as_ref() && !next_key_hashes.is_empty() {
+            if let Some(new_update_keys) = entry.parameters.update_keys.as_ref()
+                && !next_key_hashes.is_empty()
+            {
                 // Check if incoming update_keys are authorized
                 if index != 0
                     && new_update_keys.iter().any(|new_update_key| {
@@ -730,7 +732,9 @@ impl WebVerifiableHistoryDidLog {
             entry.verify_version_id_integrity()?;
 
             // Without key rotation, new update keys only take effect for following log entries
-            if let Some(new_update_keys) = entry.parameters.update_keys.as_ref() && next_key_hashes.is_empty() {
+            if let Some(new_update_keys) = entry.parameters.update_keys.as_ref()
+                && next_key_hashes.is_empty()
+            {
                 update_keys = new_update_keys;
             }
 
