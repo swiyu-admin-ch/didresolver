@@ -1,4 +1,28 @@
-# DID resolver changelog
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## Next
+
+### Added
+- Validates DID log size, which must NOT exceed 1MiB.
+
+### Fixed
+- Validate that the id of the did document matches the expected id.
+- `DidDocExtended::get_did_method_parameters` no longer stores the value of `deactivated` in `portable`.
+- No longer allows of DID log parameter `nextKeyHashes` to be the hashes of current `updateKeys`, enforcing update keys to change when using key-pre-rotation.
+- Error messages can no longer include unlimited characters from user input.
+- DID log parameter `updateKeys` can now be set in log entries other than the genesis entry without using key-pre-rotation.
+- Fixed DidResolver crash due to recursive function call.
+- Add validation for the DID log parameter `portable` to always be set to `false`.
+
+### Changed
+- When resolving a deactivated did, the resolver returns an error.
+
+## Older Versions
 
 | Version | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 |---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
