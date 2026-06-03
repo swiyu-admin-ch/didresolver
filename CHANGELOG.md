@@ -11,7 +11,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Validates DID log size, which must NOT exceed 1MiB.
 
 ### Fixed
-- Validate that the id of the did document matches the expected id.
 - `DidDocExtended::get_did_method_parameters` no longer stores the value of `deactivated` in `portable`.
 - No longer allows of DID log parameter `nextKeyHashes` to be the hashes of current `updateKeys`, enforcing update keys to change when using key-pre-rotation.
 - Error messages can no longer include unlimited characters from user input.
@@ -21,6 +20,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - When resolving a deactivated did, the resolver returns an error.
+> [!CAUTION]
+> When resolving a did, the provided did string must equal the id of the did document exactly.
+> ```swift
+> // kid with fragment which causes issues
+> let kid = "did:webvh:QmWrXWFEDenvoYWFXxSQGFCa6Pi22Cdsg2r6weGhY2ChiQ:example.com#fragment"
+> // Old, doesn't work anymore
+> let did = try? Did(did: kid);
+> // Fix #1 works for kid and did ids
+> let didId = String(kid.split(separator: "#")[0])
+> let did = try? Did(did: didId)
+> // Fix #2 works only for kids
+> let did = try? getDidFromAbsoluteKid(absoluteKid: kid)
+> ```
 
 ## Older Versions
 
