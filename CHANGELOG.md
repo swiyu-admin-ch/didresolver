@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Next
 
 ### Added
+
+### Fixed
+
+### Changed
+
+## [2.8.0] - 2026-06-03
+
+### Added
 - Validates DID log size, which must NOT exceed 1MiB.
 
 ### Fixed
