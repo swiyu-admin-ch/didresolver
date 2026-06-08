@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.1] - 2026-06-08
+
+### Fixed
+- Restore support for both kid and did in the `Did` constructor.
+
 ## [2.8.0] - 2026-06-03
 
 ### Added
@@ -22,6 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - When resolving a deactivated did, the resolver returns an error.
 > [!CAUTION]
 > When resolving a did, the provided did string must equal the id of the did document exactly.
+> This change in behavior was reverted in the next release.
+> If this change affects you, the recommended course of action is to directly switch to the next version.
+> The snippet below shows the problem with solutions only needed for this specific version.
 > ```swift
 > // kid with fragment which causes issues
 > let kid = "did:webvh:QmWrXWFEDenvoYWFXxSQGFCa6Pi22Cdsg2r6weGhY2ChiQ:example.com#fragment"
