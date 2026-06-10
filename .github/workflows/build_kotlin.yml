@@ -57,7 +57,7 @@ jobs:
     runs-on: ${{ matrix.os }}${{ matrix.label }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         #with:
         #  ref: ${{ github.ref_name }}
       - name: Cache Rust
@@ -111,7 +111,7 @@ jobs:
       latest_git_tag: ${{ needs.set-context.outputs.latest_git_tag }}
     steps:
       - name: Checkout Bindings Repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           # CAUTION This assumes such repo exists
           repository: ${{ github.repository }}-kotlin
