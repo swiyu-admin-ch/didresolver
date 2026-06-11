@@ -145,6 +145,18 @@ impl DidLogEntry {
         let prev = self.prev_entry.as_ref().map_or(self, |err| err);
 
         for proof in proof_vec {
+            let Some(challenge) = proof.challenge.as_ref() else {
+                return Err(DidResolverError::InvalidDataIntegrityProof(
+                    "Proof requires the challenge field".into(),
+                ));
+            };
+            if challenge != &self.version_id {
+                return Err(DidResolverError::InvalidDataIntegrityProof(format!(
+                    "Challenge of proof does NOT match current version id '{}'",
+                    &self.version_id
+                )));
+            }
+
             let update_key = proof.extract_update_key().map_err(|err| {
                 DidResolverError::InvalidDataIntegrityProof(format!(
                     "Failed to extract update key due to: {err}"
