@@ -1067,7 +1067,7 @@ impl WebVerifiableHistory {
         };
 
         // Verify that the document matches the did
-        if did_webvh.as_str() != did_doc_valid.get_id().as_str() {
+        if did_webvh != did_doc_valid.get_id() {
             return Err(DidResolverError::InvalidDidDocument(
                 "id in did document doesn't match did".into(),
             ));

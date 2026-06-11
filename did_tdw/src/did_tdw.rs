@@ -977,7 +977,7 @@ impl TrustDidWeb {
         };
 
         // Verify that the document matches the did
-        if did_tdw.as_str() != did_doc_valid.get_id().as_str() {
+        if did_tdw != did_doc_valid.get_id() {
             return Err(DidResolverError::InvalidDidDocument(
                 "id in did document doesn't match did".into(),
             ));

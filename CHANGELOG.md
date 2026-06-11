@@ -13,6 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+## [2.8.2] -2026-06-11
+
+### Fixed
+- No longer accept forged signatures for DID:TDW
+
+## [2.8.1] - 2026-06-08
+
+### Fixed
+- Restore support for both kid and did in the `Did` constructor.
+
 ## [2.8.0] - 2026-06-03
 
 ### Added
@@ -30,6 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - When resolving a deactivated did, the resolver returns an error.
 > [!CAUTION]
 > When resolving a did, the provided did string must equal the id of the did document exactly.
+> This change in behavior was reverted in the next release.
+> If this change affects you, the recommended course of action is to directly switch to the next version.
+> The snippet below shows the problem with solutions only needed for this specific version.
 > ```swift
 > // kid with fragment which causes issues
 > let kid = "did:webvh:QmWrXWFEDenvoYWFXxSQGFCa6Pi22Cdsg2r6weGhY2ChiQ:example.com#fragment"
