@@ -58,7 +58,7 @@ jobs:
       latest_git_tag: ${{ needs.set-context.outputs.latest_git_tag }}
     steps:
       - name: Checkout Bindings Repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           # CAUTION This assumes such repo exists
           repository: ${{ github.repository }}-swift
