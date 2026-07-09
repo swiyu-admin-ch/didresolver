@@ -27,6 +27,10 @@ pub struct Jwk {
     pub x: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub y: Option<String>,
+    #[serde(rename = "use", skip_serializing_if = "Option::is_none")]
+    pub key_use: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub key_ops: Option<Vec<String>>,
 }
 
 // See https://www.w3.org/TR/did-core/#verification-methods
@@ -46,6 +50,7 @@ pub struct VerificationMethod {
     // - https://jira.bit.admin.ch/browse/EIDOMNI-35
     // - https://confluence.bit.admin.ch/display/EIDTEAM/DID+Doc+Conformity+Check
     // It is kept for the sake of backward compatibility only.
+    #[deprecated(note = "Use not allowed by the swiss profile anchor specification")]
     #[serde(rename = "publicKeyMultibase", skip_serializing_if = "Option::is_none")]
     pub public_key_multibase: Option<String>,
     #[serde(rename = "publicKeyJwk", skip_serializing_if = "Option::is_none")]
@@ -60,6 +65,7 @@ pub struct VerificationMethod {
 pub enum VerificationType {
     Multikey,
     // https://w3c-ccg.github.io/lds-jws2020/#json-web-key-2020
+    // https://www.w3.org/TR/did-extensions-properties/#jsonwebkey2020
     JsonWebKey2020,
     // https://www.w3.org/TR/vc-di-eddsa/#ed25519verificationkey2020
     Ed25519VerificationKey2020,
@@ -67,15 +73,11 @@ pub enum VerificationType {
 
 impl core::fmt::Display for VerificationType {
     #[inline]
-    /*#[expect(
-        clippy::min_ident_chars,
-        reason = "default name of function parameter of trait impl. used to prevent clippy::renamed_function_params warning"
-    )]*/
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         let string_representation = match *self {
-            Self::Multikey => String::from("Multikey"),
-            Self::JsonWebKey2020 => String::from("JsonWebKey2020"),
-            Self::Ed25519VerificationKey2020 => String::from("Ed25519VerificationKey2020"),
+            Self::Multikey => "Multikey",
+            Self::JsonWebKey2020 => "JsonWebKey2020",
+            Self::Ed25519VerificationKey2020 => "Ed25519VerificationKey2020",
         };
         write!(f, "{string_representation}")
     }
@@ -83,6 +85,7 @@ impl core::fmt::Display for VerificationType {
 
 impl VerificationMethod {
     #[inline]
+    #[deprecated]
     pub const fn new(
         id: String,
         controller: String,
