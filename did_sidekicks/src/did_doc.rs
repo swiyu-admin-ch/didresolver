@@ -125,6 +125,7 @@ impl Clone for VerificationMethod {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[expect(clippy::exhaustive_structs, reason = "..")]
 pub struct DidDoc {
+    #[deprecated]
     #[serde(rename = "@context", skip_serializing_if = "Vec::is_empty", default)]
     pub context: Vec<String>,
     pub id: String,
@@ -175,6 +176,7 @@ pub struct DidDoc {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[expect(clippy::exhaustive_structs, reason = "..")]
 pub struct DidDocNormalized {
+    #[deprecated]
     #[serde(rename = "@context", skip_serializing_if = "Vec::is_empty", default)]
     pub context: Vec<String>,
     pub id: String,
@@ -338,6 +340,7 @@ pub struct DidDocExtended {
 }
 
 impl DidDoc {
+    #[deprecated]
     #[inline]
     pub fn get_context(&self) -> Vec<String> {
         self.context.clone()

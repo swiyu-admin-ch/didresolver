@@ -147,6 +147,7 @@ interface DidDoc {
     /// - if `DidDoc` contains a map with non-string keys.
     [Throws=DidSidekicksError]
     string to_json();
+    /// Deprecated
     sequence<string> get_context();
     string get_id();
     sequence<VerificationMethod> get_verification_method();
