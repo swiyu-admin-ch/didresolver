@@ -91,63 +91,6 @@ mod test {
         );
     }
 
-    #[rstest]
-    #[case(
-        json!({
-            "@context": [ "https://www.w3.org/ns/did/v1", "https://w3id.org/security/jwk/v1" ],
-            "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
-            "authentication": [ "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01" ],
-            "assertionMethod": [ "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#assert-key-02" ],
-            "verificationMethod": [{
-                    "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01",
-                    "controller": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
-                    "type": "JsonWebKey2020",
-                    "publicKeyJwk": {
-                        "kty": "EC",
-                        "crv": "P-256",
-                        "kid": "auth-key-01",
-                        "x": "3-xR-ApvKYCKtXxjvypxIb4tHJSUTHCl0uUYVAvP6sE",
-                        "y": "jkQdXwStFmrJjHuWw8PE_AG43c4OQwd6-Rkr4sPiC7Y"
-                    }
-                },{
-                    "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#assert-key-02",
-                    "controller": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
-                    "type": "JsonWebKey2020",
-                    "publicKeyJwk": {
-                        "kty": "EC",
-                        "crv": "P-256",
-                        "kid": "assert-key-02",
-                        "x": "Ja4P63oUfaUageuu9O_6kOHT6bLe5D4myacZpEICwC8",
-                        "y": "A4JwAyrpKxtsNLX50A0pQ_4G2AYO-NJw0dzne11xUj0"
-                    }
-            }]
-        }),
-    )]
-    fn test_did_doc_json_conversion(#[case] did_doc_norm_json: JsonValue) {
-        let did_doc = DidDocNormalized::from_json(&did_doc_norm_json.to_string())
-            .unwrap()
-            .to_did_doc()
-            .unwrap();
-        let did_doc_json_str = did_doc.to_json().unwrap(); // MUT
-        assert!(!did_doc_json_str.is_empty());
-
-        // should also match the input value (after canonicalization)
-        assert_eq!(
-            serde_json_canonicalizer::to_string(&did_doc_norm_json).unwrap(),
-            serde_json_canonicalizer::to_string(&json!({
-                "@context": did_doc.context,
-                "id": did_doc.id,
-                "authentication": did_doc.authentication.iter()
-                    .map(|x| x.id.to_owned())
-                    .collect::<Vec<String>>(),
-                "assertionMethod": did_doc.assertion_method.iter()
-                    .map(|x| x.id.to_owned())
-                    .collect::<Vec<String>>(),
-                "verificationMethod": did_doc.verification_method
-            }))
-            .unwrap()
-        );
-    }
 
     #[rstest]
     #[case(

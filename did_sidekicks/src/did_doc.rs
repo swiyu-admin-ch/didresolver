@@ -608,3 +608,286 @@ impl DidDocExtended {
         self.did_method_parameters.clone()
     }
 }
+
+#[cfg(test)]
+mod test {
+    #![allow(
+        non_snake_case,
+        reason = "consistent naming for test in form type_function_description_expectedResult"
+    )]
+    use super::*;
+    use rstest::rstest;
+    use serde_json::{Value as JsonValue, json};
+    use std::assert_matches;
+
+    /// A did doc as json used for tests to easier instantiate one.
+    static DIDDOC_JSON: &str = r#"{
+      "id": "did:webvh:{SCID}:domain.example",
+      "controller": "did:webvh:{SCID}:domain.example",
+      "profile_version": "swiss-profile-anchor:1.0.0",
+      "authentication": [
+        "did:webvh:{SCID}:domain.example#auth-key-01"
+      ],
+      "assertionMethod": [
+        "did:webvh:{SCID}:domain.example#assert-key-01"
+      ],
+      "verificationMethod": [
+        {
+          "id": "did:webvh:{SCID}:domain.example#auth-key-01",
+          "controller": "did:webvh:{SCID}:domain.example",
+          "type": "JsonWebKey2020",
+          "publicKeyJwk": {
+            "kty": "EC",
+            "crv": "P-256",
+            "x": "cMuIogOIny4VcE92-KK4Y9AuwSmCX3Ot8MY80aRz__4",
+            "y": "ln1g0wrq0IKT3D_GjnBmZhA_tbqlG5p7-7OCk-xMC1g",
+            "kid": "auth-key-01"
+          }
+        },
+        {
+          "id": "did:webvh:{SCID}:domain.example#assert-key-01",
+          "controller": "did:webvh:{SCID}:domain.example",
+          "type": "JsonWebKey2020",
+          "publicKeyJwk": {
+            "kty": "EC",
+            "crv": "P-256",
+            "x": "IXXoOILwuY2Z-e3md2vazPghS3cGJEJt8DY7Xcc28NY",
+            "y": "vyyaOaGu6ck1uEYjFChLu-cHCoxJ71L8UCQn3mM8xn4",
+            "kid": "assert-key-01"
+          }
+        }
+      ]
+    }"#;
+
+    #[rstest]
+    #[case(
+        json!({
+            "@context": [ "https://www.w3.org/ns/did/v1", "https://w3id.org/security/jwk/v1" ],
+            "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+            "authentication": [ "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01" ],
+            "assertionMethod": [ "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#assert-key-02" ],
+            "verificationMethod": [{
+                    "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01",
+                    "controller": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+                    "type": "JsonWebKey2020",
+                    "publicKeyJwk": {
+                        "kty": "EC",
+                        "crv": "P-256",
+                        "kid": "auth-key-01",
+                        "x": "3-xR-ApvKYCKtXxjvypxIb4tHJSUTHCl0uUYVAvP6sE",
+                        "y": "jkQdXwStFmrJjHuWw8PE_AG43c4OQwd6-Rkr4sPiC7Y"
+                    }
+                },{
+                    "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#assert-key-02",
+                    "controller": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+                    "type": "JsonWebKey2020",
+                    "publicKeyJwk": {
+                        "kty": "EC",
+                        "crv": "P-256",
+                        "kid": "assert-key-02",
+                        "x": "Ja4P63oUfaUageuu9O_6kOHT6bLe5D4myacZpEICwC8",
+                        "y": "A4JwAyrpKxtsNLX50A0pQ_4G2AYO-NJw0dzne11xUj0"
+                    }
+            }]
+        }),
+    )]
+    fn test_did_doc_json_conversion(#[case] did_doc_norm_json: JsonValue) {
+        use serde_json::json;
+
+        let did_doc = DidDocNormalized::from_json(&did_doc_norm_json.to_string())
+            .unwrap()
+            .to_did_doc()
+            .unwrap();
+        let did_doc_json_str = did_doc.to_json().unwrap(); // MUT
+        assert!(!did_doc_json_str.is_empty());
+
+        // should also match the input value (after canonicalization)
+        assert_eq!(
+            serde_json_canonicalizer::to_string(&did_doc_norm_json).unwrap(),
+            serde_json_canonicalizer::to_string(&json!({
+                "@context": did_doc.context,
+                "id": did_doc.id,
+                "authentication": did_doc.authentication.iter()
+                    .map(|x| x.id.to_owned())
+                    .collect::<Vec<String>>(),
+                "assertionMethod": did_doc.assertion_method.iter()
+                    .map(|x| x.id.to_owned())
+                    .collect::<Vec<String>>(),
+                "verificationMethod": did_doc.verification_method
+            }))
+            .unwrap()
+        );
+    }
+
+    #[rstest]
+    fn DidDoc_getters_validDocument() {
+        let doc = get_did_doc();
+        assert_eq!("did:webvh:{SCID}:domain.example", doc.get_id().as_str());
+        assert_eq!(
+            Some("did:webvh:{SCID}:domain.example".to_string()),
+            doc.get_controller()
+        );
+        assert_eq!(2, doc.get_verification_method().len(), "expected left");
+        assert_eq!(1, doc.get_authentication().len(), "expected left");
+        assert_eq!(1, doc.get_assertion_method().len(), "expected left");
+        assert_eq!(0, doc.get_capability_invocation().len(), "expected left");
+        assert_eq!(0, doc.get_capability_delegation().len(), "expected left");
+        assert_eq!(
+            Some("swiss-profile-anchor:1.0.0".to_string()),
+            doc.get_profile_version(),
+            "expected left"
+        );
+
+        assert_matches!(
+            doc.get_key_by_method_id("did:webvh:{SCID}:domain.example#assert-key-01".into()),
+            Ok(_),
+        );
+
+        assert_eq!(
+            doc.get_key_by_method_id("did:webvh:{SCID}:domain.example#assert-key-01".into())
+                .unwrap()
+                .kid,
+            doc.get_key_by_fragment("assert-key-01".into()).unwrap().kid
+        );
+    }
+
+    #[test]
+    fn DidDoc_validate_validWithController_returnsOk() {
+        // No controller is valid
+        let doc = DidDoc {
+            context: Vec::new(),
+            id: "did:webvh:{SCID}:example.domain".into(),
+            verification_method: vec![],
+            authentication: Vec::new(),
+            capability_invocation: Vec::new(),
+            capability_delegation: Vec::new(),
+            assertion_method: Vec::new(),
+            key_agreement: Vec::new(),
+            controller: Some("did:webvh:{SCID}:example.domain".into()),
+            deactivated: None,
+            profile_version: None,
+        };
+        if let Err(err) = doc.validate() {
+            panic!(
+                "DID should be valid with no controller, but got error: {}",
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn DidDoc_validate_validWithoutController_returnsOk() {
+        // No controller is valid
+        let doc = DidDoc {
+            context: Vec::new(),
+            id: "did:webvh:{SCID}:example.domain".into(),
+            verification_method: vec![],
+            authentication: Vec::new(),
+            capability_invocation: Vec::new(),
+            capability_delegation: Vec::new(),
+            assertion_method: Vec::new(),
+            key_agreement: Vec::new(),
+            controller: None,
+            deactivated: None,
+            profile_version: None,
+        };
+        if let Err(err) = doc.validate() {
+            panic!(
+                "DID should be valid with no controller, but got error: {}",
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn DidDoc_validate_wrongController_returnsErr() {
+        // Controller pointing to other did
+        let doc = DidDoc {
+            context: Vec::new(),
+            id: "did:webvh:{SCID}:example.domain".into(),
+            verification_method: vec![],
+            authentication: Vec::new(),
+            capability_invocation: Vec::new(),
+            capability_delegation: Vec::new(),
+            assertion_method: Vec::new(),
+            key_agreement: Vec::new(),
+            controller: Some("did:webvh:{SCID}:other.domain".into()),
+            deactivated: None,
+            profile_version: None,
+        };
+        if let Err(err) = doc.validate() {
+            assert!(
+                err.to_string()
+                    .contains("controller must be set to the id of the DID log"),
+                "Received unexpected error message: {}",
+                err.to_string()
+            );
+        }
+
+        // No controller is valid
+        let doc = DidDoc {
+            context: Vec::new(),
+            id: "did:webvh:{SCID}:example.domain#assert-key".into(),
+            verification_method: vec![],
+            authentication: Vec::new(),
+            capability_invocation: Vec::new(),
+            capability_delegation: Vec::new(),
+            assertion_method: Vec::new(),
+            key_agreement: Vec::new(),
+            controller: None,
+            deactivated: None,
+            profile_version: None,
+        };
+        if let Err(err) = doc.validate() {
+            panic!(
+                "DID should be valid with no controller, but got error: {}",
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn DidDoc_validate_verificationMethodWrongController_returnsErr() {
+        let doc = DidDoc {
+            context: Vec::new(),
+            id: "did:webvh:{SCID}:example.domain".into(),
+            verification_method: vec![VerificationMethod {
+                id: "did:webvh:{SCID}:example.domain#assert-key#assert-key".into(),
+                controller: "did:webvh:{SCID}:example.domain".into(),
+                verification_type: VerificationType::JsonWebKey2020,
+                public_key_multibase: None,
+                public_key_jwk: Some(jwk("did:webvh:{SCID}:example.domain#assert-key")),
+            }],
+            authentication: Vec::new(),
+            capability_invocation: Vec::new(),
+            capability_delegation: Vec::new(),
+            assertion_method: Vec::new(),
+            key_agreement: Vec::new(),
+            controller: None,
+            deactivated: None,
+            profile_version: None,
+        };
+        if let Err(err) = doc.validate() {
+            panic!("Expected document to be valid, but got an error: {}", err);
+        }
+    }
+
+    // Helper functions
+    fn jwk(kid: &str) -> Jwk {
+        Jwk {
+            alg: None,
+            kid: Some(kid.into()),
+            kty: Some("EC".into()),
+            crv: Some("P-256".into()),
+            x: Some("Ja4P63oUfaUageuu9O_6kOHT6bLe5D4myacZpEICwC8".into()),
+            y: Some("A4JwAyrpKxtsNLX50A0pQ_4G2AYO-NJw0dzne11xUj0".into()),
+            key_use: None,
+            key_ops: None,
+        }
+    }
+
+    fn get_did_doc() -> DidDoc {
+        let doc = serde_json::from_str::<DidDocNormalized>(DIDDOC_JSON).unwrap();
+        doc.to_did_doc().unwrap()
+    }
+}
