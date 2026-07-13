@@ -254,20 +254,6 @@ mod test {
     }
 
     #[rstest]
-    /* TODO cleanup and add more test cases
-    #[case(
-        "test_data/generated_by_tdw_js/single_update_key.jsonl",
-        "did:tdw:QmXjp5qhSEvm8oXip43cDX62hZhHZdAMYv7Magy1tkffSz:example.com"
-    )]
-    #[case(
-        "test_data/generated_by_tdw_js/unique_update_keys.jsonl",
-        "did:tdw:QmXjp5qhSEvm8oXip43cDX62hZhHZdAMYv7Magy1tkffSz:example.com"
-    )]
-    #[case(
-        "test_data/generated_by_tdw_js/alternate_update_keys.jsonl",
-        "did:tdw:QmdSU7F2rF8r4m6GZK7Evi2tthfDDxhw3NppU8pJMbd2hB:example.com"
-    )]
-    */
     #[case(
         "test_data/generated_by_didtoolbox_java/legacy/did-1.0.0-RC1.jsonl",
         "did:tdw:QmPEZPhDFR4nEYSFK5bMnvECqdpf1tPTPJuWs9QrMjCumw:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:9a5559f0-b81c-4368-a170-e7b4ae424527"
@@ -364,45 +350,4 @@ mod test {
         assert!(!did_doc_obj_v1.authentication.is_empty());
         //assert!(!did_doc_v1_obj.controller.is_empty());
     }
-
-    /* TODO implement the test case using proper input
-    #[rstest]
-    #[case(
-        "test_data/generated_by_tdw_js/deactivated.jsonl",
-        "did:tdw:QmdSU7F2rF8r4m6GZK7Evi2tthfDDxhw3NppU8pJMbd2hB:example.com"
-    )]
-    fn test_read_did_tdw_deactivated(
-        #[case] did_log_raw_filepath: String,
-        #[case] did_url: String,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        //let did_log_raw_filepath = "test_data/generated_by_tdw_js/deactivated.jsonl";
-        //let did_url: String = String::from("did:tdw:QmdSU7F2rF8r4m6GZK7Evi2tthfDDxhw3NppU8pJMbd2hB:example.com");
-
-        let did_log_raw = fs::read_to_string(Path::new(&did_log_raw_filepath))?;
-
-        // Read the newly did doc
-        let tdw_v1 = TrustDidWeb::read(did_url.clone(), did_log_raw)?;
-        let did_doc_json_v1: JsonValue = serde_json::from_str(&tdw_v1.get_did_doc())?;
-        let did_doc_obj_v1 = DidDoc::from_json(&tdw_v1.get_did_doc())?;
-
-        assert!(!did_doc_json_v1["@context"].to_string().is_empty());
-        match did_doc_json_v1["id"] {
-            JsonValue::String(ref doc_v1) => {
-                assert!(doc_v1.eq(did_url.as_str()), "DID mismatch")
-            }
-            _ => panic!("Invalid did doc"),
-        }
-        assert!(!did_doc_json_v1["verificationMethod"].to_string().is_empty());
-        assert!(!did_doc_json_v1["authentication"].to_string().is_empty());
-        assert!(!did_doc_json_v1["controller"].to_string().is_empty());
-
-        assert_eq!(did_doc_obj_v1.id, tdw_v1.get_did());
-        // CAUTION after deactivation these should be empty
-        assert!(did_doc_obj_v1.verification_method.is_empty());
-        assert!(did_doc_obj_v1.authentication.is_empty());
-        //assert!(!did_doc_v1_obj.controller.is_empty());
-
-        Ok(())
-    }
-     */
 }

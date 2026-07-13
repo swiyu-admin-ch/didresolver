@@ -327,7 +327,7 @@ mod test {
     )]
     #[case(
         "test_data/manually_created/eddsa25519.jsonl",
-        "did:webvh:QmXu2ftn7tff6rjB9FoYiiL4xdJV5tZZZno7XkuqDMBwxS:test.ch"
+        "did:webvh:QmdrU9GiDUUVTvh3xo6uMorUZgF71RMBSa1GkdMNSYa2FA:test.ch"
     )]
     #[case( // Related with below case to test file size validation, this log is between 1MB and 1MiB
         "test_data/generated_by_didtoolbox_java/v475_did.jsonl",
@@ -364,7 +364,7 @@ mod test {
         "did:webvh:QmQG4LEzoF7HWJCVcQgiCGQF8F6UgDUzjCp6iEoZAQTWc5:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
         "Proof signed with unauthorized key",
     )]
-    #[case( // Related to above case to ste file size validation, this log exceeds the limit
+    #[case( // Related to above case to test file size validation, this log exceeds the limit
         include_str!("../test_data/generated_by_didtoolbox_java/v500_did.jsonl"),
         "did:webvh:QmT3TR3M4yj9UQ4QtkNPtNthTrJTDxFcufD5bCq1T6zUah:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
         "DID log must not be bigger than"

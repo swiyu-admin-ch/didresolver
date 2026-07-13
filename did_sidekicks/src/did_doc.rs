@@ -100,6 +100,29 @@ impl VerificationMethod {
             public_key_jwk: None,
         }
     }
+
+    fn validate(&self, document_id: &str) -> Result<(), DidSidekicksError> {
+        if !self.controller.is_empty() && self.controller != document_id {
+            return Err(DidSidekicksError::InvalidDidDocument(format!(
+                "controller of the verificationMethod '{}' must be set to the id of the DID log",
+                &self.id
+            )));
+        }
+
+        if let Some(_) = self.public_key_multibase {
+            return Err(DidSidekicksError::InvalidDidDocument(
+                "'publicKeyMultibase' must not be used".into(),
+            ));
+        }
+
+        if let None = self.public_key_jwk {
+            return Err(DidSidekicksError::InvalidDidDocument(
+                "'publicKeyJwk' must be used and cannot be omitted".into(),
+            ));
+        }
+
+        Ok(())
+    }
 }
 
 #[expect(
@@ -230,7 +253,7 @@ impl DidDocNormalized {
     #[inline]
     pub fn to_did_doc(&self) -> Result<DidDoc, DidSidekicksError> {
         let mut did_doc = DidDoc {
-            context: self.context.to_owned(), // vec![],
+            context: self.context.to_owned(),
             id: self.id.clone(),
             verification_method: self.verification_method.clone(),
             authentication: vec![],
@@ -392,6 +415,18 @@ impl DidDoc {
         self.deactivated.unwrap_or(false)
     }
 
+    /// Returns an iterator over all verification methods contained in the document.
+    #[inline]
+    fn get_all_verification_methods(&self) -> impl Iterator<Item = &VerificationMethod> {
+        self.verification_method
+            .iter()
+            .chain(self.authentication.iter())
+            .chain(self.capability_invocation.iter())
+            .chain(self.capability_delegation.iter())
+            .chain(self.assertion_method.iter())
+            .chain(self.key_agreement.iter())
+    }
+
     /// The deserialization-based constructor. It attempts to deserialize an instance of type `[`DidDoc`] from a string of JSON text.
     ///
     /// # Errors
@@ -512,13 +547,7 @@ impl DidDoc {
     pub fn get_key_by_method_id(&self, kid: String) -> Result<Jwk, DidSidekicksError> {
         // A JWK referenced by the supplied key_id might be anywhere in this DID doc
         match self
-            .verification_method
-            .iter()
-            .chain(self.authentication.iter())
-            .chain(self.capability_invocation.iter())
-            .chain(self.capability_delegation.iter())
-            .chain(self.assertion_method.iter())
-            .chain(self.key_agreement.iter())
+            .get_all_verification_methods()
             .find(|&key| key.id.eq(&kid))
         {
             Some(key) => key
@@ -542,15 +571,28 @@ impl DidDoc {
             ));
         }
 
-        for vm in self.verification_method.iter() {
-            // Only validate controller if a value is present
-            if !vm.controller.is_empty() && vm.controller != id.as_str() {
-                return Err(DidSidekicksError::InvalidDidDocument(format!(
-                    "controller of the verificationMethod '{}' must be set to the id of the DID log",
-                    &vm.id
-                )));
-            }
+        if !self.key_agreement.is_empty() {
+            return Err(DidSidekicksError::InvalidDidDocument(
+                "'keyAgreement' must not be used".into(),
+            ));
         }
+
+        if !self.capability_invocation.is_empty() {
+            return Err(DidSidekicksError::InvalidDidDocument(
+                "'capabilityInvocation' must not be used".into(),
+            ));
+        }
+
+        if !self.capability_delegation.is_empty() {
+            return Err(DidSidekicksError::InvalidDidDocument(
+                "'capabilityDelegation' must not be used".into(),
+            ));
+        }
+
+        self.get_all_verification_methods()
+            .map(|v| v.validate(self.id.as_str()))
+            .collect::<Result<Vec<()>, DidSidekicksError>>()?;
+
         Ok(())
     }
 }
@@ -695,8 +737,6 @@ mod test {
         }),
     )]
     fn test_did_doc_json_conversion(#[case] did_doc_norm_json: JsonValue) {
-        use serde_json::json;
-
         let did_doc = DidDocNormalized::from_json(&did_doc_norm_json.to_string())
             .unwrap()
             .to_did_doc()
@@ -873,6 +913,73 @@ mod test {
         if let Err(err) = doc.validate() {
             panic!("Expected document to be valid, but got an error: {}", err);
         }
+    }
+
+    #[test]
+    fn DidDoc_validate_verificationMethodWithMultikey_returnsErr() {
+        let doc = DidDoc {
+            context: Vec::new(),
+            id: "did:webvh:{SCID}:example.domain".into(),
+            verification_method: vec![VerificationMethod {
+                id: "did:webvh:{SCID}:example.domain#assert-key#assert-key".into(),
+                controller: "did:webvh:{SCID}:example.domain".into(),
+                verification_type: VerificationType::JsonWebKey2020,
+                public_key_multibase: Some("some multikey".into()),
+                public_key_jwk: None,
+            }],
+            authentication: Vec::new(),
+            capability_invocation: Vec::new(),
+            capability_delegation: Vec::new(),
+            assertion_method: Vec::new(),
+            key_agreement: Vec::new(),
+            controller: None,
+            deactivated: None,
+            profile_version: None,
+        };
+        let Err(_) = doc.validate() else {
+            panic!("Expected document to be invalid but was ok");
+        };
+    }
+
+    #[test]
+    fn DidDoc_validate_withUnsupportedVerificationRelationship_returnsErr() {
+        let verification_method = VerificationMethod {
+            id: "did:webvh:{SCID}:example.domain#assert-key#assert-key".into(),
+            controller: "did:webvh:{SCID}:example.domain".into(),
+            verification_type: VerificationType::JsonWebKey2020,
+            public_key_multibase: Some("some multikey".into()),
+            public_key_jwk: Some(jwk("did:webvh:{SCID}:example.domain#assert-key")),
+        };
+
+        let mut doc = DidDoc {
+            context: Vec::new(),
+            id: "did:webvh:{SCID}:example.domain".into(),
+            verification_method: vec![],
+            authentication: Vec::new(),
+            capability_invocation: vec![verification_method.clone()],
+            capability_delegation: Vec::new(),
+            assertion_method: Vec::new(),
+            key_agreement: Vec::new(),
+            controller: None,
+            deactivated: None,
+            profile_version: None,
+        };
+
+        let Err(_) = doc.validate() else {
+            panic!("Expected document with 'capability_invocation' to be invalid but was ok");
+        };
+
+        doc.capability_invocation = Vec::new();
+        doc.capability_delegation = vec![verification_method.clone()];
+        let Err(_) = doc.validate() else {
+            panic!("Expected document with 'capability_delegation' to be invalid but was ok");
+        };
+
+        doc.capability_delegation = Vec::new();
+        doc.key_agreement = vec![verification_method.clone()];
+        let Err(_) = doc.validate() else {
+            panic!("Expected document with 'key_agreement' to be invalid but was ok");
+        };
     }
 
     // Helper functions
