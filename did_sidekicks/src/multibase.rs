@@ -20,6 +20,7 @@ pub const BASE58BTC_MULTIBASE_IDENTIFIER: &str = "z";
 pub trait MultiBaseConvertible {
     /// The multibase-encoding method.
     fn to_multibase(&self) -> String;
+
     /// The type constructor from a multibase-encoded value.
     ///
     /// # Errors

@@ -1,5 +1,7 @@
+use base64::Engine as _;
+use base64::prelude::BASE64_URL_SAFE_NO_PAD;
 // SPDX-License-Identifier: MIT
-
+use serde_json::Value;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -324,6 +326,7 @@ impl MultiBaseConvertible for Ed25519VerifyingKey {
         )
     }
 }
+
 impl Ed25519VerifyingKey {
     #[inline]
     pub const fn new(verifying_key: VerifyingKey) -> Self {
@@ -342,6 +345,102 @@ impl Ed25519VerifyingKey {
             },
             |key| Ok(Self { verifying_key: key }),
         )
+    }
+
+    /// Deserialize JWK-encoded public key.
+    ///
+    /// The JWK is expected to contain the properties `kty`, `crv`, and `x`.
+    /// Other properties are ignored.
+    ///
+    /// Example JWK:
+    /// ```json
+    /// {
+    ///     "kty": "OKP",
+    ///     "crv": "Ed25519",
+    ///     "x": "87Eihw4hpr8dKxzd-pJ1qV1sYZT0NlwnC1VL8btoJy0"
+    /// }
+    /// ```
+    #[inline]
+    pub fn from_public_key_jwk(public_key_jwk: &str) -> Result<Self, DidSidekicksError> {
+        let jwk_json: Value = match serde_json::from_str(public_key_jwk) {
+            Ok(j) => j,
+            Err(err) => {
+                return Err(DidSidekicksError::KeyDeserializationFailed(format!(
+                    "Failed to parse JWK as json: {}",
+                    err
+                )));
+            }
+        };
+
+        #[expect(clippy::pattern_type_mismatch, reason = "false positive")]
+        let Some(Value::String(kty)) = jwk_json.get("kty") else {
+            return Err(DidSidekicksError::KeyDeserializationFailed(
+                "Missing property 'kty' in JWK".into(),
+            ));
+        };
+        if kty != "OKP" {
+            return Err(DidSidekicksError::KeyDeserializationFailed(
+                "Unknown key type, expected property 'kty' to be 'OKP'".into(),
+            ));
+        }
+
+        #[expect(clippy::pattern_type_mismatch, reason = "false positive")]
+        let Some(Value::String(crv)) = jwk_json.get("crv") else {
+            return Err(DidSidekicksError::KeyDeserializationFailed(
+                "Missing property 'crv' in JWK".into(),
+            ));
+        };
+        if crv != "Ed25519" {
+            return Err(DidSidekicksError::KeyDeserializationFailed(
+                "Unknown curve, expected property 'crv' to be 'Ed25519'".into(),
+            ));
+        }
+
+        let Some(serde_json::Value::String(x)) = jwk_json.get("x").as_ref() else {
+            return Err(DidSidekicksError::KeyDeserializationFailed(
+                "Missing property 'x' in JWK".into(),
+            ));
+        };
+
+        // Convert x from base64url to base64
+        // https://www.rfc-editor.org/info/rfc4648/#section-5
+        #[expect(clippy::redundant_clone, reason = "need to do 2 replacements")]
+        let mut url_safe_x = x.replace('-', "+").replace('_', "/").to_string();
+        url_safe_x.push('='); // add padding
+
+        let pem = format!(
+            "-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEA{}
+-----END PUBLIC KEY-----",
+            url_safe_x,
+        );
+
+        let verifying_key = match VerifyingKey::from_public_key_pem(pem.as_str().trim()) {
+            Ok(jwk) => jwk,
+            Err(err) => {
+                return Err(DidSidekicksError::KeyDeserializationFailed(format!(
+                    "Failed to deserialize to PEM converted JWK: {err}"
+                )));
+            }
+        };
+        Ok(Self { verifying_key })
+    }
+
+    /// Converts the VerifyingKey into a JWK.
+    ///
+    /// Example JWK:
+    /// ```json
+    /// {
+    ///     "kty": "OKP",
+    ///     "crv": "Ed25519",
+    ///     "x": "87Eihw4hpr8dKxzd-pJ1qV1sYZT0NlwnC1VL8btoJy0"
+    /// }
+    /// ```
+    #[inline]
+    pub fn to_jwk(&self) -> String {
+        let x = BASE64_URL_SAFE_NO_PAD.encode(self.verifying_key.as_bytes());
+        // JWK template adjusted and taken from https://www.rfc-editor.org/rfc/rfc8037.html#appendix-A.2
+        [r#"{"kty":"OKP","crv":"Ed25519","x":""#, x.as_str(), r#""}"#].join("")
     }
 
     /// Load public key object from a PEM-encoded file on the local filesystem.
@@ -443,6 +542,9 @@ impl Ed25519VerifyingKey {
 )]
 mod tests {
     use super::*;
+
+    use serde_json::{Value, json};
+
     use rstest::{fixture, rstest};
 
     #[fixture]
@@ -659,5 +761,99 @@ MCowBQYDK2VwAyEA8ETLwQBKgk9fM2V0tQV5AdjrMvetLrgj5C+FOmYGTJg=
                 .is_ok()
         );
         assert!(verifying_key.verify_strict(message, &signature).is_ok());
+    }
+
+    #[rstest]
+    fn test_ed25519_verifying_key_from_jwk() {
+        let pem = r#"
+-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEA87Eihw4hpr8dKxzd+pJ1qV1sYZT0NlwnC1VL8btoJy0=
+-----END PUBLIC KEY-----
+         "#
+        .trim();
+        dbg!(&pem);
+        let pem_key = Ed25519VerifyingKey::from_public_key_pem(pem).unwrap();
+
+        let jwk = r#"{
+            "kty": "OKP",
+            "alg": "EdDSA",
+            "kid": "3aa60842-4352-42e2-95c3-2cfa971fb687",
+            "crv": "Ed25519",
+            "x": "87Eihw4hpr8dKxzd-pJ1qV1sYZT0NlwnC1VL8btoJy0"
+        }"#;
+        let key = Ed25519VerifyingKey::from_public_key_jwk(jwk).unwrap();
+
+        let jwk_multibase = key.to_multibase();
+        let pem_multibase = pem_key.to_multibase();
+        assert_eq!(jwk_multibase, pem_multibase);
+    }
+
+    #[rstest]
+    // Pem instead of JSON, so invalid JSON
+    #[case(
+        r#"-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEArUIA54HjUDaT0NFxPs3yz/yd3asozWdYD+P09YfsJOY=
+-----END PUBLIC KEY-----"#,
+        "parse JWK as json"
+    )]
+    // Missing kty
+    #[case(r#"{"crv": "Ed25519", "x":"AAAAAAAAAAAAA"}"#, "Missing property 'kty'")]
+    // Unknown kty
+    #[case(
+        r#"{"kty": "EC", "crv": "Ed25519", "x":"AAAAAAAAAAAAA"}"#,
+        "Unknown key type"
+    )]
+    // Missing crv
+    #[case(r#"{"kty": "OKP", "x":"AAAAAAAAAAAAA"}"#, "Missing property 'crv'")]
+    // Unknown crv
+    #[case(
+        r#"{"kty": "OKP", "crv": "P-256", "x":"AAAAAAAAAAAAA"}"#,
+        "Unknown curve"
+    )]
+    // Missing x
+    #[case(r#"{"kty": "OKP", "crv": "Ed25519"}"#, "Missing property 'x'")]
+    // Incorrect X
+    #[case(
+        r#"{"kty": "OKP", "crv": "Ed25519", "x": "AAAA"}"#,
+        "Failed to deserialize to PEM converted JWK"
+    )]
+    // EC Key instead of JWK
+    #[case(
+        r#"{ "kty": "EC", "crv": "P-256", "x": "WqLccrJ0NOQwVgFLP4cHCtEfR2M_SNguTsx9US5Ui7o", "y": "nhBUhaovZ6aw2tFeT25b1NFE96wYpY4z6WO5etAHfTw", "kid": "assert-key-01" }"#,
+       "")] // any error is okay
+    fn test_ed25519_verifying_key_from_invalid_jwk(#[case] jwk: &str, #[case] error: &str) {
+        let result = Ed25519VerifyingKey::from_public_key_jwk(jwk);
+        let err = result.err().expect("Expected jwk parsing to fail.");
+        assert!(
+            err.to_string().contains(error),
+            "Expected error to contain '{}' but got instead:\n{}",
+            error,
+            err
+        );
+    }
+
+    #[rstest]
+    fn test_ed25519_verifying_key_to_jwk() {
+        let jwk = json!({
+            "kty": "OKP",
+            "crv": "Ed25519",
+            "x": "87Eihw4hpr8dKxzd-pJ1qV1sYZT0NlwnC1VL8btoJy0"
+        });
+        let key = Ed25519VerifyingKey::from_public_key_jwk(jwk.to_string().as_str()).unwrap();
+        let new_jwk = key.to_jwk();
+        let parsed_jwk: Value = serde_json::from_str(new_jwk.as_str()).unwrap();
+
+        let jwk = jwk.as_object().unwrap();
+        for (key, value) in jwk.iter() {
+            let v = parsed_jwk.get(key.as_str());
+            if Some(value) != v {
+                panic!(
+                    "Expected property '{}' to be '{:?}' but got '{:?}' instead.",
+                    key,
+                    Some(value),
+                    v
+                );
+            }
+        }
     }
 }
