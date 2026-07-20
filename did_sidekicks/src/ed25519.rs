@@ -396,6 +396,7 @@ impl Ed25519VerifyingKey {
             ));
         }
 
+        #[expect(clippy::pattern_type_mismatch, reason = "false positive")]
         let Some(serde_json::Value::String(x)) = jwk_json.get("x").as_ref() else {
             return Err(DidSidekicksError::KeyDeserializationFailed(
                 "Missing property 'x' in JWK".into(),
