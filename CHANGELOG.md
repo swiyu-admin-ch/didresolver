@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Next
 
 ### Added
+- Resolver now supports Ed25519 public keys as JWK as verification methods.
 
 ### Fixed
 
