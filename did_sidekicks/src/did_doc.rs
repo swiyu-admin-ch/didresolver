@@ -105,17 +105,17 @@ impl VerificationMethod {
         if !self.controller.is_empty() && self.controller != document_id {
             return Err(DidSidekicksError::InvalidDidDocument(format!(
                 "controller of the verificationMethod '{}' must be set to the id of the DID log",
-                &self.id
+                self.id
             )));
         }
 
-        if let Some(_) = self.public_key_multibase {
+        if self.public_key_multibase.is_some() {
             return Err(DidSidekicksError::InvalidDidDocument(
                 "'publicKeyMultibase' must not be used".into(),
             ));
         }
 
-        if let None = self.public_key_jwk {
+        if self.public_key_jwk.is_none() {
             return Err(DidSidekicksError::InvalidDidDocument(
                 "'publicKeyJwk' must be used and cannot be omitted".into(),
             ));
@@ -590,7 +590,7 @@ impl DidDoc {
         }
 
         self.get_all_verification_methods()
-            .map(|v| v.validate(self.id.as_str()))
+            .map(|verification| verification.validate(self.id.as_str()))
             .collect::<Result<Vec<()>, DidSidekicksError>>()?;
 
         Ok(())

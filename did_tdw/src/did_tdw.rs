@@ -153,7 +153,7 @@ impl DidLogEntry {
             if challenge != &self.version_id {
                 return Err(DidResolverError::InvalidDataIntegrityProof(format!(
                     "Challenge of proof does NOT match current version id '{}'",
-                    &self.version_id
+                    self.version_id
                 )));
             }
 

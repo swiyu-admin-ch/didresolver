@@ -20,34 +20,49 @@ namespace did_sidekicks {
 enum DidSidekicksError {
     /// Failed to serialize DID document (to JSON).
     "SerializationFailed",
+
     /// The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation.
     "DeserializationFailed",
+
     /// Failed to create type a from hex-encoded string.
     "HexConversionFailed",
+
     /// Invalid DID document.
     "InvalidDidDocument",
+
     /// Invalid DID log integration proof.
     "InvalidDataIntegrityProof",
+
     /// Invalid DID method parameter.
     "InvalidDidMethodParameter",
+
     /// Failed to calculate SHA2-256 hash of canonical JSON UTF-8 string.
     "JscHashingFailed",
+
     /// No such JWK in the DID document.
     "KeyNotFound",
+	 
     /// Failed to save key.
     "KeySerializationFailed",
+
     /// Failure of a signature to satisfy the verification equation.
     "KeySignatureError",
+
     /// Failed to load key.
     "KeyDeserializationFailed",
+
     /// Failed to convert type from a multibase-encoded string.
     "MultibaseConversionFailed",
+
     /// Non-existing key referenced in the DID document.
     "NonExistingKeyReferenced",
+
     /// A request to generate a proof failed, as specified by https://www.w3.org/TR/vc-data-integrity/#processing-errors
     "VCDataIntegrityProofGenerationError",
+
     /// An error was encountered during proof verification, as specified by https://www.w3.org/TR/vc-data-integrity/#processing-errors
     "VCDataIntegrityProofVerificationError",
+
     /// An error was encountered during the transformation process, as specified by https://www.w3.org/TR/vc-data-integrity/#processing-errors
     "VCDataIntegrityProofTransformationError",
 };
@@ -68,21 +83,27 @@ interface DidMethodParameter {
     boolean is_empty_array();
     boolean is_string_array();
     boolean is_null();
+
     /// For any `DidMethodParameter` on which `DidMethodParameter::is_bool` returns `true`,
     /// the getter is guaranteed to return a `bool` value.
     boolean? get_bool_value();
+
     /// For any `DidMethodParameter` on which `DidMethodParameter::is_string` returns `true`,
     /// the getter is guaranteed to return a `string` value.
     string? get_string_value();
+
     /// For any `DidMethodParameter` on which `DidMethodParameter::is_string_array` returns `true`,
     /// the getter is guaranteed to return a ``string array.
     sequence<string>? get_string_array_value();
+
     /// For any `DidMethodParameter` on which `DidMethodParameter::is_f64` returns `true`,
     /// the getter is guaranteed to return a `f64` value.
     double? get_f64_value();
+
     /// For any `DidMethodParameter` on which `DidMethodParameter::is_i64` returns `true`,
     /// the getter is guaranteed to return a `i64` value.
     i64? get_i64_value();
+
     /// For any `DidMethodParameter` on which `DidMethodParameter::is_u64` returns `true`,
     /// the getter is guaranteed to return a `u64` value.
     u64? get_u64_value();
@@ -119,16 +140,22 @@ dictionary VerificationMethod {
 enum DidResolverError {
     /// Invalid method-specific identifier.
     "InvalidMethodSpecificId",
+
     /// Failed to serialize DID document (to JSON).
     "SerializationFailed",
+
     /// The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation.
     "DeserializationFailed",
+
     /// Invalid DID parameter.
     "InvalidDidParameter",
+
     /// Invalid DID document.
     "InvalidDidDocument",
+
     /// Invalid DID log integration proof.
     "InvalidDataIntegrityProof",
+
     /// Invalid did log
     "InvalidDidLog",
 };
@@ -138,6 +165,7 @@ interface DidDoc {
     /// It attempts to deserialize an instance of type `DidDoc` from a string of JSON text.
     [Name=from_json, Throws=DidSidekicksError]
     constructor([ByRef] string json_content);
+
     /// Serializes this `DidDoc` object as a `String` of JSON.
     ///
     /// The `SerializationFailed` error code denotes a serialization failure:
@@ -147,8 +175,10 @@ interface DidDoc {
     /// - if `DidDoc` contains a map with non-string keys.
     [Throws=DidSidekicksError]
     string to_json();
+
     /// Deprecated
     sequence<string> get_context();
+
     string get_id();
     sequence<VerificationMethod> get_verification_method();
     sequence<VerificationMethod> get_authentication();
@@ -157,6 +187,7 @@ interface DidDoc {
     sequence<VerificationMethod> get_assertion_method();
     string? get_controller();
     string? get_profile_version();
+
     /// Returns true if the did document contains an entry `deactivated` with the value true.
     /// This is not part of the did specification and should NOT be used.
     boolean get_deactivated();
@@ -321,15 +352,35 @@ interface Ed25519VerifyingKey {
     /// `The Multibase Data Format` (https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html)
     [Name=from_multibase, Throws=DidSidekicksError]
     constructor([ByRef] string multibase);
+
     /// Deserialize PKCS#8-encoded public key from PEM.
     [Name=from_public_key_pem, Throws=DidSidekicksError]
     constructor([ByRef] string public_key_pem);
+
+    /// Deserialize JWK-encoded public key.
+    ///
+    /// The JWK is expected to contain the properties `kty`, `crv`, and `x`.
+    /// Other properties are ignored.
+    ///
+    /// Example JWK: 
+    /// ```json
+    /// {
+    ///     "kty": "OKP",
+    ///     "crv": "Ed25519",
+    ///     "x": "87Eihw4hpr8dKxzd-pJ1qV1sYZT0NlwnC1VL8btoJy0"
+    /// }
+    /// ```
+    [Name=from_public_key_jwk, Throws=DidSidekicksError]
+    constructor([ByRef] string public_key_jwk);
+
     /// Load public key object from a PEM-encoded file on the local filesystem.
     [Name=read_public_key_pem_file, Throws=DidSidekicksError]
     constructor([ByRef] string public_key_pem_file);
+
     /// Write ASN.1 DER-encoded public key to the given path.
     [Throws=DidSidekicksError]
     void write_public_key_pem_file([ByRef] string public_key_pem_file);
+
     /// The multibase-encoding method, as specified by `Multikey` (https://www.w3.org/TR/controller-document/#Multikey):
     ///
     /// The encoding of an Ed25519 public key MUST start with the two-byte prefix 0xed01 (the varint expression of 0xed),
@@ -337,9 +388,23 @@ interface Ed25519VerifyingKey {
     /// The resulting 34-byte value MUST then be encoded using the base-58-btc alphabet,
     /// and then prepended with the base-58-btc Multibase header (z).
     string to_multibase();
+
+    /// Converts the VerifyingKey into a JWK.
+    ///
+    /// Example JWK: 
+    /// ```json
+    /// {
+    ///     "kty": "OKP",
+    ///     "crv": "Ed25519",
+    ///     "x": "87Eihw4hpr8dKxzd-pJ1qV1sYZT0NlwnC1VL8btoJy0"
+    /// }
+    /// ```
+	 string to_jwk();
+
     /// Strictly verify a signature on a message with this public key.
     [Throws=DidSidekicksError]
     void verify_strict([ByRef] string message, [ByRef] Ed25519Signature signature);
+
     /// Strictly verify a signature on a hex message with this public key.
     [Throws=DidSidekicksError]
     void verify_strict_from_hex([ByRef] string message_hex, [ByRef] Ed25519Signature signature);
@@ -369,6 +434,7 @@ interface CryptoSuiteProofOptions {
     /// - `proof_purpose: "authentication"`
     [Name=build]
     constructor();
+
     /// The super-potent non-empty constructor.
     ///
     /// As nearly all arguments are optional - see the default constructor for default values.
@@ -384,9 +450,11 @@ interface EddsaJcs2022Cryptosuite {
     /// The signing-capable constructor.
     [Name=from_signing_key]
     constructor([ByRef] Ed25519SigningKey signing_key);
+
     /// The verifying-capable constructor.
     [Name=from_verifying_key]
     constructor([ByRef] Ed25519VerifyingKey verifying_key);
+
     /// Create a data integrity proof given an unsecured data document, as specified by https://www.w3.org/TR/vc-di-eddsa/#create-proof-eddsa-jcs-2022.
     ///
     /// The `VCDataIntegrityProofVerificationError` error code denotes a failure w.r.t. https://www.w3.org/TR/vc-di-eddsa/#transformation-eddsa-jcs-2022.
@@ -396,6 +464,7 @@ interface EddsaJcs2022Cryptosuite {
     /// A runtime error occurs in case this `EddsaJcs2022Cryptosuite` instance features no signing key (required for proof creation).
     [Throws=DidSidekicksError]
     string add_proof([ByRef] string unsecured_document, [ByRef] CryptoSuiteProofOptions options);
+
     /// Verify a data integrity proof given an secured data document, as specified by https://www.w3.org/TR/vc-di-eddsa/#verify-proof-eddsa-jcs-2022.
     ///
     /// The `VCDataIntegrityProofTransformationError` error code denotes a failure w.r.t. https://www.w3.org/TR/vc-di-eddsa/#transformation-eddsa-jcs-2022
@@ -412,6 +481,7 @@ interface JcsSha256Hasher {
     /// The empty (default) constructor.
     [Name=build]
     constructor();
+
     /// Serialize the given data structure as a JCS UTF-8 string and calculate SHA2-256 hash out of it.
     ///
     /// The hash encoded as hex strict representation is returned. Lower case letters are used (e.g. f9b4ca).
@@ -419,6 +489,7 @@ interface JcsSha256Hasher {
     /// The `JscHashingFailed` error code denotes serialization failure.
     [Throws=DidSidekicksError]
     string encode_hex([ByRef] string json);
+
     /// Serialize the given data structure as a JCS UTF-8 string and calculate SHA2-256 multihash out of it.
     ///
     /// The multihash encoded in `base58btc` format is returned.

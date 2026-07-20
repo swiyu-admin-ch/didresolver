@@ -33,6 +33,7 @@ hex = "0.4.3"
 bs58 = { version = "0.5.1", features = ["check", "cb58"] }
 thiserror.workspace = true
 jsonschema = "0.46.4"
+base64 = "0.22.1"
 
 [build-dependencies]
 uniffi = { workspace = true, features = ["build"] }

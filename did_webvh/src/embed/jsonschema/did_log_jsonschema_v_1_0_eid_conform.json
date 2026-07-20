@@ -261,7 +261,6 @@
               },
               "required": [
                 "kty",
-                "alg",
                 "kid",
                 "crv",
                 "x"
