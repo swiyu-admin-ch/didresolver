@@ -577,14 +577,12 @@ mod test {
         );
 
         params = params_for_genesis_did_doc.clone();
-        /* TODO Test the "portable" DID parameter properly. Currently ignored/disabled for the sake of being able to use test vectors from third parties
         params.portable = Some(true);
         assert_trust_did_web_error(
             params.validate_initial(),
             DidResolverErrorKind::InvalidDidParameter,
             "Unsupported 'portable' DID parameter",
         );
-        */
         params.portable = Some(false);
         params.validate_initial().unwrap(); // should not panic
         params.portable = None;

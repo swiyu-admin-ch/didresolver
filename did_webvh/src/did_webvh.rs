@@ -1233,12 +1233,6 @@ mod test {
         "must be set to the id of the DID log"
     )]
     #[case(
-        "test_data/manually_created/unhappy_path/portable.jsonl",
-        "did:webvh:QmW48UthNM556Y99qU3mrcYvP9AxtGaQW2L7bRkRCj3QnC:example.com",
-        DidResolverErrorKind::InvalidDidDocument,
-        "may only change when portable is active"
-    )]
-    #[case(
         "test_data/generated_by_didtoolbox_java/did.jsonl",
         "did:webvh:Qmb8aoucR7eBFKyZHJgKivUTQhYmzSoi8mM1eDZoQYzefo:identifier-reg.trust-infra.swiyu-int.admin.ch:changed:url",
         DidResolverErrorKind::InvalidDidDocument,
