@@ -32,6 +32,7 @@ pub enum WebVerifiableHistoryDidLogEntryJsonSchema {
     V1_0EidConform,
 }
 
+#[expect(clippy::missing_trait_methods, reason = "full implementation not necessary")]
 impl DidLogEntryJsonSchema for WebVerifiableHistoryDidLogEntryJsonSchema {
     /// Converts this type into a corresponding JSON schema in UTF-8 format.
     #[inline]

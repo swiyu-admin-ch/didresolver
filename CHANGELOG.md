@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 ### Changed
+- id of verification method must now be of the DID log.
 
 ## [2.8.3] - 2026-07-03
 
