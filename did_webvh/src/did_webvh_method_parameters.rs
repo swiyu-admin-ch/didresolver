@@ -39,8 +39,8 @@ pub struct WebVerifiableHistoryDidMethodParameters {
 
     /// A JSON object declaring the set of witnesses and threshold number of witness proofs required to update the DID.
     #[serde(default)]
-    #[serde(rename = "witnesses", skip_serializing_if = "Option::is_none")]
-    pub witnesses: Option<Witness>,
+    #[serde(rename = "witness", skip_serializing_if = "Option::is_none")]
+    pub witness: Option<Witness>,
 
     /// An optional entry whose value is a JSON array containing a list of URLs ([RFC9110]) that have notified the DID Controller that they are willing to watch the DID. See the Watchers section of this specification for more details.
     #[serde(rename = "watchers", default)]
@@ -72,7 +72,7 @@ impl WebVerifiableHistoryDidMethodParameters {
             scid: None,
             update_keys: None,
             next_keys: None,
-            witnesses: None,
+            witness: None,
             watchers: None,
             deactivated: None,
             portable: None,
@@ -87,7 +87,7 @@ impl WebVerifiableHistoryDidMethodParameters {
             scid: Some(scid),
             update_keys: Some(vec![update_key]),
             next_keys: None,
-            witnesses: None,
+            witness: None,
             watchers: None,
             deactivated: None,
             ttl: None,
@@ -159,7 +159,7 @@ impl WebVerifiableHistoryDidMethodParameters {
         // As the DIDs are published on a central base registry the DID controller and the hoster
         // are different actors and the chance that both are compromised is minimized.
         // It would add complexity to the resolving of a DID and the base registry would need to also host did-witness.json file.
-        if let Some(witness) = self.witnesses.to_owned()
+        if let Some(witness) = self.witness.to_owned()
             && (witness.threshold > 0 || !witness.witnesses.is_empty())
         {
             // A witness item in the first DID log entry is used to define the witnesses and necessary threshold for that initial log entry.
@@ -254,7 +254,7 @@ impl WebVerifiableHistoryDidMethodParameters {
 
         self.next_keys = new_params.next_keys.or(current_params.next_keys);
 
-        self.witnesses = match new_params.witnesses {
+        self.witness = match new_params.witness {
             Some(witness) => {
                 if witness.threshold > 0 || !witness.witnesses.is_empty() {
                     return Err(DidResolverError::InvalidDidParameter(
@@ -266,7 +266,7 @@ impl WebVerifiableHistoryDidMethodParameters {
                     witnesses: vec![],
                 })
             }
-            None => current_params.witnesses,
+            None => current_params.witness,
         };
 
         self.watchers = new_params.watchers.or(current_params.watchers);
@@ -599,7 +599,7 @@ mod test {
 
         // Test "witnesses" DID parameter
         params = params_for_genesis_did_doc;
-        params.witnesses = Some(Witness {
+        params.witness = Some(Witness {
             threshold: 1,
             witnesses: vec!["some_valid_witness".to_owned()],
         });
@@ -608,12 +608,12 @@ mod test {
             DidResolverErrorKind::InvalidDidParameter,
             "Unsupported non-empty 'witness' DID parameter.",
         );
-        params.witnesses = Some(Witness {
+        params.witness = Some(Witness {
             threshold: 0,
             witnesses: vec![],
         });
         params.validate_initial().unwrap(); // should not panic
-        params.witnesses = None;
+        params.witness = None;
         params.validate_initial().unwrap(); // should not panic
     }
 
@@ -662,7 +662,7 @@ mod test {
         // Test "witness" DID parameter
         old_params = base_params.clone();
         new_params = new_base_params.clone();
-        new_params.witnesses = Some(Witness {
+        new_params.witness = Some(Witness {
             threshold: 1,
             witnesses: vec!["some_valid_witness".to_owned()],
         });
@@ -671,12 +671,12 @@ mod test {
             DidResolverErrorKind::InvalidDidParameter,
             "Unsupported non-empty 'witnesses' DID parameter.",
         );
-        new_params.witnesses = Some(Witness {
+        new_params.witness = Some(Witness {
             threshold: 0,
             witnesses: vec![],
         });
         old_params.merge_from(&new_params).unwrap(); // should not panic
-        new_params.witnesses = None;
+        new_params.witness = None;
         old_params.merge_from(&new_params).unwrap(); // should not panic
 
         // Test watchers
