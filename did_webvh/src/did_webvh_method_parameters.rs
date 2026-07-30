@@ -1020,4 +1020,25 @@ mod test {
         assert!(ttl.get_u64_value().is_none());
         assert_eq!(7200, ttl.get_i64_value().unwrap());
     }
+    #[test]
+    fn test_witness_serialization() {
+        let witness = Witness {
+            threshold: 1,
+            witnesses: vec!["did:webvh:scid:witness1".to_owned(), "did:webvh:scid:witness2".to_owned()],
+        };
+        let mut params = WebVerifiableHistoryDidMethodParameters::empty();
+        params.witness = Some(witness);
+        let serialized = serde_json::to_string(&params).unwrap();
+        assert_eq!(
+            serialized,
+            r#"{"witness":{"threshold":1,"witnesses":["did:webvh:scid:witness1","did:webvh:scid:witness2"]}}"#
+        );
+
+        let witness_empty = Witness {
+            threshold: 0,
+            witnesses: vec![],
+        };
+        let serialized_empty = serde_json::to_string(&witness_empty).unwrap();
+        assert_eq!(serialized_empty, "{}");
+    }
 }
