@@ -38,6 +38,7 @@ pub struct WebVerifiableHistoryDidMethodParameters {
     pub next_keys: Option<Vec<String>>,
 
     /// A JSON object declaring the set of witnesses and threshold number of witness proofs required to update the DID.
+    /// For more info see https://identity.foundation/didwebvh/v1.0/#the-witness-parameter
     #[serde(default)]
     #[serde(rename = "witness", skip_serializing_if = "Option::is_none")]
     pub witness: Option<Witness>,
@@ -488,7 +489,13 @@ pub struct Witness {
 
     #[serde(skip_serializing_if = "Vec::is_empty")]
     #[serde(default)]
-    pub witnesses: Vec<String>,
+    pub witnesses: Vec<WitnessEntry>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[non_exhaustive]
+pub struct WitnessEntry {
+    pub id: String
 }
 
 /// This is only used for serialize.
@@ -511,7 +518,7 @@ const DID_METHOD_PARAMETER_VERSION: &str = "did:webvh:1.0";
 )]
 mod test {
     use crate::did_webvh_method_parameters::{
-        DID_METHOD_PARAMETER_VERSION, WebVerifiableHistoryDidMethodParameters, Witness,
+        DID_METHOD_PARAMETER_VERSION, WebVerifiableHistoryDidMethodParameters, Witness, WitnessEntry,
     };
     use crate::test::assert_trust_did_web_error;
     use did_sidekicks::did_method_parameters::DidMethodParameter;
@@ -601,7 +608,7 @@ mod test {
         params = params_for_genesis_did_doc;
         params.witness = Some(Witness {
             threshold: 1,
-            witnesses: vec!["some_valid_witness".to_owned()],
+            witnesses: vec![WitnessEntry{id: "some_valid_witness".to_owned()}],
         });
         assert_trust_did_web_error(
             params.validate_initial(),
@@ -664,7 +671,7 @@ mod test {
         new_params = new_base_params.clone();
         new_params.witness = Some(Witness {
             threshold: 1,
-            witnesses: vec!["some_valid_witness".to_owned()],
+            witnesses: vec![WitnessEntry { id:"some_valid_witness".to_owned() }],
         });
         assert_trust_did_web_error(
             old_params.merge_from(&new_params),
@@ -1024,21 +1031,37 @@ mod test {
     fn test_witness_serialization() {
         let witness = Witness {
             threshold: 1,
-            witnesses: vec!["did:webvh:scid:witness1".to_owned(), "did:webvh:scid:witness2".to_owned()],
+            witnesses: vec![WitnessEntry{id:"did:webvh:scid:witness1".to_owned()}, WitnessEntry{id:"did:webvh:scid:witness2".to_owned()}],
         };
         let mut params = WebVerifiableHistoryDidMethodParameters::empty();
         params.witness = Some(witness);
         let serialized = serde_json::to_string(&params).unwrap();
         assert_eq!(
             serialized,
-            r#"{"witness":{"threshold":1,"witnesses":["did:webvh:scid:witness1","did:webvh:scid:witness2"]}}"#
+            r#"{"witness":{"threshold":1,"witnesses":[{"id":"did:webvh:scid:witness1"},{"id":"did:webvh:scid:witness2"}]}}"#
         );
+    }
 
-        let witness_empty = Witness {
-            threshold: 0,
-            witnesses: vec![],
-        };
-        let serialized_empty = serde_json::to_string(&witness_empty).unwrap();
-        assert_eq!(serialized_empty, "{}");
+    #[test]
+    fn test_witness_deserialization() {
+        let json = r#"{
+            "method": "did:webvh:1.0",
+            "scid": "scid",
+            "updateKeys": ["update_key"],
+            "witness": {
+                "threshold": 1,
+                "witnesses": [
+                    {"id": "did:webvh:scid:witness1"},
+                    {"id": "did:webvh:scid:witness2"}
+                ]
+            }
+        }"#;
+        let params: WebVerifiableHistoryDidMethodParameters = serde_json::from_str(json).unwrap();
+        assert!(params.witness.is_some());
+        let witness = params.witness.unwrap();
+        assert_eq!(witness.threshold, 1);
+        assert_eq!(witness.witnesses.len(), 2);
+        assert_eq!(witness.witnesses[0].id, "did:webvh:scid:witness1");
+        assert_eq!(witness.witnesses[1].id, "did:webvh:scid:witness2");
     }
 }
