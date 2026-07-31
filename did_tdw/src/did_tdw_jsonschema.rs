@@ -33,6 +33,7 @@ const DID_LOG_ENTRY_JSONSCHEMA_V_0_3_FILENAME: &str = "did_log_jsonschema_v_0_3.
 const DID_LOG_ENTRY_JSONSCHEMA_V_0_3_EID_CONFORM_FILENAME: &str =
     "did_log_jsonschema_v_0_3_eid_conform.json";
 
+#[expect(clippy::missing_trait_methods, reason = "full implementation not necessary")]
 impl DidLogEntryJsonSchema for TrustDidWebDidLogEntryJsonSchema {
     /// Converts this type into a corresponding JSON schema in UTF-8 format.
     #[inline]

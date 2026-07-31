@@ -109,6 +109,12 @@ impl VerificationMethod {
             )));
         }
 
+        if !self.id.starts_with(document_id) {
+            return Err(DidSidekicksError::InvalidDidDocument(
+                "'id' of verification method must be of the did log".into(),
+            ));
+        }
+
         if self.public_key_multibase.is_some() {
             return Err(DidSidekicksError::InvalidDidDocument(
                 "'publicKeyMultibase' must not be used".into(),
@@ -980,6 +986,25 @@ mod test {
         let Err(_) = doc.validate() else {
             panic!("Expected document with 'key_agreement' to be invalid but was ok");
         };
+    }
+
+    #[test]
+    fn verificationMethod_validate_withIdNotMatchingDocumentId_returnsErr() {
+        let document_id = "did:webvh:scid:attacker.com";
+        let verification_method = VerificationMethod {
+            id: "did:webvh:scid:example.com#kid".into(),
+            controller: document_id.into(),
+            verification_type: VerificationType::JsonWebKey2020,
+            public_key_multibase: None,
+            public_key_jwk: Some(jwk("kid")),
+        };
+
+        let Err(err) = verification_method.validate(document_id) else {
+            panic!(
+                "Expected verification method to be invalid due to id and document id mismatch."
+            );
+        };
+        assert!(err.to_string().contains("must be of the did log"));
     }
 
     // Helper functions
