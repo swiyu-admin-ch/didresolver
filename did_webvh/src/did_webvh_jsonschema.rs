@@ -190,6 +190,46 @@ mod test {
             "proofValue": "z4a92V6EKmWvURx99HXVTEM6KJhbVZZ1s4qN8HJXTMesSoDJx1VpTNtuNUpae2eHpXXKwBGjtCYC2EQK7b6eczmnp",
             "challenge": "1-QmcykRx2WnZz2L9s5ACN34E4ADEYGiCde4BJSzoxrhYoiR"
         }],}), true, "")]
+    // PQEID: same as the V1_0EidConform-specific happy path case above, but featuring an
+    // ML-DSA (AKP) publicKeyJwk instead of an EC one.
+    #[case(vec![WebVerifiableHistoryDidLogEntryJsonSchema::V1_0EidConform], json!({
+        "versionId": "1-QmcykRx2WnZz2L9s5ACN34E4ADEYGiCde4BJSzoxrhYoiR",
+        "versionTime": "2012-12-12T12:12:12Z",
+        "parameters": {
+            "method": "did:webvh:1.0",
+            "scid": "QmZ5tnGo1fHNEzHDpG2Bx5dmT3eGNmBY9QATtm6DrFMzcH",
+            "updateKeys": [
+              "z6MkvdAjfVZ2CWa38V2VgZvZVjSkENZpiuiV5gyRKsXDA8UP",
+              "z6Mkwf4PgXLq8sRfucTggtZXmigKZP7gQhFamk3XHGV54QvF"
+            ],
+            "portable": false,
+            "nextKeyHashes": [],
+            "witness": {},
+            "deactivated": false
+        },
+        "state": {
+            "id": "did:webvh:QmZ5tnGo1fHNEzHDpG2Bx5dmT3eGNmBY9QATtm6DrFMzcH:example.com",
+            "@context": ["https://www.w3.org/ns/did/v1", "https://w3id.org/security/jwk/v1"],
+            "verificationMethod": [{
+                "id": "did:webvh:QmT7BM5RsM9SoaqAQKkNKHBzSEzpS2NRzT2oKaaaPYPpGr:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01",
+                "type": "JsonWebKey2020",
+                "publicKeyJwk":{
+                    "kty": "AKP",
+                    "alg": "ML-DSA-44",
+                    "kid": "auth-key-01",
+                    "pub": "y0s5MPLAOhCEYcysEy35rbSAMs_C3wRGgiC-qwKGZSsEbEDBBrtD6No0awlidOH"
+                }
+            }],
+        },
+        "proof": [{
+            "type": "DataIntegrityProof",
+            "cryptosuite": "eddsa-jcs-2022",
+            "created": "2012-12-12T12:12:12Z",
+            "verificationMethod": "did:key:z6MkvdAjfVZ2CWa38V2VgZvZVjSkENZpiuiV5gyRKsXDA8UP#z6MkvdAjfVZ2CWa38V2VgZvZVjSkENZpiuiV5gyRKsXDA8UP",
+            "proofPurpose": "authentication",
+            "proofValue": "z4a92V6EKmWvURx99HXVTEM6KJhbVZZ1s4qN8HJXTMesSoDJx1VpTNtuNUpae2eHpXXKwBGjtCYC2EQK7b6eczmnp",
+            "challenge": "1-QmcykRx2WnZz2L9s5ACN34E4ADEYGiCde4BJSzoxrhYoiR"
+        }],}), true, "")]
     #[case(vec![WebVerifiableHistoryDidLogEntryJsonSchema::V1_0, WebVerifiableHistoryDidLogEntryJsonSchema::V1_0EidConform], json!({
         "versionId": "invalid-version-id",
         "versionTime": "2012-12-12T12:12:12Z",

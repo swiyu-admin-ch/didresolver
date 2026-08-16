@@ -242,6 +242,44 @@
               ],
               "additionalProperties": false,
               "$comment": "The publicKeyJwk property is OPTIONAL. If present, the value MUST be a map representing a JSON Web Key that conforms to [RFC7517]."
+            },
+            {
+              "description": "PQEID: ML-DSA (module-lattice-based digital signature algorithm, FIPS 204), represented as an AKP (Algorithm Key Pair) JWK per draft-ietf-jose-fully-specified-algorithms / draft-bhatia-jose-akp-jose-akp.",
+              "type": "object",
+              "properties": {
+                "kty": {
+                  "enum": [
+                    "AKP"
+                  ],
+                  "$comment": "The 'kty' (key type) parameter identifies the cryptographic algorithm family used with the key, such as 'RSA' or 'EC'."
+                },
+                "alg": {
+                  "enum": [
+                    "ML-DSA-44",
+                    "ML-DSA-65",
+                    "ML-DSA-87"
+                  ],
+                  "$comment": "Identifies the algorithm intended for use with the key. REQUIRED for AKP JWKs, since 'kty' alone does not determine the ML-DSA parameter set."
+                },
+                "kid": {
+                  "type": "string",
+                  "minLength": 1,
+                  "$comment": "The 'kid' (key ID) parameter is used to match a specific key."
+                },
+                "pub": {
+                  "type": "string",
+                  "minLength": 1,
+                  "$comment": "The 'pub' parameter contains the public key, base64url-encoded."
+                }
+              },
+              "required": [
+                "kty",
+                "alg",
+                "kid",
+                "pub"
+              ],
+              "additionalProperties": false,
+              "$comment": "The publicKeyJwk property is OPTIONAL. If present, the value MUST be a map representing a JSON Web Key that conforms to [RFC7517]."
             }
           ]
         }

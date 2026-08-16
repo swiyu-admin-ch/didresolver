@@ -95,6 +95,7 @@ dictionary Jwk {
   string? crv;
   string? x;
   string? y;
+  string? pub_key;
 };
 
 enum VerificationType {
