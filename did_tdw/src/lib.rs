@@ -319,6 +319,18 @@ mod test {
         "did:tdw:Qmf542Wb4CHvXRQJzapNhuXP6F9FNr9Kt3nwqGXHA17u7F:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
     )]
     #[case(
+        "test_data/generated_by_didtoolbox_java/legacy/did-2.1.0.jsonl",
+        "did:tdw:QmWdXkePFFo2d7CTmQtERcJWC3K1L1arw3Z2vhWp4dLUME:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
+    )]
+    #[case(
+        "test_data/generated_by_didtoolbox_java/legacy/did-2.2.1.jsonl",
+        "did:tdw:QmZ3ew6giMCZArDr4soVSsg16sSrRwJojc8PsxV59RGgH9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
+    )]
+    #[case(
+        "test_data/generated_by_didtoolbox_java/legacy/did-2.3.0.jsonl",
+        "did:tdw:Qmb9nmTEWAHunN2W8Vx1UwN6M2BKJHvHGbupVfJnFjCiqQ:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
+    )]
+    #[case(
         "test_data/generated_by_didtoolbox_java/v_0_3_eid_conform/did_doc_without_controller.jsonl",
         "did:tdw:QmZf4Pb1GoPdYaZBF3Sc1nVspXef4qc816C7eBzzuXMoGk:domain.com%3A8080:path1:path2"
     )]

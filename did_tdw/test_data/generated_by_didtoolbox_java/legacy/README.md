@@ -53,7 +53,7 @@ done
 
 # All groupId=ch.admin.swiyu versions available on Maven Central Repository.
 # Further versions will be added here as soon as they get released
-for ver in 1.8.0 1.9.0 1.9.1 2.0.0; do \
+for ver in 1.8.0 1.9.0 1.9.1 2.0.0 2.1.0 2.2.1 2.3.0; do \
     create_did_log_using_didtoolbox_ver https://repo1.maven.org/maven2/ch/admin/swiyu/didtoolbox $ver $DID_URL
 done
 ```
@@ -65,7 +65,9 @@ Here is a short list of all the DID Resolver versions used by the DID Toolbox:
 
 |                                  didresolver<br>version                                   | Date<br>published | Used in<br>didtoolbox<br>version |                                       All other<br>dependents                                       |
 |:-----------------------------------------------------------------------------------------:|:-----------------:|:--------------------------------:|:---------------------------------------------------------------------------------------------------:|
-|      [2.7.0](https://central.sonatype.com/artifact/ch.admin.swiyu/didresolver/2.7.0)      |    2026-03-25     |          2.0.0<br>1.9.1          |      [link](https://central.sonatype.com/artifact/ch.admin.swiyu/didresolver/2.7.0/dependents)      |
+|      [2.9.0](https://central.sonatype.com/artifact/ch.admin.swiyu/didresolver/2.9.0)      |    2026-07-30     |              2.3.0               |      [link](https://central.sonatype.com/artifact/ch.admin.swiyu/didresolver/2.9.0/dependents)      |
+|      [2.8.2](https://central.sonatype.com/artifact/ch.admin.swiyu/didresolver/2.8.2)      |    2026-06-11     |          2.2.0<br>2.2.1          |      [link](https://central.sonatype.com/artifact/ch.admin.swiyu/didresolver/2.8.2/dependents)      |
+|      [2.7.0](https://central.sonatype.com/artifact/ch.admin.swiyu/didresolver/2.7.0)      |    2026-03-25     |     2.1.0<br>2.0.0<br>1.9.1      |      [link](https://central.sonatype.com/artifact/ch.admin.swiyu/didresolver/2.7.0/dependents)      |
 | [2.6.0](https://central.sonatype.com/artifact/io.github.swiyu-admin-ch/didresolver/2.6.0) |    2026-01-13     |          1.9.0<br>1.8.0          | [link](https://central.sonatype.com/artifact/io.github.swiyu-admin-ch/didresolver/2.6.0/dependents) |
 | [2.5.0](https://central.sonatype.com/artifact/io.github.swiyu-admin-ch/didresolver/2.5.0) |    2026-01-07     |                -                 | [link](https://central.sonatype.com/artifact/io.github.swiyu-admin-ch/didresolver/2.5.0/dependents) |
 | [2.4.0](https://central.sonatype.com/artifact/io.github.swiyu-admin-ch/didresolver/2.4.0) |    2025-11-24     |                -                 | [link](https://central.sonatype.com/artifact/io.github.swiyu-admin-ch/didresolver/2.4.0/dependents) |
