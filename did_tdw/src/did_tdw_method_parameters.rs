@@ -217,6 +217,8 @@ impl TrustDidWebDidMethodParameters {
             (Some(true), Some(false)) => return Err(DidResolverError::InvalidDidParameter(
                 "Invalid 'prerotation' DID parameter. Once the value is set to true in a DID log entry it MUST NOT be set to false in a subsequent entry.".to_owned(),
             )),
+            (Some(false), Some(true)) => return Err(DidResolverError::InvalidDidParameter("Invalid 'prerotation' DID parameter. Prerotation is not supported".to_owned(),
+            )),
             (_, Some(new_pre)) => Some(new_pre),
             (_, None) => current_params.prerotation
         };
@@ -618,7 +620,11 @@ mod test {
         assert!(old_params.merge_from(&new_params).is_ok());
         old_params.prerotation = Some(false);
         new_params.prerotation = Some(true);
-        assert!(old_params.merge_from(&new_params).is_ok());
+        assert_trust_did_web_error(
+            old_params.merge_from(&new_params),
+            DidResolverErrorKind::InvalidDidParameter,
+            "Invalid 'prerotation' DID parameter.",
+        );
         new_params.prerotation = None;
         assert!(old_params.merge_from(&new_params).is_ok());
 
