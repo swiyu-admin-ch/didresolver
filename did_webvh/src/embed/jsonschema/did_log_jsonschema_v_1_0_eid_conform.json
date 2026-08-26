@@ -116,14 +116,12 @@
           },
           "$comment": "Services are used in DID documents to express ways of communicating with the DID subject or associated entities. As specified by https://www.w3.org/TR/did-1.0/#services. CAUTION (e-ID conformity): Although the 'service' property is PROHIBITED in e-ID, it is left OPTIONAL for the sake of being able to use test vectors from third parties."
         },
-        "profile_version":  {
+        "profile_version": {
           "type": "string",
           "$comment": "A string difining the version of the swiss profile being used."
         }
       },
-      "required": [
-        "id"
-      ],
+      "required": ["id"],
       "additionalProperties": true
     },
     "verificationMethod": {
@@ -142,10 +140,7 @@
           "$comment": "The value of the controller property MUST be a string that conforms to the [URL] syntax. Kept for the sake of backward compatibility. CAUTION (e-ID conformity): Although the 'controller' property is PROHIBITED in e-ID, it is kept as OPTIONAL (not REQUIRED) for the sake of being able to use test vectors from third parties."
         },
         "type": {
-          "enum": [
-            "JsonWebKey2020",
-            "Multikey"
-          ],
+          "enum": ["JsonWebKey2020", "Multikey"],
           "$comment": "The value of the type property MUST be a string that references exactly one verification method type."
         },
         "publicKeyMultibase": {
@@ -160,9 +155,7 @@
               "type": "object",
               "properties": {
                 "kty": {
-                  "enum": [
-                    "EC"
-                  ],
+                  "enum": ["EC"],
                   "$comment": "The 'kty' (key type) parameter identifies the cryptographic algorithm family used with the key, such as 'RSA' or 'EC'."
                 },
                 "use": {
@@ -177,9 +170,7 @@
                   "$comment": "The 'key_ops' (key operations) parameter identifies the operation(s) for which the key is intended to be used."
                 },
                 "crv": {
-                  "enum": [
-                    "P-256"
-                  ],
+                  "enum": ["P-256"],
                   "$comment": "The 'crv' (curve) parameter identifies the cryptographic curve used with the key. Only P-256 is currently supported."
                 },
                 "kid": {
@@ -202,29 +193,18 @@
                   "$comment": "The 'y' (y coordinate) parameter contains the y coordinate for the Elliptic Curve point."
                 },
                 "use": {
-                  "enum": [
-                    "sig",
-                    "enc"
-                  ],
+                  "enum": ["sig", "enc"],
                   "$comment": "The 'use' (public key use) parameter identifies the intended use of the public key. The 'use' parameter is employed to indicate whether a public key is used for encrypting data or verifying the signature on data."
                 }
               },
-              "required": [
-                "kty",
-                "crv",
-                "kid",
-                "x",
-                "y"
-              ]
+              "required": ["kty", "crv", "kid", "x", "y"]
             },
             {
               "description": "DSA",
               "type": "object",
               "properties": {
                 "kty": {
-                  "enum": [
-                    "OKP"
-                  ],
+                  "enum": ["OKP"],
                   "$comment": "The 'kty' (key type) parameter identifies the cryptographic algorithm family used with the key, such as 'RSA' or 'EC'."
                 },
                 "use": {
@@ -239,9 +219,7 @@
                   "$comment": "The 'key_ops' (key operations) parameter identifies the operation(s) for which the key is intended to be used."
                 },
                 "crv": {
-                  "enum": [
-                    "Ed25519"
-                  ],
+                  "enum": ["Ed25519"],
                   "$comment": "The 'crv' (curve) parameter identifies the cryptographic curve used with the key."
                 },
                 "kid": {
@@ -259,21 +237,13 @@
                   "$comment": "The 'x' (x coordinate) parameter contains the x coordinate for the Elliptic Curve point."
                 }
               },
-              "required": [
-                "kty",
-                "kid",
-                "crv",
-                "x"
-              ]
+              "required": ["kty", "kid", "crv", "x"]
             }
           ],
           "$comment": "The publicKeyJwk property is OPTIONAL. If present, the value MUST be a map representing a JSON Web Key that conforms to [RFC7517]. CAUTION (e-ID conformity): Although the 'publicKeyJwk' property is REQUIRED (not OPTIONAL) in e-ID, it is kept as OPTIONAL (not REQUIRED) for the sake of being able to validate test vectors from third parties."
         }
       },
-      "required": [
-        "id",
-        "type"
-      ],
+      "required": ["id", "type"],
       "$comment": "CAUTION (e-ID conformity): See the comments for 'controller' and 'publicKeyJwk' properties."
     }
   },
@@ -311,7 +281,7 @@
           }
         },
         "nextKeyHashes": {
-          "type": [ "array" ],
+          "type": ["array"],
           "$comment": "A JSON array of strings that are hashes of multikey formatted public keys that MAY be added to the updateKeys list in the next log entry. At least one entry of nextKeyHashes MUST be added to the next updateKeys list.",
           "items": {
             "type": "string",
@@ -319,7 +289,7 @@
           }
         },
         "witness": {
-          "type": [ "object", "null" ],
+          "type": ["object", "null"],
           "$comment": "A JSON object declaring the set of witnesses and threshold number of witness proofs required to update the DID.",
           "properties": {
             "threshold": {
@@ -343,7 +313,7 @@
           "additionalProperties": false
         },
         "watchers": {
-          "type": [ "array", "null" ],
+          "type": ["array", "null"],
           "items": {
             "type": "string"
           },
@@ -358,7 +328,7 @@
           "$comment": "A JSON boolean that indicates whether the DID has been deactivated. A deactivated DID is no longer subject to updates but remains resolvable."
         },
         "ttl": {
-          "type": [ "integer", "null" ],
+          "type": ["integer", "null"],
           "$comment": "An unsigned integer that indicates how long, in seconds, a resolver should cache the resolved did:webvh DID before refreshing."
         }
       },
@@ -420,12 +390,6 @@
       }
     }
   },
-  "required": [
-    "versionId",
-    "versionTime",
-    "parameters",
-    "state",
-    "proof"
-  ],
+  "required": ["versionId", "versionTime", "parameters", "state", "proof"],
   "additionalItems": false
 }

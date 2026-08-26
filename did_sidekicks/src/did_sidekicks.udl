@@ -118,6 +118,7 @@ dictionary Jwk {
   string? y;
   string? key_use;
   sequence<string>? key_ops;
+  string? pub_key;
 };
 
 enum VerificationType {

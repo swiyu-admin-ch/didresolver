@@ -31,6 +31,12 @@ pub struct Jwk {
     pub key_use: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub key_ops: Option<Vec<String>>,
+    // PQEID: ML-DSA (AKP, RFC yet to be finalized - see draft-ietf-cose-dilithium /
+    // draft-bhatia-jose-akp-jose-akp) public key material, for kty="AKP". Absent for all
+    // other kty values. Field named `pub_key` (not `pub`, a Rust keyword) internally;
+    // the wire/JSON representation stays "pub" via the rename below.
+    #[serde(rename = "pub", skip_serializing_if = "Option::is_none")]
+    pub pub_key: Option<String>,
 }
 
 // See https://www.w3.org/TR/did-core/#verification-methods
