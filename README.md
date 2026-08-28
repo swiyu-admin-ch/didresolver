@@ -34,7 +34,7 @@ This repository is part of the ecosystem developed for the future official Swiss
 The goal of this repository is to engage with the community and collaborate on developing the Swiss ecosystem for e-ID and other credentials.
 We warmly encourage you to engage with us by creating an issue in the repository.
 
-For more information about the project please visit the [introduction for the Public Beta](https://www.eid.admin.ch/de/public-beta) or the [Open Source Community](https://github.com/swiyu-admin-ch/community) repository.
+For more information about the project please visit the [introduction for the Sandbox](https://www.eid.admin.ch/en/sandbox-e) or the [Open Source Community](https://github.com/swiyu-admin-ch/community) repository.
 
 ## Using the library
 
@@ -137,7 +137,7 @@ All the relevant reports are available [here](criterion/README.md).
 
 ## Missing Features and Known Issues
 
-The swiyu Public Beta Trust Infrastructure was deliberately released at an early stage to enable future ecosystem participants. The [feature roadmap](https://github.com/orgs/swiyu-admin-ch/projects/1/views/7) shows the current discrepancies between Public Beta and the targeted productive Trust Infrastructure. There may still be minor bugs or security vulnerabilities in the test system. These are marked as [‘KnownIssues’](../../issues) in each repository.
+The swiyu Sandbox Trust Infrastructure was deliberately released at an early stage to enable future ecosystem participants. The [feature roadmap](https://github.com/orgs/swiyu-admin-ch/projects/1/views/7) shows the current discrepancies between Sandbox and the targeted productive Trust Infrastructure. There may still be minor bugs or security vulnerabilities in the test system. These are marked as [‘KnownIssues’](../../issues) in each repository.
 
 ## Contributions and feedback
 
