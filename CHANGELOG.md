@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Next
 
 ### Added
+
+### Fixed
+- Checksum mismatch in Kotlin bindings on aarch64 `(#1324)`
+
+### Changed
+- disallow usage of pre-rotation in DID:TDW logs `(#1206)`
+
+## [2.9.0] - 2026-07-30
+
+### Added
 - Resolver now supports Ed25519 public keys as JWK as verification methods.
 
 ### Fixed
