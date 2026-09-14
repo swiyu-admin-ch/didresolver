@@ -40,6 +40,12 @@ uniffi = { workspace = true, features = ["build"] }
 
 [dev-dependencies]
 rstest.workspace = true
+criterion.workspace = true
+rayon.workspace = true
+
+[[bench]]
+name = "did_doc"
+harness = false
 
 # See [workspace.lints.clippy] in ../Cargo.toml
 # (w.r.t. https://doc.rust-lang.org/cargo/reference/workspaces.html#the-lints-table)
