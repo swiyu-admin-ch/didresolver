@@ -46,6 +46,7 @@ rayon.workspace = true
 [[bench]]
 name = "did_doc"
 harness = false
+rand = "0.10"
 
 # See [workspace.lints.clippy] in ../Cargo.toml
 # (w.r.t. https://doc.rust-lang.org/cargo/reference/workspaces.html#the-lints-table)

@@ -1,5 +1,6 @@
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use did_sidekicks::did_doc::{DidDocNormalized, VerificationMethod, VerificationType};
+use rand::seq::SliceRandom;
 
 pub fn criterion_benchmark_setup(_: &mut Criterion) {
     // On MacOS, this should match the result of running `sysctl -a machdep.cpu` command
@@ -32,7 +33,7 @@ pub fn criterion_benchmark_to_did_doc(c: &mut Criterion) {
         //sampling_mode(SamplingMode::Auto) // intended for long-running benchmarks.
         //.nresamples(4000)
         //.measurement_time(std::time::Duration::from_secs(10))
-        //.sample_size(100)
+        //.sample_size(25)
         //.warm_up_time(Duration::from_secs(5))
     ;
 
@@ -49,7 +50,7 @@ pub fn criterion_benchmark_to_did_doc(c: &mut Criterion) {
                 })
                 .collect();
             let method_references: Vec<_> = (0..*size).map(|i| format!("did:webvh:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#{}", i)).collect();
-            let doc_normalized = DidDocNormalized {
+            let mut doc_normalized = DidDocNormalized {
                 context: Vec::new(),
                 id: format!("Document with {} verification methods", size),
                 verification_method: methods,
@@ -62,6 +63,12 @@ pub fn criterion_benchmark_to_did_doc(c: &mut Criterion) {
                 deactivated: None,
                 profile_version: None,
             };
+            doc_normalized.verification_method.shuffle(&mut rand::rngs::OsRng);
+            doc_normalized.authentication.shuffle(&mut rand::rngs::OsRng);
+            doc_normalized.capability_invocation.shuffle(&mut rand::rngs::OsRng);
+            doc_normalized.capability_delegation.shuffle(&mut rand::rngs::OsRng);
+            doc_normalized.assertion_method.shuffle(&mut rand::rngs::OsRng);
+            doc_normalized.key_agreement.shuffle(&mut rand::rngs::OsRng);
             (size, doc_normalized)
         })
         .collect();
