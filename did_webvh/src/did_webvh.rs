@@ -63,8 +63,7 @@ lazy_static! {
     Regex::new(HAS_PORT_REGEX_STR).unwrap();
 }
 
-/// Limit of 1 MiB, following that of the registry.
-pub const MAX_DID_LOG_FILE_SIZE: usize = 1024 * 1024;
+pub use did_sidekicks::did_doc::MAX_DID_LOG_FILE_SIZE;
 // String here to easily be updated with changes to MAX_DID_LOG_FILE_SIZE
 const MAX_DID_LOG_FILE_SIZE_ERROR_MESSAGE: &str = "DID log must not be bigger than 1MiB";
 

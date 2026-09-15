@@ -3,9 +3,15 @@
 use crate::did_method_parameters::DidMethodParameter;
 use crate::errors::DidSidekicksError;
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashMap};
-use std::rc::Rc;
+use std::collections::HashMap;
 use std::sync::Arc;
+
+/// Limit of 1 MiB, following that of the registry.
+// IMPORTANT: used in DID:TDW & DID:WEBVH, so if this value changes, the error messages there MUST
+// also be updated.
+pub const MAX_DID_LOG_FILE_SIZE: usize = 1024 * 1024;
+// String here to easily be updated with changes to MAX_DID_LOG_FILE_SIZE
+const MAX_DID_DOC_FILE_SIZE_ERROR_MESSAGE: &str = "DID document must be smaller than 1MiB";
 
 /// An entry in DID log file as shown here
 /// https://bcgov.github.io/trustdidweb/#term:did-log-entry.
@@ -35,7 +41,7 @@ pub struct Jwk {
 }
 
 // See https://www.w3.org/TR/did-core/#verification-methods
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[expect(clippy::exhaustive_structs, reason = "..")]
 pub struct VerificationMethod {
     pub id: String,
@@ -129,23 +135,6 @@ impl VerificationMethod {
         }
 
         Ok(())
-    }
-}
-
-#[expect(
-    clippy::missing_trait_methods,
-    reason = "not all trait methods required and implemented to prevent error[E0599]: the method `clone` exists for struct `Vec<did_doc::VerificationMethod>`, but its trait bounds were not satisfied"
-)]
-impl Clone for VerificationMethod {
-    #[inline]
-    fn clone(&self) -> Self {
-        Self {
-            id: self.id.clone(),
-            controller: self.controller.clone(),
-            verification_type: self.verification_type.clone(),
-            public_key_multibase: self.public_key_multibase.clone(),
-            public_key_jwk: self.public_key_jwk.clone(),
-        }
     }
 }
 
@@ -259,76 +248,73 @@ pub struct DidDocNormalized {
 impl DidDocNormalized {
     #[inline]
     pub fn to_did_doc(&self) -> Result<DidDoc, DidSidekicksError> {
-        let verification_methods: HashMap<_, _> = self
+        let mut verification_methods: HashMap<_, _> = self
             .verification_method
             .iter()
-            .map(|v| (v.id.clone(), Arc::new(v.clone())))
+            .map(|method| (method.id.clone(), Arc::new(method.clone())))
             .collect();
 
         let authentication = self
             .authentication
             .iter()
-            .map(|v| match verification_methods.get(v) {
-                Some(v) => Ok(v.clone()),
-                None => Err(DidSidekicksError::InvalidDidDocument(format!(
-                    "Authentication (reference) key refers to non-existing verification method: {}",
-                    v
-                ))),
-            })
-            .collect::<Result<Vec<_>, _>>()?;
+            .map(|method_name| verification_methods.get(method_name).map_or_else(
+               || Err(DidSidekicksError::InvalidDidDocument(format!("Authentication (reference) key refers to non-existing verification method: {}", method_name))), 
+               |method| Ok(Arc::clone(method))
+            )).collect::<Result<Vec<_>, _>>()?;
 
         let capability_invocation = self
             .capability_invocation
             .iter()
-            .map(|v| match verification_methods.get(v) {
-                Some(v) => Ok(v.clone()),
-                None => Err(DidSidekicksError::InvalidDidDocument(format!(
-                    "Authentication (reference) key refers to non-existing verification method: {}",
-                    v
-                ))),
-            })
-            .collect::<Result<Vec<_>, _>>()?;
+            .map(|method_name| verification_methods.get(method_name).map_or_else(
+               || Err(DidSidekicksError::InvalidDidDocument(format!("Capability Invocation (reference) key refers to non-existing verification method: {}", method_name))), 
+               |method| Ok(Arc::clone(method))
+            )).collect::<Result<Vec<_>, _>>()?;
 
         let capability_delegation = self
             .capability_delegation
             .iter()
-            .map(|v| match verification_methods.get(v) {
-                Some(v) => Ok(v.clone()),
-                None => Err(DidSidekicksError::InvalidDidDocument(format!(
-                    "Authentication (reference) key refers to non-existing verification method: {}",
-                    v
-                ))),
-            })
-            .collect::<Result<Vec<_>, _>>()?;
+            .map(|method_name| verification_methods.get(method_name).map_or_else(
+               || Err(DidSidekicksError::InvalidDidDocument(format!("Capability Delegation (reference) key refers to non-existing verification method: {}", method_name))), 
+               |method| Ok(Arc::clone(method))
+            )).collect::<Result<Vec<_>, _>>()?;
 
         let assertion_method = self
             .assertion_method
             .iter()
-            .map(|v| match verification_methods.get(v) {
-                Some(v) => Ok(v.clone()),
-                None => Err(DidSidekicksError::InvalidDidDocument(format!(
-                    "Authentication (reference) key refers to non-existing verification method: {}",
-                    v
-                ))),
-            })
-            .collect::<Result<Vec<_>, _>>()?;
+            .map(|method_name| verification_methods.get(method_name).map_or_else(
+               || Err(DidSidekicksError::InvalidDidDocument(format!("Assertion Method (reference) key refers to non-existing verification method: {}", method_name))), 
+               |method| Ok(Arc::clone(method))
+            )).collect::<Result<Vec<_>, _>>()?;
 
         let key_agreement = self
             .key_agreement
             .iter()
-            .map(|v| match verification_methods.get(v) {
-                Some(v) => Ok(v.clone()),
-                None => Err(DidSidekicksError::InvalidDidDocument(format!(
-                    "Authentication (reference) key refers to non-existing verification method: {}",
-                    v
-                ))),
+            .map(|method_name| verification_methods.get(method_name).map_or_else(
+               || Err(DidSidekicksError::InvalidDidDocument(format!("Key Agreement (reference) key refers to non-existing verification method: {}", method_name))), 
+               |method| Ok(Arc::clone(method))
+            )).collect::<Result<Vec<_>, _>>()?;
+
+        // To preserve order
+        let verification_method = self
+            .verification_method
+            .iter()
+            .map(|method| {
+                verification_methods.remove(&method.id).map_or_else(
+                    || {
+                        Err(DidSidekicksError::InvalidDidDocument(format!(
+                            "Multiple verification methods used the same ID: {}",
+                            method.id
+                        )))
+                    },
+                    |method| Ok(method),
+                )
             })
             .collect::<Result<Vec<_>, _>>()?;
 
         Ok(DidDoc {
             context: self.context.to_owned(),
             id: self.id.clone(),
-            verification_method: verification_methods.into_values().collect(),
+            verification_method,
             authentication,
             capability_invocation,
             capability_delegation,
@@ -389,20 +375,23 @@ impl DidDoc {
     pub fn get_verification_method(&self) -> Vec<VerificationMethod> {
         self.verification_method
             .iter()
-            .map(|v| (**v).clone())
+            .map(|method| (**method).clone())
             .collect()
     }
 
     #[inline]
     pub fn get_authentication(&self) -> Vec<VerificationMethod> {
-        self.authentication.iter().map(|v| (**v).clone()).collect()
+        self.authentication
+            .iter()
+            .map(|method| (**method).clone())
+            .collect()
     }
 
     #[inline]
     pub fn get_capability_invocation(&self) -> Vec<VerificationMethod> {
         self.capability_invocation
             .iter()
-            .map(|v| (**v).clone())
+            .map(|method| (**method).clone())
             .collect()
     }
 
@@ -410,7 +399,7 @@ impl DidDoc {
     pub fn get_capability_delegation(&self) -> Vec<VerificationMethod> {
         self.capability_delegation
             .iter()
-            .map(|v| (**v).clone())
+            .map(|method| (**method).clone())
             .collect()
     }
 
@@ -418,7 +407,7 @@ impl DidDoc {
     pub fn get_assertion_method(&self) -> Vec<VerificationMethod> {
         self.assertion_method
             .iter()
-            .map(|v| (**v).clone())
+            .map(|method| (**method).clone())
             .collect()
     }
 
@@ -480,29 +469,33 @@ impl DidDoc {
             verification_method: self
                 .verification_method
                 .iter()
-                .map(|v| (**v).clone())
+                .map(|method| (**method).clone())
                 .collect(),
             authentication: self
                 .authentication
                 .iter()
-                .map(|x| x.id.to_owned())
+                .map(|method| method.id.to_owned())
                 .collect(),
             capability_invocation: self
                 .capability_invocation
                 .iter()
-                .map(|x| x.id.to_owned())
+                .map(|method| method.id.to_owned())
                 .collect(),
             capability_delegation: self
                 .capability_delegation
                 .iter()
-                .map(|x| x.id.to_owned())
+                .map(|method| method.id.to_owned())
                 .collect(),
             assertion_method: self
                 .assertion_method
                 .iter()
-                .map(|x| x.id.to_owned())
+                .map(|method| method.id.to_owned())
                 .collect(),
-            key_agreement: self.key_agreement.iter().map(|x| x.id.to_owned()).collect(),
+            key_agreement: self
+                .key_agreement
+                .iter()
+                .map(|method| method.id.to_owned())
+                .collect(),
             controller: self.controller.to_owned(),
             deactivated: self.deactivated.to_owned(),
             profile_version: self.profile_version.to_owned(),
@@ -629,6 +622,11 @@ impl DidDoc {
 /// If no such key exists, [`DidSidekicksError::KeyNotFound`] is returned.
 #[inline]
 pub fn get_key_from_did_doc(did_doc: String, key_id: String) -> Result<Jwk, DidSidekicksError> {
+    if did_doc.len() > MAX_DID_LOG_FILE_SIZE {
+        return Err(DidSidekicksError::InvalidDidDocument(
+            MAX_DID_DOC_FILE_SIZE_ERROR_MESSAGE.into(),
+        ));
+    }
     let doc = match serde_json::from_str::<DidDocNormalized>(did_doc.as_str()) {
         Ok(doc_norm) => match doc_norm.to_did_doc() {
             Ok(doc) => doc,
