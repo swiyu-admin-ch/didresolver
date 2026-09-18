@@ -127,6 +127,18 @@ impl VerificationMethod {
             ));
         }
 
+        if !matches!(
+            self.verification_type,
+            VerificationType::JsonWebKey | VerificationType::JsonWebKey2020
+        ) {
+            return Err(DidSidekicksError::InvalidDidDocument(format!(
+                "Verification method '{}' has an invalid type, must be '{}' or '{}'",
+                self.id,
+                VerificationType::JsonWebKey,
+                VerificationType::JsonWebKey2020
+            )));
+        }
+
         if self.public_key_multibase.is_some() {
             return Err(DidSidekicksError::InvalidDidDocument(
                 "'publicKeyMultibase' must not be used".into(),
@@ -1023,6 +1035,25 @@ mod test {
             );
         };
         assert!(err.to_string().contains("must be of the did log"));
+    }
+
+    #[test]
+    fn verificationMethod_validate_withInvalidMethodType_returnsErr() {
+        let document_id = "did:webvh:scid:example.com";
+        let verification_method = VerificationMethod {
+            id: "did:webvh:scid:example.com#kid".into(),
+            controller: document_id.into(),
+            verification_type: VerificationType::Multikey,
+            public_key_multibase: None,
+            public_key_jwk: Some(jwk("kid")),
+        };
+
+        let Err(err) = verification_method.validate(document_id) else {
+            panic!(
+                "Expected verification method to be invalid due to method type."
+            );
+        };
+        assert!(err.to_string().contains("invalid type"));
     }
 
     // Helper functions
