@@ -73,7 +73,11 @@ pub enum VerificationType {
     Multikey,
     // https://w3c-ccg.github.io/lds-jws2020/#json-web-key-2020
     // https://www.w3.org/TR/did-extensions-properties/#jsonwebkey2020
+    // https://www.rfc-editor.org/info/rfc7517/
     JsonWebKey2020,
+    // https://www.w3.org/TR/cid-1.0/#dfn-publickeyjwk
+    // https://www.rfc-editor.org/info/rfc7517/
+    JsonWebKey,
     // https://www.w3.org/TR/vc-di-eddsa/#ed25519verificationkey2020
     Ed25519VerificationKey2020,
 }
@@ -84,6 +88,7 @@ impl core::fmt::Display for VerificationType {
         let string_representation = match *self {
             Self::Multikey => "Multikey",
             Self::JsonWebKey2020 => "JsonWebKey2020",
+            Self::JsonWebKey => "JsonWebKey",
             Self::Ed25519VerificationKey2020 => "Ed25519VerificationKey2020",
         };
         write!(f, "{string_representation}")
@@ -120,6 +125,18 @@ impl VerificationMethod {
             return Err(DidSidekicksError::InvalidDidDocument(
                 "'id' of verification method must be of the did log".into(),
             ));
+        }
+
+        if !matches!(
+            self.verification_type,
+            VerificationType::JsonWebKey | VerificationType::JsonWebKey2020
+        ) {
+            return Err(DidSidekicksError::InvalidDidDocument(format!(
+                "Verification method '{}' has an invalid type, must be '{}' or '{}'",
+                self.id,
+                VerificationType::JsonWebKey,
+                VerificationType::JsonWebKey2020
+            )));
         }
 
         if self.public_key_multibase.is_some() {
@@ -1018,6 +1035,25 @@ mod test {
             );
         };
         assert!(err.to_string().contains("must be of the did log"));
+    }
+
+    #[test]
+    fn verificationMethod_validate_withInvalidMethodType_returnsErr() {
+        let document_id = "did:webvh:scid:example.com";
+        let verification_method = VerificationMethod {
+            id: "did:webvh:scid:example.com#kid".into(),
+            controller: document_id.into(),
+            verification_type: VerificationType::Multikey,
+            public_key_multibase: None,
+            public_key_jwk: Some(jwk("kid")),
+        };
+
+        let Err(err) = verification_method.validate(document_id) else {
+            panic!(
+                "Expected verification method to be invalid due to method type."
+            );
+        };
+        assert!(err.to_string().contains("invalid type"));
     }
 
     // Helper functions

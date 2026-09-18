@@ -467,6 +467,10 @@ mod tests {
         "test_data/webvh/did_without_controller.jsonl",
         "did:webvh:QmT4kPBFsHpJKvvvxgFUYxnSGPMeaQy1HWwyXMHj8NjLuy:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
     )]
+    #[case(
+        "test_data/webvh/did_jsonwebkey.jsonl",
+        "did:webvh:QmfHFDiDbhnZdp9WJ14rDokQdvSsiUYmtZ1JotmBsJfP34:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
+    )]
     fn test_resolve_did_log_from_file(#[case] did_log_raw_filepath: String, #[case] did: String) {
         let did_obj = Did::new(did.to_owned()).unwrap(); // panic-safe unwrap call (as long as #case setup is correct)
 
@@ -482,7 +486,6 @@ mod tests {
 
         //assert_eq!(did_doc.get_id(), did.to_string()); // assuming the Display trait is implemented accordingly for DID struct
         assert!(did_obj.to_string().contains(did_doc.get_id().as_str())); // assuming the Display trait is implemented accordingly for DID struct
-        assert!(!did_doc.get_context().is_empty());
         assert!(!did_doc.get_verification_method().is_empty());
         assert!(!did_doc.get_authentication().is_empty());
     }

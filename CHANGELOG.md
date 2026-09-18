@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Next
 
 ### Added
+- Support for verification method type `JsonWebKey` `(#1293)`
 
 ### Fixed
 - Checksum mismatch in Kotlin bindings on aarch64 `(#1324)`
