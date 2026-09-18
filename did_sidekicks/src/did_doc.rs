@@ -73,7 +73,11 @@ pub enum VerificationType {
     Multikey,
     // https://w3c-ccg.github.io/lds-jws2020/#json-web-key-2020
     // https://www.w3.org/TR/did-extensions-properties/#jsonwebkey2020
+    // https://www.rfc-editor.org/info/rfc7517/
     JsonWebKey2020,
+    // https://www.w3.org/TR/cid-1.0/#dfn-publickeyjwk
+    // https://www.rfc-editor.org/info/rfc7517/
+    JsonWebKey,
     // https://www.w3.org/TR/vc-di-eddsa/#ed25519verificationkey2020
     Ed25519VerificationKey2020,
 }
@@ -84,6 +88,7 @@ impl core::fmt::Display for VerificationType {
         let string_representation = match *self {
             Self::Multikey => "Multikey",
             Self::JsonWebKey2020 => "JsonWebKey2020",
+            Self::JsonWebKey => "JsonWebKey",
             Self::Ed25519VerificationKey2020 => "Ed25519VerificationKey2020",
         };
         write!(f, "{string_representation}")

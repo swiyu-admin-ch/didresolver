@@ -123,6 +123,7 @@ dictionary Jwk {
 enum VerificationType {
     "Multikey",
     "JsonWebKey2020",
+    "JsonWebKey",
     "Ed25519VerificationKey2020",
 };
 

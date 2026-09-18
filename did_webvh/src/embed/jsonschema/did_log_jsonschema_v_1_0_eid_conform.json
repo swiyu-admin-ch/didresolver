@@ -144,6 +144,7 @@
         "type": {
           "enum": [
             "JsonWebKey2020",
+            "JsonWebKey",
             "Multikey"
           ],
           "$comment": "The value of the type property MUST be a string that references exactly one verification method type."
