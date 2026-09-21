@@ -24,12 +24,12 @@ rstest = "0.26.1"
 criterion = "0.8.2"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = { version = "1.0.149", features = ["preserve_order"] }
-chrono = { version = "0.4.44", features = ["serde"] }
-rand = "0.8.6"
+chrono = { version = "0.4.44", default-features = false, features = ["clock", "std", "serde"] }
+rand = "0.8"
 regex = "1.12.3"
-url-escape = "0.1.1"
+url-escape = "0.1.2"
 url = "2.5.8"
-rust-embed = { version = "8.11.0" , features = ["include-exclude", "compression"]}
+rust-embed = { version = "8.11.0" , features = ["include-exclude"]} # binary is smaller without compression
 rayon = "1.12.0"
 lazy_static = "1.5.0"
 
@@ -68,6 +68,9 @@ decimal_literal_representation = "allow"
 deprecated = "allow"
 
 [profile.release]
+# S optimizes for size, but less aggresive than Z.
+# The benchmarkresults also yielded better results than with 2.
+opt-level = "s"
 strip = true
 lto = true
 codegen-units = 1
