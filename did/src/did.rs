@@ -11,7 +11,6 @@ use did_webvh::did_webvh::{WebVerifiableHistory, WebVerifiableHistoryId};
 use did_webvh::errors::WebVerifiableHistoryIdResolutionError;
 use regex::Regex;
 use std::sync::Arc;
-use strum::{AsRefStr as EnumAsRefStr, Display as EnumDisplay};
 use thiserror::Error;
 
 static FRAGMENT_REGEX_STR: &str = "^([-?/:@._~!$&'()*+,;=a-zA-Z0-9]|%[0-9a-fA-F]{2})*$";
@@ -131,17 +130,15 @@ pub enum DidResolveErrorKind {
 }
 
 /// The DID methods supported by [`Did`].
-#[derive(Debug, Clone, PartialEq, Eq, Default, EnumDisplay, EnumAsRefStr)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 #[expect(
     clippy::exhaustive_enums,
     reason = "further enum variants might be added in the future"
 )]
 pub enum DidMethod {
-    #[strum(to_string = "tdw", serialize = "tdw")]
     TDW { scid: String, https_url: String },
     #[default]
     UNKNOWN,
-    #[strum(to_string = "webvh", serialize = "webvh")]
     WEBVH { scid: String, https_url: String },
 }
 
@@ -194,6 +191,23 @@ impl DidMethod {
                 "Unsupported DID method denoted by DID: {did_str:.256}"
             ))),
         }
+    }
+}
+
+impl Display for DidMethod {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            TDW {
+                scid: _,
+                https_url: _,
+            } => "tdw",
+            UNKNOWN => "UNKNOWN",
+            WEBVH {
+                scid: _,
+                https_url: _,
+            } => "webvh",
+        };
+        f.write_str(s)
     }
 }
 

@@ -17,7 +17,6 @@ use did_sidekicks::multibase::MultiBaseConvertible as _;
 use did_sidekicks::vc_data_integrity::{
     CryptoSuiteType, DataIntegrityProof, EddsaJcs2022Cryptosuite, VCDataIntegrity as _,
 };
-use rayon::prelude::*;
 use regex;
 use regex::Regex;
 use serde::de;
@@ -413,11 +412,9 @@ impl TryFrom<String> for WebVerifiableHistoryDidLog {
             &WebVerifiableHistoryDidLogEntryJsonSchema::V1_0EidConform;
         let validator = DidLogEntryValidator::from(sch);
         if let Some(err) = did_log
-            .par_lines() // engage a parallel iterator (thanks to 'use rayon::prelude::*;' import)
+            .lines()
             .filter(|line| !line.trim().is_empty())
-            // Once a non-None value is produced from the map operation,
-            // `find_map_any` will attempt to stop processing the rest of the items in the iterator as soon as possible.
-            .find_map_any(|line| validator.validate_str(line).err())
+            .find_map(|line| validator.validate_str(line).err())
         {
             // The supplied DID log contains at least one entry that violates the JSON schema
             return Err(DidResolverError::DeserializationFailed(err.to_string()));

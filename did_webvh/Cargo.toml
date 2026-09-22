@@ -32,7 +32,6 @@ url-escape.workspace = true
 thiserror.workspace = true
 url.workspace = true
 rust-embed.workspace = true
-rayon.workspace = true
 lazy_static.workspace = true
 
 [features]

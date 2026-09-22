@@ -18,7 +18,6 @@ categories = ["cryptography", "development-tools::ffi", "external-ffi-bindings"]
 
 [workspace.dependencies]
 uniffi = { version = "0.32.1", features = ["cli"] }
-strum = { version = "0.28.0", features = ["derive"] }
 thiserror = "2.0.18"
 rstest = "0.26.1"
 criterion = "0.8.2"
@@ -29,8 +28,7 @@ rand = "0.8"
 regex = "1.12.3"
 url-escape = "0.1.2"
 url = "2.5.8"
-rust-embed = { version = "8.11.0" , features = ["include-exclude"]} # binary is smaller without compression
-rayon = "1.12.0"
+rust-embed = { version = "8.11.0", features = ["include-exclude"]} # binary is smaller without compression
 lazy_static = "1.5.0"
 
 [workspace.lints.clippy]
@@ -68,8 +66,8 @@ decimal_literal_representation = "allow"
 deprecated = "allow"
 
 [profile.release]
-# S optimizes for size, but less aggresive than Z.
-# The benchmarkresults also yielded better results than with 2.
+# S optimizes for size, but less aggresive than z.
+# The benchmark results also yielded better results than with 2.
 opt-level = "s"
 strip = true
 lto = true

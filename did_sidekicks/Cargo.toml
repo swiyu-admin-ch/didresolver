@@ -41,7 +41,6 @@ uniffi = { workspace = true, features = ["build"] }
 [dev-dependencies]
 rstest.workspace = true
 criterion.workspace = true
-rayon.workspace = true
 
 [[bench]]
 name = "did_doc"

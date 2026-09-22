@@ -14,7 +14,6 @@ use did_sidekicks::ed25519::*;
 use did_sidekicks::errors::DidResolverError;
 use did_sidekicks::jcs_sha256_hasher::JcsSha256Hasher;
 use did_sidekicks::vc_data_integrity::*;
-use rayon::prelude::*;
 use regex;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -352,10 +351,8 @@ impl TryFrom<String> for TrustDidWebDidLog {
         let sch: &dyn DidLogEntryJsonSchema = &TrustDidWebDidLogEntryJsonSchema::V03EidConform;
         let validator = DidLogEntryValidator::from(sch);
         if let Some(err) = did_log
-            .par_lines() // engage a parallel iterator (thanks to 'use rayon::prelude::*;' import)
-            // Once a non-None value is produced from the map operation,
-            // `find_map_any` will attempt to stop processing the rest of the items in the iterator as soon as possible.
-            .find_map_any(|line| validator.validate_str(line).err())
+            .lines()
+            .find_map(|line| validator.validate_str(line).err())
         {
             // The supplied DID log contains at least one entry that violates the JSON schema
             return Err(DidResolverError::DeserializationFailed(err.to_string()));
