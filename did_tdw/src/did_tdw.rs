@@ -52,7 +52,8 @@ lazy_static! {
     )]
     Regex::new(HAS_PORT_REGEX_STR).unwrap();
 }
-
+#[allow(clippy::useless_attribute, reason = "to fix the false positive of the below expect")]
+#[expect(clippy::pub_use, reason = "for single definition of the max size")]
 pub use did_sidekicks::did_doc::MAX_DID_LOG_FILE_SIZE;
 // String here to easily be updated with changes to MAX_DID_LOG_FILE_SIZE
 const MAX_DID_LOG_FILE_SIZE_ERROR_MESSAGE: &str = "DID log must not be bigger than 1MiB";

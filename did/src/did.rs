@@ -195,19 +195,14 @@ impl DidMethod {
 }
 
 impl Display for DidMethod {
+    #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let s = match self {
-            TDW {
-                scid: _,
-                https_url: _,
-            } => "tdw",
+        let did_method_str = match *self {
+            TDW { .. } => "tdw",
             UNKNOWN => "UNKNOWN",
-            WEBVH {
-                scid: _,
-                https_url: _,
-            } => "webvh",
+            WEBVH { .. } => "webvh",
         };
-        f.write_str(s)
+        f.write_str(did_method_str)
     }
 }
 

@@ -306,7 +306,7 @@ impl DidDocNormalized {
                             method.id
                         )))
                     },
-                    |method| Ok(method),
+                    Ok,
                 )
             })
             .collect::<Result<Vec<_>, _>>()?;
