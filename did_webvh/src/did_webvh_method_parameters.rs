@@ -228,7 +228,7 @@ impl WebVerifiableHistoryDidMethodParameters {
                 .is_none_or(|keys| keys.is_empty())
             {
                 return Err(DidResolverError::InvalidDidParameter(
-                    "updatesKeys must not be empty during key pre-rotation.".to_owned(),
+                    "updateKeys must not be empty during key pre-rotation.".to_owned(),
                 ));
             }
 
