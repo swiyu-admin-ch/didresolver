@@ -52,7 +52,10 @@ lazy_static! {
     )]
     Regex::new(HAS_PORT_REGEX_STR).unwrap();
 }
-#[allow(clippy::useless_attribute, reason = "to fix the false positive of the below expect")]
+#[allow(
+    clippy::useless_attribute,
+    reason = "to fix the false positive of the below expect"
+)]
 #[expect(clippy::pub_use, reason = "for single definition of the max size")]
 pub use did_sidekicks::did_doc::MAX_DID_LOG_FILE_SIZE;
 // String here to easily be updated with changes to MAX_DID_LOG_FILE_SIZE
@@ -351,6 +354,7 @@ impl TryFrom<String> for TrustDidWebDidLog {
         //         featuring at least as many entries as `std::thread::available_parallelism()` would return.
         let sch: &dyn DidLogEntryJsonSchema = &TrustDidWebDidLogEntryJsonSchema::V03EidConform;
         let validator = DidLogEntryValidator::from(sch);
+        // Rayon was previously used to optimize this step, but improvements were negligable.
         if let Some(err) = did_log
             .lines()
             .find_map(|line| validator.validate_str(line).err())
