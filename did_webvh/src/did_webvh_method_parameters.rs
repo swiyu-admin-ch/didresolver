@@ -249,7 +249,7 @@ impl WebVerifiableHistoryDidMethodParameters {
                     )));
                 }
             }
-        } 
+        }
 
         self.update_keys = new_params.update_keys.or(current_params.update_keys);
 
@@ -495,7 +495,7 @@ pub struct Witness {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[non_exhaustive]
 pub struct WitnessEntry {
-    pub id: String
+    pub id: String,
 }
 
 /// This is only used for serialize.
@@ -518,7 +518,8 @@ const DID_METHOD_PARAMETER_VERSION: &str = "did:webvh:1.0";
 )]
 mod test {
     use crate::did_webvh_method_parameters::{
-        DID_METHOD_PARAMETER_VERSION, WebVerifiableHistoryDidMethodParameters, Witness, WitnessEntry,
+        DID_METHOD_PARAMETER_VERSION, WebVerifiableHistoryDidMethodParameters, Witness,
+        WitnessEntry,
     };
     use crate::test::assert_trust_did_web_error;
     use did_sidekicks::did_method_parameters::DidMethodParameter;
@@ -608,7 +609,9 @@ mod test {
         params = params_for_genesis_did_doc;
         params.witness = Some(Witness {
             threshold: 1,
-            witnesses: vec![WitnessEntry{id: "some_valid_witness".to_owned()}],
+            witnesses: vec![WitnessEntry {
+                id: "some_valid_witness".to_owned(),
+            }],
         });
         assert_trust_did_web_error(
             params.validate_initial(),
@@ -671,7 +674,9 @@ mod test {
         new_params = new_base_params.clone();
         new_params.witness = Some(Witness {
             threshold: 1,
-            witnesses: vec![WitnessEntry { id:"some_valid_witness".to_owned() }],
+            witnesses: vec![WitnessEntry {
+                id: "some_valid_witness".to_owned(),
+            }],
         });
         assert_trust_did_web_error(
             old_params.merge_from(&new_params),
@@ -1031,7 +1036,14 @@ mod test {
     fn test_witness_serialization() {
         let witness = Witness {
             threshold: 1,
-            witnesses: vec![WitnessEntry{id:"did:webvh:scid:witness1".to_owned()}, WitnessEntry{id:"did:webvh:scid:witness2".to_owned()}],
+            witnesses: vec![
+                WitnessEntry {
+                    id: "did:webvh:scid:witness1".to_owned(),
+                },
+                WitnessEntry {
+                    id: "did:webvh:scid:witness2".to_owned(),
+                },
+            ],
         };
         let mut params = WebVerifiableHistoryDidMethodParameters::empty();
         params.witness = Some(witness);

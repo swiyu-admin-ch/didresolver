@@ -1049,9 +1049,7 @@ mod test {
         };
 
         let Err(err) = verification_method.validate(document_id) else {
-            panic!(
-                "Expected verification method to be invalid due to method type."
-            );
+            panic!("Expected verification method to be invalid due to method type.");
         };
         assert!(err.to_string().contains("invalid type"));
     }
