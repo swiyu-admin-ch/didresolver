@@ -101,7 +101,7 @@ impl WebVerifiableHistoryDidMethodParameters {
     /// Furthermore, the relevant Swiss profile checks are also taken into account here:
     /// https://github.com/e-id-admin/open-source-community/blob/main/tech-roadmap/swiss-profile.md#didtdwdidwebvh.
     #[inline]
-    pub fn validate_initial(&mut self) -> Result<(), DidResolverError> {
+    pub fn validate_initial(&mut self) -> Result<String, DidResolverError> {
         if let Some(method) = self.method.to_owned() {
             // This item MAY appear in later DID log entries to indicate that the processing rules
             // for that and later entries have been changed to a different specification version.
@@ -118,18 +118,17 @@ impl WebVerifiableHistoryDidMethodParameters {
             ));
         }
 
-        if let Some(scid) = self.scid.to_owned() {
-            if scid.is_empty() {
-                return Err(DidResolverError::InvalidDidParameter(
-                    "Invalid 'scid' DID parameter. This item MUST appear in the first DID log entry.".to_owned(),
-                ));
-            }
-        } else {
+        let Some(scid) = self.scid.to_owned() else {
             return Err(DidResolverError::InvalidDidParameter(
                 "Missing 'scid' DID parameter. This item MUST appear in the first DID log entry."
                     .to_owned(),
             ));
-        }
+        };
+         if scid.is_empty() {
+             return Err(DidResolverError::InvalidDidParameter(
+                 "Invalid 'scid' DID parameter. This item MUST appear in the first DID log entry.".to_owned(),
+             ));
+         }
 
         if let Some(update_keys) = self.update_keys.to_owned() {
             if update_keys.is_empty() {
@@ -180,7 +179,8 @@ impl WebVerifiableHistoryDidMethodParameters {
             ));
         }
 
-        self.validate()
+        self.validate()?;
+        Ok(scid)
     }
 
     #[inline]

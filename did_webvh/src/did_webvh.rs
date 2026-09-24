@@ -5,7 +5,6 @@ use crate::did_webvh_method_parameters::*;
 use crate::errors::*;
 use chrono::serde::ts_seconds;
 use chrono::{DateTime, SecondsFormat, Utc};
-use core::cmp::PartialEq as _;
 use did_sidekicks::did_doc::*;
 use did_sidekicks::did_jsonschema::{DidLogEntryJsonSchema, DidLogEntryValidator};
 use did_sidekicks::did_method_parameters::DidMethodParameter;
@@ -93,9 +92,8 @@ pub struct DidLogEntry {
     #[serde(rename = "proof")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proof: Option<Vec<DataIntegrityProof>>,
-
-    #[serde(skip)]
-    pub prev_entry: Option<Arc<Self>>, // Arc-ed to prevent "recursive without indirection"
+    //#[serde(skip)]
+    //pub prev_entry: Option<Arc<Self>>, // Arc-ed to prevent "recursive without indirection"
 }
 
 #[expect(clippy::exhaustive_structs, reason = "..")]
@@ -179,7 +177,6 @@ impl DidLogEntry {
         did_doc: DidDoc,
         did_doc_json: JsonValue,
         proof: DataIntegrityProof,
-        prev_entry: Option<Arc<Self>>,
     ) -> Self {
         Self {
             version,
@@ -188,16 +185,18 @@ impl DidLogEntry {
             did_doc,
             did_doc_json,
             proof: Some(vec![proof]),
-            prev_entry,
         }
     }
 
     /// Check whether the versionId of this log entry is based on the previous versionId.
     #[inline]
-    pub fn verify_version_id_integrity(&self) -> Result<(), DidResolverError> {
+    pub fn verify_version_id_integrity(
+        &self,
+        prev_version_id: &str,
+    ) -> Result<(), DidResolverError> {
         // 1 Extract the versionId in the DID log entry, and remove from it the version number and dash prefix, leaving the log entry entryHash value.
         let hash = &self.version.hash;
-        let calculated_hash = self.calculate_entry_hash().map_err(|err| {
+        let calculated_hash = self.calculate_entry_hash(prev_version_id).map_err(|err| {
             DidResolverError::InvalidDataIntegrityProof(format!("Failed to build versionId: {err}"))
         })?;
         if calculated_hash != *hash {
@@ -261,7 +260,7 @@ impl DidLogEntry {
                 did_doc: self.did_doc.clone(),
                 did_doc_json: self.did_doc_json.clone(),
                 proof: None,
-                prev_entry: None,
+                //prev_entry: None,
             }
             .to_log_entry_line()?;
 
@@ -283,11 +282,12 @@ impl DidLogEntry {
 
     /// The new versionId takes the form \<version number\>-\<entryHash\>, where \<version number\> is the incrementing integer of version of the entry: 1, 2, 3, etc.
     #[inline]
-    pub fn calculate_entry_hash(&self) -> Result<String, DidResolverError> {
+    pub fn calculate_entry_hash(&self, prev_version_id: &str) -> Result<String, DidResolverError> {
         // According to https://identity.foundation/didwebvh/v1.0/#entry-hash-generation-and-verification
         // 2 Determine hash algorithm from the multihash (https://identity.foundation/didwebvh/v1.0/#term:multihash), value is encoded as base58btc
         // 3 Set the versionId in the entry object to be the versionId from the previous log entry.
         //   If this is the first entry in the log, set the value to <scid>, the value of the SCID of the DID.
+        /*
         let prev_version_id = match self.prev_entry.to_owned() {
             Some(entr) => entr.version.id.clone(),
             None => match self.parameters.get_scid_option() {
@@ -299,6 +299,7 @@ impl DidLogEntry {
                 }
             },
         };
+        */
         // 4. remove Data Integrity proof from the log entry
         let entry = Self {
             version: DidLogVersion::new(&prev_version_id),
@@ -307,7 +308,7 @@ impl DidLogEntry {
             did_doc: self.did_doc.clone(),
             did_doc_json: self.did_doc_json.clone(),
             proof: None,
-            prev_entry: None,
+            //prev_entry: None,
         };
         let entry_json = entry.to_log_entry_line()?;
         // 5 calculate  the hash string
@@ -373,12 +374,14 @@ impl DidLogEntry {
 
 /// The parser for `did:webvh` DID logs implementing [`TryFrom<String>`] trait.
 #[expect(clippy::exhaustive_structs, reason = "..")]
-#[derive(Serialize, Debug)]
+#[derive(Debug)]
 pub struct WebVerifiableHistoryDidLog {
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub did_log_entries: Vec<Arc<DidLogEntry>>,
-    #[serde(skip)]
+    //#[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub did_doc: DidDoc,
+    //#[serde(skip)]
     pub did_method_parameters: WebVerifiableHistoryDidMethodParameters,
+    //#[serde(skip)]
+    pub did_log: String,
 }
 
 impl TryFrom<String> for WebVerifiableHistoryDidLog {
@@ -424,7 +427,7 @@ impl TryFrom<String> for WebVerifiableHistoryDidLog {
         }
 
         let mut current_params: Option<WebVerifiableHistoryDidMethodParameters> = None;
-        let mut prev_entry: Option<Arc<DidLogEntry>> = None;
+        //let mut prev_entry: Option<Arc<DidLogEntry>> = None;
 
         let mut is_deactivated = false;
         //let now= Local::now();
@@ -449,11 +452,6 @@ impl TryFrom<String> for WebVerifiableHistoryDidLog {
                         Err(err) => { return Err(DidResolverError::DeserializationFailed(format!("Invalid versionId: {err}"))); },
                     };
 
-                    if prev_entry.is_none() && version.index != 1
-                        || prev_entry.is_some() && (version.index - 1).ne(&prev_entry.to_owned().unwrap().version.index) {
-                        return Err(DidResolverError::DeserializationFailed("Version numbers (`versionId`) must be in a sequence of positive consecutive integers.".to_owned()));
-                    }
-
                     // https://identity.foundation/didwebvh/v1.0/#the-did-log-file:
                     // The `versionTime` (as stated by the DID Controller) of the entry,
                     // in ISO8601 format (https://identity.foundation/didwebvh/v0.3/#term:iso8601).
@@ -468,47 +466,20 @@ impl TryFrom<String> for WebVerifiableHistoryDidLog {
                         return Err(DidResolverError::DeserializationFailed(format!("`versionTime` '{version_time}' must be before the current datetime '{now}'.")));
                     }
 
-                    if prev_entry.to_owned().is_some_and(|prev_entr| {
-                        version_time.lt(&prev_entr.version_time)
-                    }) {
-                        return Err(DidResolverError::DeserializationFailed("`versionTime` must be greater than the `versionTime` of the previous entry.".to_owned()));
-                    }
-
-                    let mut new_params: Option<WebVerifiableHistoryDidMethodParameters> = None;
-                    current_params = Some(match entry[DID_LOG_ENTRY_PARAMETERS].to_owned() {
+                    let params = match entry[DID_LOG_ENTRY_PARAMETERS].to_owned() {
                         JsonObject(obj) => {
-                            if !obj.is_empty() {
-                                new_params = Some(WebVerifiableHistoryDidMethodParameters::from_json(&entry[DID_LOG_ENTRY_PARAMETERS].to_string())?);
+                            if obj.is_empty() {
+                              WebVerifiableHistoryDidMethodParameters::empty()
+                            } else {
+                              WebVerifiableHistoryDidMethodParameters::from_json(&entry[DID_LOG_ENTRY_PARAMETERS].to_string())?
                             }
-
-                            match (current_params.clone(), new_params.clone()) {
-                                (None, None) => return Err(DidResolverError::DeserializationFailed(
-                                    "Missing DID Document parameters.".to_owned(),
-                                )),
-                                (None, Some(mut new_par)) => {
-                                    // this is the first entry, therefore we check for the base configuration
-                                    new_par.validate_initial()?;
-                                    new_par // from the initial log entry
-                                }
-                                (Some(mut current_par), None) => {
-                                    let new_par = WebVerifiableHistoryDidMethodParameters::empty();
-                                    // to check if empty parameters are valid
-                                    current_par.merge_from(&new_par)?;
-                                    new_params = Some(new_par);
-                                    current_par
-                                }
-                                (Some(mut current_par), Some(new_par)) => {
-                                    current_par.merge_from(&new_par)?;
-                                    current_par
-                                }
-                            }
-                        }
+                        },
                         _ => {
                             return Err(DidResolverError::DeserializationFailed(
                                 "Missing DID method parameters.".to_owned(),
                             ))
                         }
-                    });
+                    };
 
                     is_deactivated = current_params.to_owned().is_some_and(|par| par.deactivated.is_some_and(|dct| dct));
                     if is_deactivated {
@@ -567,107 +538,60 @@ impl TryFrom<String> for WebVerifiableHistoryDidLog {
                         ))),
                     };
 
-                    let parameters = match new_params {
-                        Some(new_par) => new_par,
-                        None => return Err(DidResolverError::DeserializationFailed(
-                            "Internal error: Missing parameter values.".to_owned(),
-                        ))
-                    };
-
-                    let current_entry = Arc::new(DidLogEntry::new(
+                    let current_entry = DidLogEntry::new(
                         version,
                         version_time,
-                        parameters,
+                        params,
                         current_did_doc,
                         did_doc_value,
                         proof,
-                        prev_entry.to_owned(),
-                    ));
-                    prev_entry = Some(Arc::clone(&current_entry));
+                    );
 
                     Ok(current_entry)
-                }).collect::<Result<Vec<Arc<DidLogEntry>>, DidResolverError>>()?;
+                }).collect::<Result<Vec<DidLogEntry>, DidResolverError>>()?;
 
-        current_params.map_or_else(
-            || {
-                Err(DidResolverError::DeserializationFailed(
-                    "Missing DID method parameters.".to_owned(),
-                ))
-            },
-            |params| {
-                Ok(Self {
-                    did_method_parameters: params,
-                    did_log_entries,
-                })
-            },
-        )
+        WebVerifiableHistoryDidLog::new(did_log_entries, did_log)
     }
 }
 
 impl WebVerifiableHistoryDidLog {
-    #[inline]
-    pub fn get_did_method_parameters(&self) -> WebVerifiableHistoryDidMethodParameters {
-        self.did_method_parameters.clone()
-    }
+    pub fn new<I>(did_log_entries: I, original_log: String) -> Result<Self, DidResolverError>
+    where
+        I: IntoIterator<Item = DidLogEntry>,
+    {
+        let mut did_log_entries = did_log_entries.into_iter().peekable();
+        let (mut prev_version_id, mut params, mut update_keys) = {
+            let Some(did_log) = did_log_entries.peek_mut() else {
+                return Err(DidResolverError::InvalidDidLog("DID log is empty".into()));
+            };
+            let mut params = did_log.parameters.clone();
+            let scid = params.validate_initial()?;
 
-    /// Checks if all entries in the did log are valid (data integrity, versioning etc.)
-    #[inline]
-    pub fn validate(&self) -> Result<DidDoc, DidResolverError> {
-        self.validate_with_scid(None)
-    }
+            let original_scid = did_log.build_original_scid(&scid).map_err(|err| {
+                DidResolverError::InvalidDataIntegrityProof(format!(
+                    "Failed to build original SCID: {err}"
+                ))
+            })?;
+            if original_scid != scid {
+                return Err(DidResolverError::InvalidDataIntegrityProof(
+                    "Invalid did log. Genesis entry has invalid SCID".to_owned(),
+                ));
+            }
 
-    /// Checks if all entries in the did log are valid (data integrity, versioning etc.)
-    #[inline]
-    #[expect(
-        clippy::arithmetic_side_effects,
-        reason = "number of entries is always way lower than usize::MAX"
-    )]
-    pub fn validate_with_scid(
-        &self,
-        scid_to_validate: Option<String>,
-    ) -> Result<DidDoc, DidResolverError> {
-        let Some(first_entry) = self.did_log_entries.first() else {
-            return Err(DidResolverError::InvalidDataIntegrityProof(
-                "Invalid did log. No entries found".to_owned(),
-            ));
+            // keep track of update keys
+            let Some(update_keys) = did_log.parameters.update_keys.as_ref() else {
+                return Err(DidResolverError::InvalidDidParameter(
+                    "No update keys found in initial log entry".into(),
+                ));
+            };
+            (scid, params, update_keys.clone())
         };
-
-        // Validation specific to the first entry (namely SCID)
-        let Some(scid) = first_entry.parameters.get_scid_option() else {
-            return Err(DidResolverError::InvalidDataIntegrityProof(
-                "Missing SCID inside the DID document.".to_owned(),
-            ));
-        };
-
-        if let Some(res) = scid_to_validate
-            && res != scid.as_str()
-        {
-            return Err(DidResolverError::InvalidDataIntegrityProof(format!(
-                "The SCID '{scid}' supplied inside the DID document does not match the one supplied for validation: '{res}'"
-            )));
-        }
-
-        let original_scid = first_entry.build_original_scid(&scid).map_err(|err| {
-            DidResolverError::InvalidDataIntegrityProof(format!(
-                "Failed to build original SCID: {err}"
-            ))
-        })?;
-        if original_scid != scid {
-            return Err(DidResolverError::InvalidDataIntegrityProof(
-                "Invalid did log. Genesis entry has invalid SCID".to_owned(),
-            ));
-        }
-
-        // keep track of update keys
-        let Some(mut update_keys) = first_entry.parameters.update_keys.as_ref() else {
-            return Err(DidResolverError::InvalidDidParameter(
-                "No update keys found in initial log entry".into(),
-            ));
-        };
-        let mut next_key_hashes: &Vec<String> = &Vec::new();
+        let mut next_key_hashes: Vec<String> = Vec::new();
+        let mut prev_version_time = DateTime::<Utc>::MIN_UTC.clone();
 
         // Validation for all entries
-        for (index, entry) in self.did_log_entries.iter().enumerate() {
+        let mut prev_did_doc: Option<DidDoc> = None;
+        for (index, entry) in did_log_entries.enumerate() {
             if entry.version.index != index + 1 {
                 // +1 because logs start at index 1 not 0
                 return Err(DidResolverError::InvalidDataIntegrityProof(if index == 0 {
@@ -680,13 +604,23 @@ impl WebVerifiableHistoryDidLog {
                 }));
             }
 
-            if let Some(prev_entry) = entry.prev_entry.to_owned() {
+            if entry.version_time.lt(&prev_version_time) {
+                return Err(DidResolverError::DeserializationFailed(
+                    "`versionTime` must be greater than the `versionTime` of the previous entry."
+                        .to_owned(),
+                ));
+            }
+
+            // for 2nd entry onwards specific validations
+            if let Some(prev_doc) = prev_did_doc.as_ref() {
+                params.merge_from(&entry.parameters)?;
+
                 #[expect(clippy::else_if_without_else, reason = "else case not needed")]
                 if matches!(entry.parameters.portable, Some(true)) {
                     // Validate that changed identifier keeps the same SCID
                     match (
                         WebVerifiableHistoryId::parse_did_webvh(entry.did_doc.get_id()),
-                        WebVerifiableHistoryId::parse_did_webvh(prev_entry.did_doc.get_id()),
+                        WebVerifiableHistoryId::parse_did_webvh(prev_doc.get_id()),
                     ) {
                         (Ok(current_did_doc_id), Ok(previous_did_doc_id)) => {
                             if current_did_doc_id.scid != previous_did_doc_id.scid {
@@ -702,7 +636,7 @@ impl WebVerifiableHistoryDidLog {
                         } // Missing validation for alsoKnownAs to include previous entry
                     }
                     // Check that DID Document ID stayed the same
-                } else if entry.did_doc.get_id() != prev_entry.did_doc.get_id() {
+                } else if entry.did_doc.get_id() != prev_doc.get_id() {
                     return Err(DidResolverError::InvalidDidDocument(
                         "ID of DID Document may only change when portable is active.".into(),
                     ));
@@ -724,24 +658,24 @@ impl WebVerifiableHistoryDidLog {
                         "Unauthorized update key detected.".into(),
                     ));
                 }
-                update_keys = new_update_keys;
+                update_keys = new_update_keys.clone();
             }
 
             // Verify data integrity proof
-            entry.verify_data_integrity_proof(update_keys)?;
+            entry.verify_data_integrity_proof(&update_keys)?;
 
             // Verify the entryHash
-            entry.verify_version_id_integrity()?;
+            entry.verify_version_id_integrity(prev_version_id.as_str())?;
 
             // Without key rotation, new update keys only take effect for following log entries
-            if let Some(new_update_keys) = entry.parameters.update_keys.as_ref()
+            if let Some(new_update_keys) = entry.parameters.update_keys
                 && next_key_hashes.is_empty()
             {
                 update_keys = new_update_keys;
             }
 
             // Update next_key_hashes when the entry is valid
-            if let Some(new_next_keys) = entry.parameters.next_keys.as_ref() {
+            if let Some(new_next_keys) = entry.parameters.next_keys {
                 next_key_hashes = new_next_keys;
             }
 
@@ -750,16 +684,30 @@ impl WebVerifiableHistoryDidLog {
                 .did_doc
                 .validate()
                 .map_err(|err| DidResolverError::InvalidDidDocument(err.to_string()))?;
+
+            prev_version_id = entry.version.id;
+            prev_version_time = entry.version_time;
+            prev_did_doc = Some(entry.did_doc);
         }
 
-        #[expect(clippy::unwrap_used, reason = "checked at start of function")]
-        Ok(self.did_log_entries.last().unwrap().did_doc.clone())
+        Ok(Self {
+            did_doc: prev_did_doc.unwrap(), // is safe since size check is done before
+            did_method_parameters: params,
+            did_log: original_log,
+        })
+    }
+
+    #[inline]
+    pub fn get_did_method_parameters(&self) -> WebVerifiableHistoryDidMethodParameters {
+        self.did_method_parameters.clone()
     }
 }
 
 impl core::fmt::Display for WebVerifiableHistoryDidLog {
     #[inline]
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        f.write_str(self.did_log.as_str())
+        /*
         let mut log = String::new();
         for entry in &self.did_log_entries {
             let log_line = entry.to_log_entry_line().map_err(|_x| core::fmt::Error)?;
@@ -768,6 +716,7 @@ impl core::fmt::Display for WebVerifiableHistoryDidLog {
             log.push('\n');
         }
         write!(f, "{log}")
+          */
     }
 }
 
@@ -1062,7 +1011,7 @@ impl WebVerifiableHistory {
         let did = WebVerifiableHistoryId::parse_did_webvh(did_webvh.clone())
             .map_err(|err| DidResolverError::InvalidMethodSpecificId(format!("{err}")))?;
 
-        let did_doc_valid = did_log_obj.validate_with_scid(Some(did.get_scid()))?;
+        let did_doc_valid = did_log_obj.did_doc.clone();
         let did_doc_str = match serde_json::to_string(&did_doc_valid) {
             Ok(val) => val,
             Err(err) => return Err(DidResolverError::SerializationFailed(err.to_string())),

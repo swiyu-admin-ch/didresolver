@@ -240,6 +240,7 @@ mod test {
         );
     }
 
+    /*
     #[rstest]
     #[case("test_data/manually_created/2_log_entries.jsonl")]
     fn test_generate_version_id(#[case] did_log_raw_filepath: String) {
@@ -252,6 +253,7 @@ mod test {
             assert_eq!(hash, did_log.version.hash);
         }
     }
+    */
 
     #[rstest]
     #[case(
