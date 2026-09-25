@@ -122,7 +122,7 @@ pub enum DidSidekicksErrorKind {
 /// The error accompanying [`DidResolver`] trait.
 ///
 /// Yet another UniFFI-compliant error.
-#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+#[derive(Debug, thiserror::Error, PartialEq, Eq, Clone)]
 #[expect(
     clippy::exhaustive_enums,
     reason = "further enum variants may be added in the future"
