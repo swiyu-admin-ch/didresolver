@@ -493,8 +493,11 @@ impl TryFrom<String> for WebVerifiableHistoryDidLog {
                                     new_par.validate_initial()?;
                                     new_par // from the initial log entry
                                 }
-                                (Some(current_par), None) => {
-                                    new_params = Some(WebVerifiableHistoryDidMethodParameters::empty());
+                                (Some(mut current_par), None) => {
+                                    let new_par = WebVerifiableHistoryDidMethodParameters::empty();
+                                    // to check if empty parameters are valid
+                                    current_par.merge_from(&new_par)?;
+                                    new_params = Some(new_par);
                                     current_par
                                 }
                                 (Some(mut current_par), Some(new_par)) => {
@@ -1239,6 +1242,12 @@ mod test {
         "did:webvh:Qmb8aoucR7eBFKyZHJgKivUTQhYmzSoi8mM1eDZoQYzefo:identifier-reg.trust-infra.swiyu-int.admin.ch:changed:url",
         DidResolverErrorKind::InvalidDidDocument,
         "id in did document doesn't match did"
+    )]
+    #[case(
+        "test_data/manually_created/unhappy_path/empty_method_parameters.jsonl",
+        "did:webvh:QmcY42ziM6CedEq8G96DA6ZSPd83puPDJVGXU2887HuUMa:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+        DidResolverErrorKind::InvalidDidParameter,
+        "updateKeys must not be empty during key pre-rotation"
     )]
     fn test_read_invalid_did_log(
         #[case] did_log_raw_filepath: String,
