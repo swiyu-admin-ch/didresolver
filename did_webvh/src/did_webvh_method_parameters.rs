@@ -38,7 +38,7 @@ pub struct WebVerifiableHistoryDidMethodParameters {
     pub next_keys: Option<Vec<String>>,
 
     /// A JSON object declaring the set of witnesses and threshold number of witness proofs required to update the DID.
-    /// For more info see https://identity.foundation/didwebvh/v1.0/#the-witness-parameter
+    /// For more info see https://identity.foundation/didwebvh/v1.0/#the-witness-parameter.
     #[serde(default)]
     #[serde(rename = "witness", skip_serializing_if = "Option::is_none")]
     pub witness: Option<Witness>,

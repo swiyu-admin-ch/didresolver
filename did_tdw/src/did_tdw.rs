@@ -14,7 +14,6 @@ use did_sidekicks::ed25519::*;
 use did_sidekicks::errors::DidResolverError;
 use did_sidekicks::jcs_sha256_hasher::JcsSha256Hasher;
 use did_sidekicks::vc_data_integrity::*;
-use rayon::prelude::*;
 use regex;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -53,7 +52,11 @@ lazy_static! {
     )]
     Regex::new(HAS_PORT_REGEX_STR).unwrap();
 }
-
+#[allow(
+    clippy::useless_attribute,
+    reason = "to fix the false positive of the below expect"
+)]
+#[expect(clippy::pub_use, reason = "for single definition of the max size")]
 pub use did_sidekicks::did_doc::MAX_DID_LOG_FILE_SIZE;
 // String here to easily be updated with changes to MAX_DID_LOG_FILE_SIZE
 const MAX_DID_LOG_FILE_SIZE_ERROR_MESSAGE: &str = "DID log must not be bigger than 1MiB";
@@ -351,11 +354,10 @@ impl TryFrom<String> for TrustDidWebDidLog {
         //         featuring at least as many entries as `std::thread::available_parallelism()` would return.
         let sch: &dyn DidLogEntryJsonSchema = &TrustDidWebDidLogEntryJsonSchema::V03EidConform;
         let validator = DidLogEntryValidator::from(sch);
+        // Rayon was previously used to optimize this step, but improvements were negligable.
         if let Some(err) = did_log
-            .par_lines() // engage a parallel iterator (thanks to 'use rayon::prelude::*;' import)
-            // Once a non-None value is produced from the map operation,
-            // `find_map_any` will attempt to stop processing the rest of the items in the iterator as soon as possible.
-            .find_map_any(|line| validator.validate_str(line).err())
+            .lines()
+            .find_map(|line| validator.validate_str(line).err())
         {
             // The supplied DID log contains at least one entry that violates the JSON schema
             return Err(DidResolverError::DeserializationFailed(err.to_string()));

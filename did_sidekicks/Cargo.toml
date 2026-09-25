@@ -21,18 +21,18 @@ categories = ["cryptography"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-uniffi = { workspace = true, features = ["cli"] }
+uniffi.workspace = true
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_json = { workspace = true, features = ["preserve_order"] }
 serde_json_canonicalizer = "0.3.1"
-chrono = { workspace = true, features = ["serde"] }
+chrono.workspace = true
 ed25519-dalek = { version = "2.2.0", features = ["rand_core", "pkcs8", "pem", "std"] }
 rand.workspace = true
 sha2 = "0.11.0"
 hex = "0.4.3"
-bs58 = { version = "0.5.1", features = ["check", "cb58"] }
+bs58 = { version = "0.5.1", default-features = false, features = ["std"]}#, features = ["check", "cb58"] }
 thiserror.workspace = true
-jsonschema = "0.46.4"
+jsonschema = {version = "0.56.0", default-features = false}
 base64 = "0.22.1"
 
 [build-dependencies]
@@ -41,7 +41,6 @@ uniffi = { workspace = true, features = ["build"] }
 [dev-dependencies]
 rstest.workspace = true
 criterion.workspace = true
-rayon.workspace = true
 
 [[bench]]
 name = "did_doc"

@@ -22,17 +22,16 @@ categories.workspace = true
 
 [dependencies]
 did_sidekicks = { path = "../did_sidekicks" }
-uniffi = { workspace = true, features = ["cli"] }
+uniffi.workspace = true
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_json = { workspace = true, features = ["preserve_order"] }
-chrono = { workspace = true, features = ["serde"] }
+chrono.workspace = true
 rand.workspace = true
 regex.workspace = true
 url-escape.workspace = true
 thiserror.workspace = true
 url.workspace = true
-rust-embed = { workspace = true , features = ["include-exclude", "compression"]}
-rayon.workspace = true
+rust-embed.workspace = true
 lazy_static.workspace = true
 
 [features]
