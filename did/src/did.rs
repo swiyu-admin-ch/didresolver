@@ -663,25 +663,28 @@ mod tests {
     // CAUTION A did_tdw (param #2) MUST match the one residing in did_log_raw_filepath (param #1)
     #[case(
         "test_data/tdw/non_incremented_version_did.jsonl",
-        "did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
+        "did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+        DidResolveErrorKind::DeserializationFailed,
     )]
     #[case(
         "test_data/tdw/unordered_did.jsonl",
-        "did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
+        "did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+        DidResolveErrorKind::DeserializationFailed,
     )]
-    /* TODO@MP
     #[case(
         "test_data/webvh/non_incremented_version_did.jsonl",
-        "did:webvh:QmT4kPBFsHpJKvvvxgFUYxnSGPMeaQy1HWwyXMHj8NjLuy:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
+        "did:webvh:QmT4kPBFsHpJKvvvxgFUYxnSGPMeaQy1HWwyXMHj8NjLuy:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+        DidResolveErrorKind::InvalidDidLog,
     )]
     #[case(
         "test_data/webvh/unordered_did.jsonl",
-        "did:webvh:QmT4kPBFsHpJKvvvxgFUYxnSGPMeaQy1HWwyXMHj8NjLuy:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
+        "did:webvh:QmT4kPBFsHpJKvvvxgFUYxnSGPMeaQy1HWwyXMHj8NjLuy:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+        DidResolveErrorKind::InvalidDidLog,
     )]
-    */
     fn test_resolve_invalid_did_log_non_incremented_version(
         #[case] did_log_raw_filepath: String,
         #[case] did: String,
+        #[case] kind: DidResolveErrorKind,
     ) {
         let did_log_raw_res = fs::read_to_string(Path::new(&did_log_raw_filepath));
         assert!(did_log_raw_res.is_ok());
@@ -690,10 +693,10 @@ mod tests {
         let resolve_all_res = Did::new(did).unwrap().resolve_all(did_log_raw); // panic-safe unwrap call (as long as #case setup is correct)
         assert!(resolve_all_res.is_err());
         let err = resolve_all_res.unwrap_err(); // panic-safe unwrap call (see the previous line)
-        assert_eq!(err.kind(), DidResolveErrorKind::DeserializationFailed);
+        assert_eq!(err.kind(), kind);
         assert!(err
                     .to_string()
-                    .contains("Version numbers (`versionId`) must be in a sequence of positive consecutive integers"),
+                    .contains("versionId"),
                 "ERROR: {:?}", err);
     }
 

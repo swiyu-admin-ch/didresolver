@@ -229,7 +229,7 @@ mod test {
         let err = res.err();
         assert!(err.is_some());
         let err = err.unwrap();
-        assert_eq!(err.kind(), expected_kind);
+        assert_eq!(err.kind(), expected_kind, "{}", err.to_string());
 
         let err_to_string = err.to_string();
         assert!(
@@ -239,21 +239,6 @@ mod test {
             err_to_string
         );
     }
-
-    /*
-    #[rstest]
-    #[case("test_data/manually_created/2_log_entries.jsonl")]
-    fn test_generate_version_id(#[case] did_log_raw_filepath: String) {
-        let did_log_raw = fs::read_to_string(Path::new(&did_log_raw_filepath)).unwrap();
-        let did_document = WebVerifiableHistoryDidLog::try_from(did_log_raw).unwrap();
-        for did_log in did_document.did_log_entries {
-            let did_log_res = did_log.calculate_entry_hash();
-            assert!(did_log_res.is_ok());
-            let hash = did_log_res.unwrap(); // panic-safe (see the previous line)
-            assert_eq!(hash, did_log.version.hash);
-        }
-    }
-    */
 
     #[rstest]
     #[case(

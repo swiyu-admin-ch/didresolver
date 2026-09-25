@@ -124,11 +124,12 @@ impl WebVerifiableHistoryDidMethodParameters {
                     .to_owned(),
             ));
         };
-         if scid.is_empty() {
-             return Err(DidResolverError::InvalidDidParameter(
-                 "Invalid 'scid' DID parameter. This item MUST appear in the first DID log entry.".to_owned(),
-             ));
-         }
+        if scid.is_empty() {
+            return Err(DidResolverError::InvalidDidParameter(
+                "Invalid 'scid' DID parameter. This item MUST appear in the first DID log entry."
+                    .to_owned(),
+            ));
+        }
 
         if let Some(update_keys) = self.update_keys.to_owned() {
             if update_keys.is_empty() {
@@ -177,6 +178,8 @@ impl WebVerifiableHistoryDidMethodParameters {
                 "Unsupported 'portable' DID parameter. We currently don't support portable DIDs"
                     .to_owned(),
             ));
+        } else {
+            self.portable = Some(false);
         }
 
         self.validate()?;
@@ -201,22 +204,20 @@ impl WebVerifiableHistoryDidMethodParameters {
             None => current_params.method.clone(),
         };
 
-        self.scid = match new_params.scid {
-            Some(scid) => {
-                if current_params
-                    .scid
-                    .as_ref()
-                    .is_none_or(|x| x != scid.as_str())
-                {
-                    return Err(DidResolverError::InvalidDidParameter(
-                        "Invalid 'scid' DID parameter. The 'scid' parameter is not allowed to change."
-                        .to_owned(),
-                    ));
-                };
-                Some(scid)
+        match (self.scid.as_ref(), new_params.scid.as_ref()) {
+            (None, _) => {
+                return Err(DidResolverError::InvalidDidParameter(
+                    "The 'scid' must not be empty.".into(),
+                ));
             }
-            None => self.scid.clone(),
-        };
+            (Some(original), Some(new)) if original != new => {
+                return Err(DidResolverError::InvalidDidParameter(
+                    "Invalid 'scid' DID parameter. The 'scid' parameter is not allowed to change."
+                        .to_owned(),
+                ));
+            }
+            _ => {}
+        }
 
         // During key pre-rotation, new log entries
         // - must have at least 1 key in updateKeys
@@ -272,16 +273,15 @@ impl WebVerifiableHistoryDidMethodParameters {
 
         self.watchers = new_params.watchers.or(current_params.watchers);
 
-        self.portable = match (current_params.portable, new_params.portable) {
+        match (current_params.portable, new_params.portable) {
             (Some(true), _) => return Err(DidResolverError::InvalidDidParameter(
                 "Unsupported 'portable' DID parameter. We currently don't support portable dids".to_owned(),
             )),
             (_, Some(true)) =>  return Err(DidResolverError::InvalidDidParameter(
                 "Invalid 'portable' DID parameter. The value can ONLY be set to true in the first log entry, the initial version of the DID.".to_owned(),
             )),
-            (_, Some(false)) => Some(false),
-            (_, None) => current_params.portable
-
+            (_, Some(false)) => {},
+            (_, None) => {},
         };
 
         self.deactivated = match (current_params.deactivated, new_params.deactivated) {
@@ -297,7 +297,8 @@ impl WebVerifiableHistoryDidMethodParameters {
         self.validate()
     }
 
-    fn validate(&self) -> Result<(), DidResolverError> {
+    #[inline]
+    pub fn validate(&self) -> Result<(), DidResolverError> {
         // Ensure no update_key is in next_key hashes, as this would defeat the purpose of key
         // rotation
         let mut hasher = JcsSha256Hasher::default();
