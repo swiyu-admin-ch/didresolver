@@ -91,7 +91,6 @@ mod test {
         );
     }
 
-
     #[rstest]
     #[case(
         json!({

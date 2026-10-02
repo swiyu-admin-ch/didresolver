@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Checksum mismatch in Kotlin bindings on aarch64 `(#1324)`
 - Improved performance in `DidDocNormalized` to `DidDoc` conversion to prevent potential attacks `(#1209)`
+- Properly validate empty parameter list in webvh `(#1233)`
 
 ### Changed
 - Disallow usage of pre-rotation in DID:TDW logs `(#1206)`
