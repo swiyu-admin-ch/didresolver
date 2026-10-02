@@ -92,8 +92,6 @@ pub struct DidLogEntry {
     #[serde(rename = "proof")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proof: Option<Vec<DataIntegrityProof>>,
-    //#[serde(skip)]
-    //pub prev_entry: Option<Arc<Self>>, // Arc-ed to prevent "recursive without indirection"
 }
 
 #[expect(clippy::exhaustive_structs, reason = "..")]
@@ -288,7 +286,6 @@ impl DidLogEntry {
                 did_doc: self.did_doc.clone(),
                 did_doc_json: self.did_doc_json.clone(),
                 proof: None,
-                //prev_entry: None,
             }
             .to_log_entry_line()?;
 
@@ -323,7 +320,6 @@ impl DidLogEntry {
             did_doc: self.did_doc.clone(),
             did_doc_json: self.did_doc_json.clone(),
             proof: None,
-            //prev_entry: None,
         };
         let entry_json = entry.to_log_entry_line()?;
         // 5 calculate  the hash string
@@ -442,10 +438,8 @@ impl TryFrom<String> for WebVerifiableHistoryDidLog {
         }
 
         let mut current_params: Option<WebVerifiableHistoryDidMethodParameters> = None;
-        //let mut prev_entry: Option<Arc<DidLogEntry>> = None;
 
         let mut is_deactivated = false;
-        //let now= Local::now();
         let now = Utc::now();
 
         let did_log_entries = did_log
@@ -1002,7 +996,8 @@ impl WebVerifiableHistory {
         let did_log_obj = WebVerifiableHistoryDidLog::try_from(did_log)?;
 
         // 1. DID-to-HTTPS Transformation
-        let _did = WebVerifiableHistoryId::parse_did_webvh(did_webvh.clone())
+        // Validates that it can be parsed -> Return value is ignored
+        WebVerifiableHistoryId::parse_did_webvh(did_webvh.clone())
             .map_err(|err| DidResolverError::InvalidMethodSpecificId(format!("{err}")))?;
 
         let did_doc_valid = did_log_obj.did_doc.clone();
