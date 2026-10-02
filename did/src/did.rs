@@ -628,7 +628,7 @@ mod tests {
     r#"{"versionId":"1-QmNxcdkcQR7sigXDhcS3HG26hJ4rugR7hRxkARXGLQ1Kcq","versionTime":"2026-02-26T21:03:18Z","parameters": {"method":"did:webvh:1.0","scid":"QmZrdgHX4aVrUyvhMiwo3eHhybxsKEosj3kd9LVpMSCt3U","updateKeys":["z6MkiSvDtnFU4JiD4KXCyWiyHqXMvDwTQCmKJhEjEnynVXVZ"],"nextKeyHashes":["QmSW19VZLEQKtwyWeNMthVU4g5HwkvT4fXqhAYiPMsqxtY"],"portable":false} ,"state":{"@context":["https://www.w3.org/ns/did/v1","https://w3id.org/security/multikey/v1"],"id":"did:webvh:QmZrdgHX4aVrUyvhMiwo3eHhybxsKEosj3kd9LVpMSCt3U:example.com","verificationMethod":[ {"id":"did:webvh:QmZrdgHX4aVrUyvhMiwo3eHhybxsKEosj3kd9LVpMSCt3U:example.com#key-1","type":"Multikey","controller":"did:webvh:QmZrdgHX4aVrUyvhMiwo3eHhybxsKEosj3kd9LVpMSCt3U:example.com","publicKeyMultibase":"z6MkiSvDtnFU4JiD4KXCyWiyHqXMvDwTQCmKJhEjEnynVXVZ"} ],"authentication":["did:webvh:QmZrdgHX4aVrUyvhMiwo3eHhybxsKEosj3kd9LVpMSCt3U:example.com#key-1"]},"proof":[ {"type":"DataIntegrityProof","cryptosuite":"eddsa-jcs-2022","created":"2026-02-26T21:03:18Z","verificationMethod":"did:key:z6MkiSvDtnFU4JiD4KXCyWiyHqXMvDwTQCmKJhEjEnynVXVZ#z6MkiSvDtnFU4JiD4KXCyWiyHqXMvDwTQCmKJhEjEnynVXVZ","proofPurpose":"authentication","proofValue":"z4aaF7BTdrkEinWEKhKDQJ9cJcdC7H8TiR14ZSupeLXPhdGvbK2cS8wu4EpGivUHoWCRyNCbd2H6B8zGuZAAtopF8"} ]}
 {"versionId":"2-QmRhAkDuXM1JfvzXEzmA53awTu43dZoa2z96wBWSAYEKBb","versionTime":"2026-02-26T21:03:18Z","parameters": {"method":"did:webvh:1.0","scid":"QmZrdgHX4aVrUyvhMiwo3eHhybxsKEosj3kd9LVpMSCt3U","nextKeyHashes":["QmSW19VZLEQKtwyWeNMthVU4g5HwkvT4fXqhAYiPMsqxtY"],"updateKeys":["z6Mkh4HTPxDfpdhvYqmQsdbVMMjRNNK5E8zVN4KBxV8Rc3zn"]} ,"state":{"@context":["https://www.w3.org/ns/did/v1","https://w3id.org/security/multikey/v1"],"id":"did:webvh:QmZrdgHX4aVrUyvhMiwo3eHhybxsKEosj3kd9LVpMSCt3U:example.com","verificationMethod":[ {"id":"did:webvh:QmZrdgHX4aVrUyvhMiwo3eHhybxsKEosj3kd9LVpMSCt3U:example.com#key-1","type":"Multikey","controller":"did:webvh:QmZrdgHX4aVrUyvhMiwo3eHhybxsKEosj3kd9LVpMSCt3U:example.com","publicKeyMultibase":"z6Mks6KhWXNfyZmdHrTY7aibRvs7oQqE1GEvd48PCh92nDH6"} ],"authentication":["did:webvh:QmZrdgHX4aVrUyvhMiwo3eHhybxsKEosj3kd9LVpMSCt3U:example.com#key-1"]},"proof":[ {"type":"DataIntegrityProof","cryptosuite":"eddsa-jcs-2022","created":"2026-02-26T21:03:18Z","verificationMethod":"did:key:z6Mkh4HTPxDfpdhvYqmQsdbVMMjRNNK5E8zVN4KBxV8Rc3zn#z6Mkh4HTPxDfpdhvYqmQsdbVMMjRNNK5E8zVN4KBxV8Rc3zn","proofPurpose":"authentication","proofValue":"z62EgAWHXv5VT6KJ98mSQcaX4qAkshibaSFXBmGAFnip85FGkow4kskCpS7uRBxR2HjQiwuViabvAoFaer7tiZmVN"} ]}
 {"versionId":"3-QmST6UZPpR348CEvHNQF5ooG4ZEM8JMq2Anah7wpW9USjq","versionTime":"2026-02-26T21:03:18Z","parameters": {"method":"did:webvh:1.0","scid":"QmZrdgHX4aVrUyvhMiwo3eHhybxsKEosj3kd9LVpMSCt3U","nextKeyHashes":[],"updateKeys":["z6Mkh4HTPxDfpdhvYqmQsdbVMMjRNNK5E8zVN4KBxV8Rc3zn"]} ,"state":{"@context":["https://www.w3.org/ns/did/v1","https://w3id.org/security/multikey/v1"],"id":"did:webvh:QmZrdgHX4aVrUyvhMiwo3eHhybxsKEosj3kd9LVpMSCt3U:example.com","verificationMethod":[ {"id":"did:webvh:QmZrdgHX4aVrUyvhMiwo3eHhybxsKEosj3kd9LVpMSCt3U:example.com#key-1","type":"Multikey","controller":"did:webvh:QmZrdgHX4aVrUyvhMiwo3eHhybxsKEosj3kd9LVpMSCt3U:example.com","publicKeyMultibase":"z6Mks6KhWXNfyZmdHrTY7aibRvs7oQqE1GEvd48PCh92nDH6"} ],"authentication":["did:webvh:QmZrdgHX4aVrUyvhMiwo3eHhybxsKEosj3kd9LVpMSCt3U:example.com#key-1"]},"proof":[ {"type":"DataIntegrityProof","cryptosuite":"eddsa-jcs-2022","created":"2026-02-26T21:03:18Z","verificationMethod":"did:key:z6Mkh4HTPxDfpdhvYqmQsdbVMMjRNNK5E8zVN4KBxV8Rc3zn#z6Mkh4HTPxDfpdhvYqmQsdbVMMjRNNK5E8zVN4KBxV8Rc3zn","proofPurpose":"authentication","proofValue":"z28bvzDwShZQnKXtP9193cmx9sw5B1S4u89fkLtvZ1yHjFt89afuGT5TifMkQxFfZ6wXiLcxMrorxERxnpfXMGfFd"} ]}
-"#, "Next key must not be a current update key"
+"#, "must be 'JsonWebKey' or"
     )]
     // 2nd entry has same did doc, but different parameters. Reuses old proof.
     #[case("did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
@@ -672,23 +672,28 @@ mod tests {
     // CAUTION A did_tdw (param #2) MUST match the one residing in did_log_raw_filepath (param #1)
     #[case(
         "test_data/tdw/non_incremented_version_did.jsonl",
-        "did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
+        "did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+        DidResolveErrorKind::DeserializationFailed,
     )]
     #[case(
         "test_data/tdw/unordered_did.jsonl",
-        "did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
+        "did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+        DidResolveErrorKind::DeserializationFailed,
     )]
     #[case(
         "test_data/webvh/non_incremented_version_did.jsonl",
-        "did:webvh:QmT4kPBFsHpJKvvvxgFUYxnSGPMeaQy1HWwyXMHj8NjLuy:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
+        "did:webvh:QmT4kPBFsHpJKvvvxgFUYxnSGPMeaQy1HWwyXMHj8NjLuy:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+        DidResolveErrorKind::InvalidDidLog,
     )]
     #[case(
         "test_data/webvh/unordered_did.jsonl",
-        "did:webvh:QmT4kPBFsHpJKvvvxgFUYxnSGPMeaQy1HWwyXMHj8NjLuy:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
+        "did:webvh:QmT4kPBFsHpJKvvvxgFUYxnSGPMeaQy1HWwyXMHj8NjLuy:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+        DidResolveErrorKind::InvalidDidLog,
     )]
     fn test_resolve_invalid_did_log_non_incremented_version(
         #[case] did_log_raw_filepath: String,
         #[case] did: String,
+        #[case] kind: DidResolveErrorKind,
     ) {
         let did_log_raw_res = fs::read_to_string(Path::new(&did_log_raw_filepath));
         assert!(did_log_raw_res.is_ok());
@@ -697,10 +702,10 @@ mod tests {
         let resolve_all_res = Did::new(did).unwrap().resolve_all(did_log_raw); // panic-safe unwrap call (as long as #case setup is correct)
         assert!(resolve_all_res.is_err());
         let err = resolve_all_res.unwrap_err(); // panic-safe unwrap call (see the previous line)
-        assert_eq!(err.kind(), DidResolveErrorKind::DeserializationFailed);
+        assert_eq!(err.kind(), kind);
         assert!(err
                     .to_string()
-                    .contains("Version numbers (`versionId`) must be in a sequence of positive consecutive integers"),
+                    .contains("versionId"),
                 "ERROR: {:?}", err);
     }
 
