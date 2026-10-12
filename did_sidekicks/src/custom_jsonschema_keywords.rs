@@ -24,7 +24,7 @@ impl DidLogEntryKeyword {
         _parent: &'a Map<String, Value>,
         value: &'a Value,
         path: Location,
-    ) -> Result<Box<dyn Keyword>, ValidationError<'a>> {
+    ) -> Result<Box<dyn for<'i> Keyword<'i>>, ValidationError<'a>> {
         // You can use the `value` parameter to configure your validator if needed
         if value
             .as_bool()
@@ -39,7 +39,7 @@ impl DidLogEntryKeyword {
     }
 }
 
-impl Keyword for DidLogEntryKeyword {
+impl<'a> Keyword<'a> for DidLogEntryKeyword {
     /// Validate instance according to https://identity.foundation/didwebvh/v0.3/#overview - each DID log entry includes a JSON array of five items:
     ///
     /// 1. The `versionId` of the entry, a value that combines the version number (starting at 1 and incrementing by one per version), a literal dash -, and a hash of the entry. The entry hash calculation links each entry to its predecessor in a ledger-like chain.
@@ -120,7 +120,7 @@ impl DidVersionTimeKeyword {
         _parent: &'a Map<String, Value>,
         value: &'a Value,
         path: Location,
-    ) -> Result<Box<dyn Keyword>, ValidationError<'a>> {
+    ) -> Result<Box<dyn for<'i> Keyword<'i>>, ValidationError<'a>> {
         // You can use the `value` parameter to configure your validator if needed
         if value
             .as_bool()
@@ -135,7 +135,7 @@ impl DidVersionTimeKeyword {
     }
 }
 
-impl Keyword for DidVersionTimeKeyword {
+impl<'a> Keyword<'a> for DidVersionTimeKeyword {
     /// Validate instance according to a custom specification i.e. a `versionTime` string representation qualifies as "valid" if:
     /// 1. is valid datetime in `ISO8601` format
     /// 2. is (as datetime) before the current time

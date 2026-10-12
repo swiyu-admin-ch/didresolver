@@ -2,26 +2,6 @@ use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use did_sidekicks::did_doc::{DidDocNormalized, VerificationMethod, VerificationType};
 use rand::seq::SliceRandom;
 
-pub fn criterion_benchmark_setup(_: &mut Criterion) {
-    // On MacOS, this should match the result of running `sysctl -a machdep.cpu` command
-    let available_parallelism = std::thread::available_parallelism().unwrap().get();
-
-    // Calling `build_global` is not recommended, except in two scenarios:
-    // - You wish to change the default configuration.
-    // - You are running a benchmark, in which case initializing may yield slightly more consistent results,
-    // since the worker threads will already be ready to go even in the first iteration. But this cost is minimal.
-    //
-    // Initialization of the global thread pool happens exactly once.
-    // Once started, the configuration cannot be changed.
-    // Therefore, if you call build_global a second time, it will return an error.
-    rayon::ThreadPoolBuilder::new()
-        // feel free to set the downscale factor manually, e.g. 2,3,4,6 etc.
-        .num_threads(available_parallelism / 1)
-        .build_global()
-        .unwrap();
-    //println!("Global thread pool (rayon) initialized");
-}
-
 pub fn criterion_benchmark_to_did_doc(c: &mut Criterion) {
     let inputs = [100, 500, 1000, 1500, 2000, 2500, 3000];
 
@@ -86,7 +66,6 @@ pub fn criterion_benchmark_to_did_doc(c: &mut Criterion) {
 
 criterion_group!(
     benches,
-    criterion_benchmark_setup,
     criterion_benchmark_to_did_doc,
 );
 criterion_main!(benches);

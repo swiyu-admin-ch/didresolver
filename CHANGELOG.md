@@ -16,7 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Properly validate empty parameter list in webvh `(#1233)`
 
 ### Changed
-- disallow usage of pre-rotation in DID:TDW logs `(#1206)`
+- Disallow usage of pre-rotation in DID:TDW logs `(#1206)`
+- Improved binary size of the library `(#1047)`
 
 ## [2.9.0] - 2026-07-30
 
