@@ -52,7 +52,7 @@ lazy_static! {
     )]
     Regex::new(HAS_PORT_REGEX_STR).unwrap();
 }
-#[allow(
+#[expect(
     clippy::useless_attribute,
     reason = "to fix the false positive of the below expect"
 )]

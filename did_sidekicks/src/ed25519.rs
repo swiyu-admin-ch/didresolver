@@ -772,7 +772,6 @@ MCowBQYDK2VwAyEA87Eihw4hpr8dKxzd+pJ1qV1sYZT0NlwnC1VL8btoJy0=
 -----END PUBLIC KEY-----
          "#
         .trim();
-        dbg!(&pem);
         let pem_key = Ed25519VerifyingKey::from_public_key_pem(pem).unwrap();
 
         let jwk = r#"{
