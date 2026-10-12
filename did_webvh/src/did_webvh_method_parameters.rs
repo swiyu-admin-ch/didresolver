@@ -11,7 +11,7 @@ use std::sync::Arc;
 
 // See https://identity.foundation/didwebvh/v1.0/#didwebvh-did-method-parameters
 #[expect(clippy::exhaustive_structs, reason = "..")]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct WebVerifiableHistoryDidMethodParameters {
     /// Specifies the did:webvh specification version to be used for processing the DID’s log.
     /// Each acceptable value in turn defines what cryptographic algorithms are permitted for the current and
@@ -38,7 +38,7 @@ pub struct WebVerifiableHistoryDidMethodParameters {
     pub next_keys: Option<Vec<String>>,
 
     /// A JSON object declaring the set of witnesses and threshold number of witness proofs required to update the DID.
-    /// For more info see https://identity.foundation/didwebvh/v1.0/#the-witness-parameter
+    /// For more info see https://identity.foundation/didwebvh/v1.0/#the-witness-parameter.
     #[serde(default)]
     #[serde(rename = "witness", skip_serializing_if = "Option::is_none")]
     pub witness: Option<Witness>,
@@ -481,7 +481,7 @@ impl TryInto<HashMap<String, Arc<DidMethodParameter>>> for WebVerifiableHistoryD
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[non_exhaustive]
 pub struct Witness {
     #[serde(skip_serializing_if = "is_zero")]
@@ -493,7 +493,7 @@ pub struct Witness {
     pub witnesses: Vec<WitnessEntry>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[non_exhaustive]
 pub struct WitnessEntry {
     pub id: String,

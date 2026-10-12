@@ -406,10 +406,6 @@ impl TryFrom<String> for WebVerifiableHistoryDidLog {
     )]
     #[expect(clippy::indexing_slicing, reason = "..")]
     #[expect(
-        clippy::arithmetic_side_effects,
-        reason = "number of entries is always way lower than usize::MIN"
-    )]
-    #[expect(
         clippy::wildcard_enum_match_arm,
         reason = "no further variants of serde_json::Value enum are expected in the future"
     )]
@@ -1052,10 +1048,17 @@ impl DidResolver for WebVerifiableHistory {
     reason = "unwrap calls are panic-safe as long as test case setup is correct"
 )]
 mod test {
-    use crate::did_webvh::{WebVerifiableHistory, WebVerifiableHistoryDidLog};
-    use crate::test::assert_trust_did_web_error;
-    use did_sidekicks::errors::DidResolverErrorKind;
+    use crate::{
+        did_webvh::{DidLogEntry, DidLogVersion, WebVerifiableHistory, WebVerifiableHistoryDidLog},
+        did_webvh_method_parameters::WebVerifiableHistoryDidMethodParameters,
+        test::assert_trust_did_web_error,
+    };
+    use chrono::DateTime;
+    use did_sidekicks::{
+        did_doc::DidDoc, errors::DidResolverErrorKind, vc_data_integrity::DataIntegrityProof,
+    };
     use rstest::rstest;
+    use serde_json::json;
     use std::fs;
     use std::path::Path;
 
@@ -1237,5 +1240,163 @@ mod test {
             err_contains_pattern,
             err
         );
+    }
+
+    #[rstest]
+    fn test_validate_initial_entry_properties() {
+        let params: WebVerifiableHistoryDidMethodParameters =
+            serde_json::from_value(json!({})).unwrap();
+        let raw_doc = json!({
+           "id": "did:webvh:QmWs9qC3t5qmoJXa3D3Uas9goCw7NYVRxHjjfdfPTU4jCk:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:example",
+           "verificationMethod": [],
+        });
+        let doc: DidDoc = serde_json::from_value(raw_doc.clone()).unwrap();
+        let proof =  DataIntegrityProof::from_json_string(json!([{
+                "type": "DataIntegrityProof",
+                "cryptosuite": "eddsa-jcs-2022",
+                "created": "2025-08-13T05:43:17Z",
+                "verificationMethod": "did:key:z6MkkkjG6shmZk6D2ghgDbpJQHD4xvpZhzYiWSLKDeznibiJ#z6MkkkjG6shmZk6D2ghgDbpJQHD4xvpZhzYiWSLKDeznibiJ",
+                "proofPurpose": "assertionMethod",
+                "proofValue": "z3L7j2siRiZ4zziQQmRqLY5qH2RfVz6VTC5gbDE6vntw1De5Ej5DNR3wDU6m9KRiUYPm9o8P89yMzNk5EhWVTo4Tn"
+        }]).to_string()).unwrap();
+        let mut entry = DidLogEntry::new(
+            DidLogVersion::new("1-QmVfo7te466L3BVB66kTV6yaYyKic4J17QMo1fFcDYkZJx"),
+            DateTime::from_timestamp_secs(1791786617).unwrap(),
+            params,
+            doc,
+            raw_doc,
+            proof,
+        );
+
+        // Error in params to test WebVerifiableHistoryDidMethodParameters::validate_initial method
+        // call.
+        let res = entry.validate_initial_entry_properties();
+        let Err(err) = res else {
+            panic!(
+                "Missing call to method WebVerifiableHistoryDidMethodParameters::validate_initial."
+            )
+        };
+        assert!(
+            err.to_string().contains("Missing 'method' DID parameter"),
+            "failed, error message: {}",
+            err,
+        );
+
+        let valid_params: WebVerifiableHistoryDidMethodParameters = serde_json::from_value(json!({
+           "method": "did:webvh:1.0",
+           "scid": "QmWs9qC3t5qmoJXa3D3Uas9goCw7NYVRxHjjfdfPTU4jCk",
+           "updateKeys": ["QmT4kPBFsHpJKvvvxgFUYxnSGPMeaQy1HWwyXMHj8NjLuy"],
+        }))
+        .unwrap();
+        entry.parameters = valid_params.clone();
+
+        // Validate initial SCID
+        let (scid, _) = entry.validate_initial_entry_properties().unwrap();
+        assert_eq!(scid, "QmWs9qC3t5qmoJXa3D3Uas9goCw7NYVRxHjjfdfPTU4jCk");
+
+        entry.parameters.scid = Some("some other SCID".into());
+        let res = entry.validate_initial_entry_properties();
+        let Err(err) = res else {
+            panic!("Expected invalid SCID to return an error");
+        };
+        assert!(err.to_string().contains("Genesis entry has invalid SCID"));
+
+        entry.parameters = valid_params.clone();
+
+        // Check for update keys present
+        entry.parameters.update_keys = Some(Vec::new());
+        let res = entry.validate_initial_entry_properties();
+        let Err(err) = res else {
+            panic!("Expected no update keys to return an error");
+        };
+        assert!(
+            err.to_string()
+                .contains("Empty 'updateKeys' DID parameter."),
+            "Unexpected error: {}",
+            err
+        );
+    }
+
+    #[rstest]
+    fn test_didlogentry_calculate_entry_hash() {
+        const EXPECTED_ENTRY_HASH: &str = "Qmf1Bekf2m53tX3Vji7BMnfMsZjENQUmroefWH81jVPBPj";
+        // NOTE: this proof is of another entry, but still works, as the proof is not used for
+        // generating the entry hash.
+        let proof =  DataIntegrityProof::from_json_string(json!([{
+                "type": "DataIntegrityProof",
+                "cryptosuite": "eddsa-jcs-2022",
+                "created": "2025-08-13T05:43:17Z",
+                "verificationMethod": "did:key:z6MkkkjG6shmZk6D2ghgDbpJQHD4xvpZhzYiWSLKDeznibiJ#z6MkkkjG6shmZk6D2ghgDbpJQHD4xvpZhzYiWSLKDeznibiJ",
+                "proofPurpose": "assertionMethod",
+                "proofValue": "z3L7j2siRiZ4zziQQmRqLY5qH2RfVz6VTC5gbDE6vntw1De5Ej5DNR3wDU6m9KRiUYPm9o8P89yMzNk5EhWVTo4Tn"
+        }]).to_string()).unwrap();
+        let params: WebVerifiableHistoryDidMethodParameters = serde_json::from_value(json!({
+           "method": "did:webvh:1.0",
+           "scid": "QmWs9qC3t5qmoJXa3D3Uas9goCw7NYVRxHjjfdfPTU4jCk",
+           "updateKeys": ["QmT4kPBFsHpJKvvvxgFUYxnSGPMeaQy1HWwyXMHj8NjLuy"],
+        }))
+        .unwrap();
+        let raw_doc = json!({
+           "id": "did:webvh:QmWs9qC3t5qmoJXa3D3Uas9goCw7NYVRxHjjfdfPTU4jCk:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:example",
+           "verificationMethod": [],
+        });
+        let version_id = DidLogVersion::new("1-Qmf1Bekf2m53tX3Vji7BMnfMsZjENQUmroefWH81jVPBPj");
+
+        let version_time = DateTime::from_timestamp_secs(1791786617).unwrap();
+        let doc: DidDoc = serde_json::from_value(raw_doc.clone()).unwrap();
+        let mut entry = DidLogEntry::new(
+            version_id.clone(),
+            version_time.clone(),
+            params.clone(),
+            doc.clone(),
+            raw_doc.clone(),
+            proof.clone(),
+        );
+
+        // Valid entry with mismatched proof (proof is ignored for entry hash)
+        let hash = entry
+            .calculate_entry_hash("QmSSDeWv7aqwU6V1sLTaNZqEwEPVoUkQjUzwrtLzEkgXQb")
+            .unwrap();
+        assert_eq!(hash, EXPECTED_ENTRY_HASH);
+
+        // VersionID change is irrelevant for entry hash (but not for validation done in different
+        // method)
+        entry.version = DidLogVersion::new("1-INVALID_VERSION_ID");
+        let hash = entry
+            .calculate_entry_hash("QmSSDeWv7aqwU6V1sLTaNZqEwEPVoUkQjUzwrtLzEkgXQb")
+            .unwrap();
+        assert_eq!(hash, EXPECTED_ENTRY_HASH);
+        entry.version = version_id.clone();
+
+        // Change in versionTime results in different hash
+        entry.version_time = DateTime::from_timestamp_secs(1790000000).unwrap();
+        let hash = entry
+            .calculate_entry_hash("QmSSDeWv7aqwU6V1sLTaNZqEwEPVoUkQjUzwrtLzEkgXQb")
+            .unwrap();
+        assert_ne!(hash, EXPECTED_ENTRY_HASH);
+        entry.version_time = version_time.clone();
+
+        // Change in params results in different hash
+        entry.parameters.portable = Some(true);
+        let hash = entry
+            .calculate_entry_hash("QmSSDeWv7aqwU6V1sLTaNZqEwEPVoUkQjUzwrtLzEkgXQb")
+            .unwrap();
+        assert_ne!(hash, EXPECTED_ENTRY_HASH);
+        entry.parameters = params.clone();
+
+        // Change in doc results in different hash
+        entry.version_time = DateTime::from_timestamp_secs(1790000000).unwrap();
+        entry.did_doc_json = json!({
+           "id": "did:webvh:QmWs9qC3t5qmoJXa3D3Uas9goCw7NYVRxHjjfdfPTU4jCk:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:example",
+           "verificationMethod": [],
+           "profile_version": "some value",
+        });
+        entry.did_doc = serde_json::from_value(entry.did_doc_json.clone()).unwrap();
+        let hash = entry
+            .calculate_entry_hash("QmSSDeWv7aqwU6V1sLTaNZqEwEPVoUkQjUzwrtLzEkgXQb")
+            .unwrap();
+        assert_ne!(hash, EXPECTED_ENTRY_HASH);
+        entry.did_doc_json = raw_doc.clone();
+        entry.did_doc = serde_json::from_value(entry.did_doc_json.clone()).unwrap();
     }
 }
