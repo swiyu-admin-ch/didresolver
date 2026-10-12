@@ -335,7 +335,7 @@
             "type": "array",
             "items": {
               "type": "string",
-              "pattern": "^z[1-9a-zA-NP-Z]{47,}$"
+              "pattern": "^Q[1-9a-zA-NP-Z]{45,}$"
             },
             "$comment": "An array of strings that are hashes of multikey formatted public keys that MAY be added to the updateKeys list in the log entry of a future version of the DID."
           },

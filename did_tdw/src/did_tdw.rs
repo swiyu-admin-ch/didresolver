@@ -1094,20 +1094,18 @@ mod test {
         DidResolverErrorKind::InvalidDidDocument,
         "id in did document doesn't match did"
     )]
-    /* TODO generate a proper test case data using didtoolbox-java
     #[case(
-        "test_data/generated_by_tdw_js/already_deactivated.jsonl",
-        "did:tdw:QmdSU7F2rF8r4m6GZK7Evi2tthfDDxhw3NppU8pJMbd2hB:example.com",
-        DidResolverErrorKind::InvalidDidDocument,
-        "This DID document is already deactivated"
+        "test_data/generated_by_didtoolbox_java/unhappy_path/key_prerotation_initial_entry_did.jsonl",
+        "did:tdw:QmR5WyVe1QRDUrVrvog2zWony3Dp73VkCuvfx7Hb7F8RrJ:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+        DidResolverErrorKind::InvalidDidParameter,
+        "Unsupported 'prerotation'"
     )]
     #[case(
-        "test_data/generated_by_tdw_js/unhappy_path/not_authorized.jsonl",
-        "did:tdw:QmXjp5qhSEvm8oXip43cDX62hZhHZdAMYv7Magy1tkffSz:example.com",
-        DidResolverErrorKind::InvalidIntegrityProof,
-        "Key extracted from proof is not authorized for update"
+        "test_data/generated_by_didtoolbox_java/unhappy_path/key_prerotation_did.jsonl",
+        "did:tdw:QmTYqaiEn5VpKeYsTNYELGUUhhLBtNheqhCdvrN2TxmTKe:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+        DidResolverErrorKind::InvalidDidParameter,
+        "Prerotation is not supported"
     )]
-    */
     fn test_read_invalid_did_log(
         #[case] did_log_raw_filepath: String,
         #[case] did_url: String,
