@@ -518,7 +518,7 @@ const DID_METHOD_PARAMETER_VERSION: &str = "did:webvh:1.0";
     reason = "unwrap calls are panic-safe as long as test case setup is correct"
 )]
 mod test {
-    use crate::did_webvh_method_parameters::{
+    use super::{
         DID_METHOD_PARAMETER_VERSION, WebVerifiableHistoryDidMethodParameters, Witness,
         WitnessEntry,
     };

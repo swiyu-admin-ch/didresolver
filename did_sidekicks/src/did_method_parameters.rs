@@ -114,11 +114,6 @@ impl DidMethodParameter {
     /// The only non-empty constructor of the type.
     ///
     /// The supplied string of JSON text (`json_text`) must be deserializable into a JSON object.
-    //#[expect(clippy::unwrap_in_result, reason = "..")]
-    #[expect(
-        clippy::unwrap_used,
-        reason = "panic-safe unwrap call, see comments below"
-    )]
     fn new(name: &str, json_text: String) -> Result<Self, DidSidekicksError> {
         if name.is_empty() {
             return Err(DidSidekicksError::InvalidDidMethodParameter(
@@ -126,28 +121,30 @@ impl DidMethodParameter {
             ));
         }
 
-        match serde_json::from_str::<Value>(json_text.as_str()) {
-            Ok(value) => DidMethodParameter::new_from_value(name.into(), value),
-            Err(err) => Err(DidSidekicksError::InvalidDidMethodParameter(format!(
-                "'{json_text}' denoting the DID method parameter '{name}' is not a valid JSON text: {err}"
-            ))),
-        }
-    }
+        let json_value = match serde_json::from_str::<Value>(json_text.as_str()) {
+            Ok(value) => value,
+            Err(err) => {
+                return Err(DidSidekicksError::InvalidDidMethodParameter(format!(
+                    "'{json_text}' denoting the DID method parameter '{name}' is not a valid JSON text: {err}"
+                )));
+            }
+        };
 
-    fn new_from_value(name: String, json: Value) -> Result<Self, DidSidekicksError> {
-        let json_text = serde_json::to_string(&json).unwrap();
-        let value = match json {
+        let value = match json_value {
             Value::Bool(entry) => DidMethodValue::Bool(entry),
             Value::String(entry) => DidMethodValue::String(entry),
             Value::Number(entry) => {
                 if entry.is_f64() {
                     // panic-safe unwrap call: For any Number on which is_f64 returns true, as_f64 is guaranteed to return the floating point value
+                    #[expect(clippy::unwrap_used, reason = "Unwrap is checked")]
                     DidMethodValue::F64(entry.as_f64().unwrap())
                 } else if entry.is_i64() {
                     // panic-safe unwrap call: If the Number is an integer represent it as i64 if possible. Returns None otherwise
+                    #[expect(clippy::unwrap_used, reason = "Unwrap is checked")]
                     DidMethodValue::I64(entry.as_i64().unwrap())
                 } else if entry.is_u64() {
                     // panic-safe unwrap call: If the Number is an integer, represent it as u64 if possible. Returns None otherwise
+                    #[expect(clippy::unwrap_used, reason = "Unwrap is checked")]
                     DidMethodValue::U64(entry.as_u64().unwrap())
                 } else {
                     return Err(DidSidekicksError::InvalidDidMethodParameter(format!(
@@ -161,36 +158,17 @@ impl DidMethodParameter {
                 if entry.is_empty() {
                     DidMethodValue::EmptyArray
                 } else {
-                    let mut arr = vec![];
-                    entry.iter().for_each(|element| {
-                        if element.is_string() {
-                            // panic-safe unwrap call: For any Value on which is_string returns true, as_str is guaranteed to return the string slice
-                            arr.push(element.as_str().unwrap().to_owned());
-                        }
-                    });
-
-                    if let Ok(string_array) = entry
+                    entry
                         .iter()
-                        .map(|element| {
-                            // panic-safe unwrap call: For any Value on which is_string returns true, as_str is guaranteed to return the string slice
-                            if element.is_string() {
-                                Ok(element.as_str().unwrap().to_owned())
-                            } else {
-                                Err(())
-                            }
-                        })
-                        .collect::<Result<Vec<String>, ()>>()
-                    {
-                        DidMethodValue::StringArray(string_array)
-                    } else {
-                        DidMethodValue::Array
-                    }
+                        .map(|element| element.as_str().map(str::to_owned))
+                        .collect::<Option<Vec<String>>>()
+                        .map_or(DidMethodValue::Array, DidMethodValue::StringArray)
                 }
             }
             Value::Null => DidMethodValue::Null,
         };
         Ok(Self {
-            name,
+            name: name.into(),
             json_text,
             value,
         })
@@ -249,7 +227,10 @@ impl DidMethodParameter {
     /// A UniFFI-compliant getter.
     #[inline]
     pub const fn is_array(&self) -> bool {
-        matches!(self.value, DidMethodValue::Array | DidMethodValue::EmptyArray | DidMethodValue::StringArray(_))
+        matches!(
+            self.value,
+            DidMethodValue::Array | DidMethodValue::EmptyArray | DidMethodValue::StringArray(_)
+        )
     }
 
     /// A UniFFI-compliant getter.
@@ -347,45 +328,45 @@ impl DidMethodParameter {
 mod test {
     use crate::did_method_parameters::DidMethodParameter;
 
-   #[test]
-   fn new_bool() {
-      let name = "some name";
-      let true_parameter = DidMethodParameter::new_bool(name, true);
-      assert!(true_parameter.is_bool());
-      assert_eq!(Some(true), true_parameter.get_bool_value());
-      assert_eq!(name, true_parameter.get_name());
+    #[test]
+    fn new_bool() {
+        let name = "some name";
+        let true_parameter = DidMethodParameter::new_bool(name, true);
+        assert!(true_parameter.is_bool());
+        assert_eq!(Some(true), true_parameter.get_bool_value());
+        assert_eq!(name, true_parameter.get_name());
 
-      let false_parameter = DidMethodParameter::new_bool(name, false);
-      assert!(false_parameter.is_bool());
-      assert_eq!(Some(false), false_parameter.get_bool_value());
-      assert_eq!(name, false_parameter.get_name());
-   }
+        let false_parameter = DidMethodParameter::new_bool(name, false);
+        assert!(false_parameter.is_bool());
+        assert_eq!(Some(false), false_parameter.get_bool_value());
+        assert_eq!(name, false_parameter.get_name());
+    }
 
-   #[test]
-   fn new_true() {
-      let name = "some name";
-      let parameter = DidMethodParameter::new_true(name);
-      assert!(parameter.is_bool());
-      assert_eq!(Some(true), parameter.get_bool_value());
-      assert_eq!(name, parameter.get_name());
-   }
+    #[test]
+    fn new_true() {
+        let name = "some name";
+        let parameter = DidMethodParameter::new_true(name);
+        assert!(parameter.is_bool());
+        assert_eq!(Some(true), parameter.get_bool_value());
+        assert_eq!(name, parameter.get_name());
+    }
 
-   #[test]
-   fn new_false() {
-      let name = "some name";
-      let parameter = DidMethodParameter::new_false(name);
-      assert!(parameter.is_bool());
-      assert_eq!(Some(false), parameter.get_bool_value());
-      assert_eq!(name, parameter.get_name());
-   }
+    #[test]
+    fn new_false() {
+        let name = "some name";
+        let parameter = DidMethodParameter::new_false(name);
+        assert!(parameter.is_bool());
+        assert_eq!(Some(false), parameter.get_bool_value());
+        assert_eq!(name, parameter.get_name());
+    }
 
-   #[test]
-   fn new_string() {
-      let name = "some name";
-      let value = "value";
-      let parameter = DidMethodParameter::new_string(name, value.to_string()).unwrap();
-      assert!(parameter.is_string());
-      assert_eq!(Some(value.to_string()), parameter.get_string_value());
-      assert_eq!(name, parameter.get_name());
-   }
+    #[test]
+    fn new_string() {
+        let name = "some name";
+        let value = "value";
+        let parameter = DidMethodParameter::new_string(name, value.to_string()).unwrap();
+        assert!(parameter.is_string());
+        assert_eq!(Some(value.to_string()), parameter.get_string_value());
+        assert_eq!(name, parameter.get_name());
+    }
 }

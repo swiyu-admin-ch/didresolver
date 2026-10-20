@@ -9,8 +9,8 @@
 extern crate core;
 
 pub mod did_webvh;
+
 pub mod did_webvh_jsonschema;
-pub mod did_webvh_method_parameters;
 pub mod errors;
 
 #[macro_use]
@@ -31,7 +31,7 @@ use did_webvh::*;
 use did_webvh_jsonschema::*;
 #[allow(unused_imports, reason = "required by the UniFFI compiler!")]
 #[expect(clippy::allow_attributes, reason = "..")]
-use did_webvh_method_parameters::*;
+use method_parameters::*;
 #[allow(unused_imports, reason = "required by the UniFFI compiler!")]
 #[expect(clippy::allow_attributes, reason = "..")]
 use errors::*;
