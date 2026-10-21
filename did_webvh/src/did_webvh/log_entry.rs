@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-use chrono::{SecondsFormat, serde::ts_seconds};
+use std::str::FromStr;
+
+use chrono::{DateTime, SecondsFormat, Utc, serde::ts_seconds};
 use did_sidekicks::{
-    did_doc::DidDoc,
+    did_doc::{DidDoc, DidDocNormalized},
     ed25519::Ed25519VerifyingKey,
     errors::DidResolverError,
     jcs_sha256_hasher::JcsSha256Hasher,
@@ -11,13 +13,14 @@ use did_sidekicks::{
         CryptoSuiteType, DataIntegrityProof, EddsaJcs2022Cryptosuite, VCDataIntegrity as _,
     },
 };
-use serde::Serialize;
-use serde_json::{Value as JsonValue, json};
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
 
-use crate::did_webvh::{
-    DidLogVersionTime, method_parameters::WebVerifiableHistoryDidMethodParameters,
-    version_id::DidLogVersion,
+use super::{
+    method_parameters::WebVerifiableHistoryDidMethodParameters, version_id::DidLogVersion,
 };
+
+type DidLogVersionTime = DateTime<Utc>;
 
 pub const SCID_PLACEHOLDER: &str = "{SCID}";
 pub const DID_LOG_ENTRY_VERSION_ID: &str = "versionId";
@@ -29,7 +32,7 @@ pub const DID_LOG_ENTRY_PROOF: &str = "proof";
 /// Entry in a did log file as shown here
 /// https://identity.foundation/didwebvh/v1.0/#term:did-log-entry.
 #[expect(clippy::exhaustive_structs, reason = "..")]
-#[derive(Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct DidLogEntry {
     /// Since v0.2 (see https://identity.foundation/didwebvh/v1.0/#didwebvh-version-changelog):
     ///            The new versionId takes the form <version number>-<entryHash>, where <version number> is the incrementing integer of version of the entry: 1, 2, 3, etc.
@@ -47,7 +50,7 @@ pub struct DidLogEntry {
     pub did_doc: DidDoc,
 
     #[serde(skip)]
-    pub did_doc_json: JsonValue,
+    pub did_doc_json: Value,
 
     #[serde(rename = "proof")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -62,7 +65,7 @@ impl DidLogEntry {
         version_time: DidLogVersionTime,
         parameters: WebVerifiableHistoryDidMethodParameters,
         did_doc: DidDoc,
-        did_doc_json: JsonValue,
+        did_doc_json: Value,
         proof: DataIntegrityProof,
     ) -> Self {
         Self {
@@ -226,7 +229,7 @@ impl DidLogEntry {
         clippy::indexing_slicing,
         reason = "panic-free indexing ensured in code"
     )]
-    fn to_log_entry_line(&self) -> Result<JsonValue, DidResolverError> {
+    fn to_log_entry_line(&self) -> Result<Value, DidResolverError> {
         let did_doc_json_value = self.did_doc_json.clone();
 
         let version_time = self
@@ -264,12 +267,76 @@ impl DidLogEntry {
         let entry_with_placeholder_without_proof = json!({
            DID_LOG_ENTRY_VERSION_ID: SCID_PLACEHOLDER,
            DID_LOG_ENTRY_VERSION_TIME: self.version_time,
-           DID_LOG_ENTRY_PARAMETERS: serde_json::from_str::<JsonValue>(str::replace(serde_json::to_string(&self.parameters)?.as_str(), scid, SCID_PLACEHOLDER).as_str())?,
-           DID_LOG_ENTRY_STATE :     serde_json::from_str::<JsonValue>(did_doc_with_placeholder_scid.as_str())?,
+           DID_LOG_ENTRY_PARAMETERS: serde_json::from_str::<Value>(str::replace(serde_json::to_string(&self.parameters)?.as_str(), scid, SCID_PLACEHOLDER).as_str())?,
+           DID_LOG_ENTRY_STATE :     serde_json::from_str::<Value>(did_doc_with_placeholder_scid.as_str())?,
         });
 
         let hash = JcsSha256Hasher::default()
             .base58btc_encode_multihash_json_value(&entry_with_placeholder_without_proof)?;
         Ok(hash)
+    }
+}
+
+impl FromStr for DidLogEntry {
+    type Err = DidResolverError;
+
+    fn from_str(line: &str) -> Result<Self, Self::Err> {
+        #[derive(Deserialize)]
+        struct ParsableDidLogEntry {
+            #[serde(rename = "versionId")]
+            pub version: DidLogVersion,
+
+            #[serde(rename = "versionTime")]
+            pub version_time: String,
+
+            #[serde(rename = "parameters")]
+            pub parameters: WebVerifiableHistoryDidMethodParameters,
+
+            #[serde(rename = "state")]
+            pub did_doc: DidDocNormalized,
+        }
+
+        let log = serde_json::from_str::<ParsableDidLogEntry>(line)
+            .map_err(|err| {
+                DidResolverError::DeserializationFailed(format!("Invalid log entry: {err}"))
+            })
+            .map_err(|err| DidResolverError::DeserializationFailed(err.to_string()))?;
+
+        let entry: Value = serde_json::from_str(line)
+            .map_err(|err| DidResolverError::DeserializationFailed(err.to_string()))?;
+
+        // https://identity.foundation/didwebvh/v1.0/#the-did-log-file:
+        // The `versionTime` (as stated by the DID Controller) of the entry,
+        // in ISO8601 format (https://identity.foundation/didwebvh/v0.3/#term:iso8601).
+        let version_time = DateTime::parse_from_rfc3339(log.version_time.as_str())
+            .map_err(|err| {
+                DidResolverError::DeserializationFailed(format!(
+                    "Failed to parse versionTime: {err}",
+                ))
+            })?
+            .to_utc();
+
+        let proof =
+            match DataIntegrityProof::from_json_string(entry[DID_LOG_ENTRY_PROOF].to_string()) {
+                Ok(prf) => prf,
+                Err(err) => {
+                    return Err(DidResolverError::DeserializationFailed(format!(
+                        "Failed to deserialize data integrity proof due to: {err}"
+                    )));
+                }
+            };
+
+        Ok(DidLogEntry {
+            version: log.version,
+            version_time,
+            parameters: log.parameters,
+            did_doc: log.did_doc.to_did_doc().map_err(|err| {
+                DidResolverError::DeserializationFailed(format!(
+                    "Deserialization of DID document failed due to: {err}"
+                ))
+            })?,
+            did_doc_json: entry[DID_LOG_ENTRY_STATE].to_owned(),
+            proof: Some(vec![proof]),
+        })
     }
 }
