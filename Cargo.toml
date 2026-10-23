@@ -82,7 +82,7 @@ debug = true
 # S optimizes for size, but less aggresive than z.
 # The benchmark results also yielded better results than with 2.
 opt-level = "s"
-strip = true
+strip = "debuginfo" # Must not be symbols, as those are required by UniFFI bindings
 lto = true
 codegen-units = 1
 panic = "abort"
