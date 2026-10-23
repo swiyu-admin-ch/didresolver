@@ -31,10 +31,10 @@ use did_webvh::*;
 use did_webvh_jsonschema::*;
 #[allow(unused_imports, reason = "required by the UniFFI compiler!")]
 #[expect(clippy::allow_attributes, reason = "..")]
-use method_parameters::*;
+use errors::*;
 #[allow(unused_imports, reason = "required by the UniFFI compiler!")]
 #[expect(clippy::allow_attributes, reason = "..")]
-use errors::*;
+use method_parameters::*;
 
 uniffi::include_scaffolding!("did_webvh");
 

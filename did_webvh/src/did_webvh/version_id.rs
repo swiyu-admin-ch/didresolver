@@ -16,11 +16,10 @@ pub struct DidLogVersion {
 impl DidLogVersion {
     /// Creates a DidLogVersion with empty hash and index that serializes to the provides hash.
     ///
-    /// # Safety
     /// The returned value should ONLY be used for serialization as the index and hash property are
     /// not filled correctly.
     #[inline]
-    pub unsafe fn new_forced(version: String) -> Self {
+    pub fn new_forced(version: String) -> Self {
         Self {
             id: version,
             index: 0,

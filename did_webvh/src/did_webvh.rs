@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-use std::{collections::HashMap, str::FromStr, sync::Arc};
+use std::{collections::HashMap, str::FromStr as _, sync::Arc};
 
 use crate::{
     did_webvh_jsonschema::WebVerifiableHistoryDidLogEntryJsonSchema,
@@ -276,15 +276,6 @@ impl TryFrom<String> for WebVerifiableHistoryDidLog {
     type Error = DidResolverError;
 
     #[inline]
-    #[expect(
-        clippy::unwrap_used,
-        reason = "panic-safe unwrap calls are possible thanks to profilactic JSON schema conformity check"
-    )]
-    #[expect(clippy::indexing_slicing, reason = "..")]
-    #[expect(
-        clippy::wildcard_enum_match_arm,
-        reason = "no further variants of serde_json::Value enum are expected in the future"
-    )]
     fn try_from(did_log: String) -> Result<Self, Self::Error> {
         if did_log.len() > MAX_DID_LOG_FILE_SIZE {
             return Err(DidResolverError::InvalidDidLog(

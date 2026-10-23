@@ -136,10 +136,16 @@ pub enum DidResolveErrorKind {
     reason = "further enum variants might be added in the future"
 )]
 pub enum DidMethod {
-    TDW { scid: String, https_url: String },
+    TDW {
+        scid: String,
+        https_url: String,
+    },
     #[default]
     UNKNOWN,
-    WEBVH { scid: String, https_url: String },
+    WEBVH {
+        scid: String,
+        https_url: String,
+    },
 }
 
 impl DidMethod {
@@ -673,22 +679,22 @@ mod tests {
     #[case(
         "test_data/tdw/non_incremented_version_did.jsonl",
         "did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
-        DidResolveErrorKind::DeserializationFailed,
+        DidResolveErrorKind::DeserializationFailed
     )]
     #[case(
         "test_data/tdw/unordered_did.jsonl",
         "did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
-        DidResolveErrorKind::DeserializationFailed,
+        DidResolveErrorKind::DeserializationFailed
     )]
     #[case(
         "test_data/webvh/non_incremented_version_did.jsonl",
         "did:webvh:QmT4kPBFsHpJKvvvxgFUYxnSGPMeaQy1HWwyXMHj8NjLuy:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
-        DidResolveErrorKind::InvalidDidLog,
+        DidResolveErrorKind::InvalidDidLog
     )]
     #[case(
         "test_data/webvh/unordered_did.jsonl",
         "did:webvh:QmT4kPBFsHpJKvvvxgFUYxnSGPMeaQy1HWwyXMHj8NjLuy:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
-        DidResolveErrorKind::InvalidDidLog,
+        DidResolveErrorKind::InvalidDidLog
     )]
     fn test_resolve_invalid_did_log_non_incremented_version(
         #[case] did_log_raw_filepath: String,
@@ -703,10 +709,7 @@ mod tests {
         assert!(resolve_all_res.is_err());
         let err = resolve_all_res.unwrap_err(); // panic-safe unwrap call (see the previous line)
         assert_eq!(err.kind(), kind);
-        assert!(err
-                    .to_string()
-                    .contains("versionId"),
-                "ERROR: {:?}", err);
+        assert!(err.to_string().contains("versionId"), "ERROR: {:?}", err);
     }
 
     #[rstest]

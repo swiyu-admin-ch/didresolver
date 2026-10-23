@@ -2,8 +2,8 @@
 
 use crate::did_method_parameters::DidMethodParameter;
 use crate::errors::DidSidekicksError;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use serde::{Deserialize, Serialize, de};
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 /// Limit of 1 MiB, following that of the registry.
@@ -40,30 +40,6 @@ pub struct Jwk {
     pub key_ops: Option<Vec<String>>,
 }
 
-// See https://www.w3.org/TR/did-core/#verification-methods
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[expect(clippy::exhaustive_structs, reason = "..")]
-pub struct VerificationMethod {
-    pub id: String,
-    // CAUTION The "controller" property must not be present w.r.t.:
-    // - https://jira.bit.admin.ch/browse/EIDSYS-352
-    // - https://confluence.bit.admin.ch/display/EIDTEAM/DID+Doc+Conformity+Check
-    // It is kept for the sake of backward compatibility only.
-    #[serde(skip_serializing_if = "String::is_empty", default)]
-    pub controller: String,
-    #[serde(rename = "type")]
-    pub verification_type: VerificationType,
-    // CAUTION The "publicKeyMultibase" property must not be present w.r.t.:
-    // - https://jira.bit.admin.ch/browse/EIDOMNI-35
-    // - https://confluence.bit.admin.ch/display/EIDTEAM/DID+Doc+Conformity+Check
-    // It is kept for the sake of backward compatibility only.
-    #[deprecated(note = "Use not allowed by the swiss profile anchor specification")]
-    #[serde(rename = "publicKeyMultibase", skip_serializing_if = "Option::is_none")]
-    pub public_key_multibase: Option<String>,
-    #[serde(rename = "publicKeyJwk", skip_serializing_if = "Option::is_none")]
-    pub public_key_jwk: Option<Jwk>,
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[expect(
     clippy::exhaustive_enums,
@@ -93,6 +69,30 @@ impl core::fmt::Display for VerificationType {
         };
         write!(f, "{string_representation}")
     }
+}
+
+// See https://www.w3.org/TR/did-core/#verification-methods
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[expect(clippy::exhaustive_structs, reason = "..")]
+pub struct VerificationMethod {
+    pub id: String,
+    // CAUTION The "controller" property must not be present w.r.t.:
+    // - https://jira.bit.admin.ch/browse/EIDSYS-352
+    // - https://confluence.bit.admin.ch/display/EIDTEAM/DID+Doc+Conformity+Check
+    // It is kept for the sake of backward compatibility only.
+    #[serde(skip_serializing_if = "String::is_empty", default)]
+    pub controller: String,
+    #[serde(rename = "type")]
+    pub verification_type: VerificationType,
+    // CAUTION The "publicKeyMultibase" property must not be present w.r.t.:
+    // - https://jira.bit.admin.ch/browse/EIDOMNI-35
+    // - https://confluence.bit.admin.ch/display/EIDTEAM/DID+Doc+Conformity+Check
+    // It is kept for the sake of backward compatibility only.
+    #[deprecated(note = "Use not allowed by the swiss profile anchor specification")]
+    #[serde(rename = "publicKeyMultibase", skip_serializing_if = "Option::is_none")]
+    pub public_key_multibase: Option<String>,
+    #[serde(rename = "publicKeyJwk", skip_serializing_if = "Option::is_none")]
+    pub public_key_jwk: Option<Jwk>,
 }
 
 impl VerificationMethod {
@@ -155,6 +155,67 @@ impl VerificationMethod {
     }
 }
 
+/// Container for parsing verification method of a did doc allowing to either be a string or a verification method object.
+#[derive(Debug, Clone)]
+#[expect(clippy::large_enum_variant, reason = "")]
+#[non_exhaustive]
+pub enum DocVerificationMethod {
+    String(String),
+    VerificationMethod(VerificationMethod),
+}
+
+impl Serialize for DocVerificationMethod {
+    #[inline]
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        #[expect(clippy::pattern_type_mismatch, reason = "false positive")]
+        match self {
+            Self::String(method) => serializer.serialize_str(method),
+            Self::VerificationMethod(verification_method) => {
+                verification_method.serialize(serializer)
+            }
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for DocVerificationMethod {
+    #[inline]
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct DidDocVerificationMethodVisitor;
+
+        impl<'de> de::Visitor<'de> for DidDocVerificationMethodVisitor {
+            type Value = DocVerificationMethod;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("a string referencing  a verificatino method or a verification method object directly.")
+            }
+
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                Ok(DocVerificationMethod::String(v.to_owned()))
+            }
+
+            fn visit_map<A>(self, map: A) -> Result<Self::Value, A::Error>
+            where
+                A: de::MapAccess<'de>,
+            {
+                let ver: VerificationMethod =
+                    Deserialize::deserialize(de::value::MapAccessDeserializer::new(map))?;
+                Ok(DocVerificationMethod::VerificationMethod(ver))
+            }
+        }
+
+        deserializer.deserialize_any(DidDocVerificationMethodVisitor)
+    }
+}
+
 // See      https://www.w3.org/TR/did-core/#dfn-did-documents
 // Examples https://www.w3.org/TR/did-core/#did-documents
 // According to https://www.w3.org/TR/did-core/#did-document-properties
@@ -209,10 +270,10 @@ pub struct DidDoc {
 // See      https://www.w3.org/TR/did-core/#dfn-did-documents
 // Examples https://www.w3.org/TR/did-core/#did-documents
 // According to https://www.w3.org/TR/did-core/#did-document-properties
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 #[expect(clippy::exhaustive_structs, reason = "..")]
 pub struct DidDocNormalized {
-    #[deprecated]
+    #[deprecated(note = "no longer supported")]
     #[serde(rename = "@context", skip_serializing_if = "Vec::is_empty", default)]
     pub context: Vec<String>,
     pub id: String,
@@ -221,35 +282,33 @@ pub struct DidDocNormalized {
         skip_serializing_if = "Vec::is_empty",
         default
     )]
-    pub verification_method: Vec<VerificationMethod>,
+    pub verification_method: Vec<DocVerificationMethod>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub authentication: Vec<String>,
+    pub authentication: Vec<DocVerificationMethod>,
     #[serde(
         rename = "capabilityInvocation",
         skip_serializing_if = "Vec::is_empty",
         default
     )]
-    pub capability_invocation: Vec<String>,
+    pub capability_invocation: Vec<DocVerificationMethod>,
     #[serde(
         rename = "capabilityDelegation",
         skip_serializing_if = "Vec::is_empty",
         default
     )]
-    pub capability_delegation: Vec<String>,
+    pub capability_delegation: Vec<DocVerificationMethod>,
     #[serde(
         rename = "assertionMethod",
         skip_serializing_if = "Vec::is_empty",
         default
     )]
-    pub assertion_method: Vec<String>,
+    pub assertion_method: Vec<DocVerificationMethod>,
     #[serde(
         rename = "keyAgreement",
         skip_serializing_if = "Vec::is_empty",
         default
     )]
-    pub key_agreement: Vec<String>,
-    //#[serde(skip_serializing_if = "Vec::is_empty", default)]
-    //pub controller: Vec<String>,
+    pub key_agreement: Vec<DocVerificationMethod>,
     // CAUTION The "controller" property must not be present w.r.t.:
     // - https://jira.bit.admin.ch/browse/EIDSYS-352
     // - https://confluence.bit.admin.ch/display/EIDTEAM/DID+Doc+Conformity+Check
@@ -257,90 +316,92 @@ pub struct DidDocNormalized {
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub controller: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[deprecated(note = "not part of specification, should not be used")]
     pub deactivated: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none", default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub profile_version: Option<String>,
 }
 
 impl DidDocNormalized {
     #[inline]
-    pub fn to_did_doc(&self) -> Result<DidDoc, DidSidekicksError> {
-        let mut verification_methods: HashMap<_, _> = self
+    pub fn to_did_doc(self) -> Result<DidDoc, DidSidekicksError> {
+        let verification_methods = self
             .verification_method
-            .iter()
-            .map(|method| (method.id.clone(), Arc::new(method.clone())))
-            .collect();
+            .into_iter()
+            .map(|method| match method {
+                DocVerificationMethod::String(_) => Err(DidSidekicksError::DeserializationFailed(
+                    "Field 'verificationMethod' must only contain objects.".into(),
+                )),
+                DocVerificationMethod::VerificationMethod(verification_method) => {
+                    Ok(Arc::new(verification_method))
+                }
+            })
+            .collect::<Result<Vec<Arc<VerificationMethod>>, DidSidekicksError>>()?;
+
+        let verification_method_map: HashMap<String, Arc<VerificationMethod>> =
+            verification_methods
+                .iter()
+                .map(|method| (method.id.to_owned(), Arc::clone(method)))
+                .collect();
+
+        let mapper = |verification_method: DocVerificationMethod, method_name: &str| {
+            match verification_method {
+                #[expect(clippy::or_fun_call, reason = "just formatting")]
+                DocVerificationMethod::String(method_id) => verification_method_map
+                    .get(&method_id)
+                    .map(Arc::clone)
+                    .ok_or(DidSidekicksError::InvalidDidDocument(format!(
+                        "{} (reference) key refers to non-existing verification method: {}",
+                        method_name, method_id,
+                    ))),
+                DocVerificationMethod::VerificationMethod(method) => Ok(Arc::new(method)),
+            }
+        };
 
         let authentication = self
             .authentication
-            .iter()
-            .map(|method_name| verification_methods.get(method_name).map_or_else(
-               || Err(DidSidekicksError::InvalidDidDocument(format!("Authentication (reference) key refers to non-existing verification method: {}", method_name))), 
-               |method| Ok(Arc::clone(method))
-            )).collect::<Result<Vec<_>, _>>()?;
+            .into_iter()
+            .map(|method| mapper(method, "Authentication"))
+            .collect::<Result<Vec<_>, _>>()?;
 
         let capability_invocation = self
             .capability_invocation
-            .iter()
-            .map(|method_name| verification_methods.get(method_name).map_or_else(
-               || Err(DidSidekicksError::InvalidDidDocument(format!("Capability Invocation (reference) key refers to non-existing verification method: {}", method_name))), 
-               |method| Ok(Arc::clone(method))
-            )).collect::<Result<Vec<_>, _>>()?;
+            .into_iter()
+            .map(|method| mapper(method, "Capability Invocation"))
+            .collect::<Result<Vec<_>, _>>()?;
 
         let capability_delegation = self
             .capability_delegation
-            .iter()
-            .map(|method_name| verification_methods.get(method_name).map_or_else(
-               || Err(DidSidekicksError::InvalidDidDocument(format!("Capability Delegation (reference) key refers to non-existing verification method: {}", method_name))), 
-               |method| Ok(Arc::clone(method))
-            )).collect::<Result<Vec<_>, _>>()?;
+            .into_iter()
+            .map(|method| mapper(method, "Capability Delegation"))
+            .collect::<Result<Vec<_>, _>>()?;
 
         let assertion_method = self
             .assertion_method
-            .iter()
-            .map(|method_name| verification_methods.get(method_name).map_or_else(
-               || Err(DidSidekicksError::InvalidDidDocument(format!("Assertion Method (reference) key refers to non-existing verification method: {}", method_name))), 
-               |method| Ok(Arc::clone(method))
-            )).collect::<Result<Vec<_>, _>>()?;
+            .into_iter()
+            .map(|method| mapper(method, "Assertion Method"))
+            .collect::<Result<Vec<_>, _>>()?;
 
         let key_agreement = self
             .key_agreement
-            .iter()
-            .map(|method_name| verification_methods.get(method_name).map_or_else(
-               || Err(DidSidekicksError::InvalidDidDocument(format!("Key Agreement (reference) key refers to non-existing verification method: {}", method_name))), 
-               |method| Ok(Arc::clone(method))
-            )).collect::<Result<Vec<_>, _>>()?;
-
-        // To preserve order
-        let verification_method = self
-            .verification_method
-            .iter()
-            .map(|method| {
-                verification_methods.remove(&method.id).map_or_else(
-                    || {
-                        Err(DidSidekicksError::InvalidDidDocument(format!(
-                            "Multiple verification methods used the same ID: {}",
-                            method.id
-                        )))
-                    },
-                    Ok,
-                )
-            })
+            .into_iter()
+            .map(|method| mapper(method, "Key Agreement"))
             .collect::<Result<Vec<_>, _>>()?;
 
-        Ok(DidDoc {
-            context: self.context.to_owned(),
-            id: self.id.clone(),
-            verification_method,
+        let did_doc = DidDoc {
+            context: self.context,
+            id: self.id,
+            verification_method: verification_methods,
             authentication,
             capability_invocation,
             capability_delegation,
             assertion_method,
             key_agreement,
-            controller: self.controller.to_owned(),
+            controller: self.controller,
             deactivated: self.deactivated,
-            profile_version: self.profile_version.to_owned(),
-        })
+            profile_version: self.profile_version,
+        };
+        Ok(did_doc)
     }
 
     /// The deserialization-based constructor. It attempts to deserialize an instance of type [`DidDocNormalized`] from a string of JSON text.
@@ -479,6 +540,16 @@ impl DidDoc {
     /// - if [`DidDoc`] contains a map with non-string keys.
     #[inline]
     pub fn to_json(&self) -> Result<String, DidSidekicksError> {
+        let verification_methods: HashSet<String> = self
+            .verification_method
+            .iter()
+            .map(|method| method.id.clone())
+            .collect();
+        let mapper = |method: &Arc<VerificationMethod>| match verification_methods.get(&method.id) {
+            Some(_) => DocVerificationMethod::String(method.id.clone()),
+            None => DocVerificationMethod::VerificationMethod((**method).clone()),
+        };
+
         // Normalization due to DID log JSON schema compliance
         serde_json::to_string(&DidDocNormalized {
             context: self.context.to_owned(),
@@ -486,33 +557,13 @@ impl DidDoc {
             verification_method: self
                 .verification_method
                 .iter()
-                .map(|method| (**method).clone())
+                .map(|method| DocVerificationMethod::VerificationMethod((**method).clone()))
                 .collect(),
-            authentication: self
-                .authentication
-                .iter()
-                .map(|method| method.id.to_owned())
-                .collect(),
-            capability_invocation: self
-                .capability_invocation
-                .iter()
-                .map(|method| method.id.to_owned())
-                .collect(),
-            capability_delegation: self
-                .capability_delegation
-                .iter()
-                .map(|method| method.id.to_owned())
-                .collect(),
-            assertion_method: self
-                .assertion_method
-                .iter()
-                .map(|method| method.id.to_owned())
-                .collect(),
-            key_agreement: self
-                .key_agreement
-                .iter()
-                .map(|method| method.id.to_owned())
-                .collect(),
+            authentication: self.authentication.iter().map(mapper).collect(),
+            capability_invocation: self.capability_invocation.iter().map(mapper).collect(),
+            capability_delegation: self.capability_delegation.iter().map(mapper).collect(),
+            assertion_method: self.assertion_method.iter().map(mapper).collect(),
+            key_agreement: self.key_agreement.iter().map(mapper).collect(),
             controller: self.controller.to_owned(),
             deactivated: self.deactivated.to_owned(),
             profile_version: self.profile_version.to_owned(),
@@ -1071,5 +1122,23 @@ mod test {
     fn get_did_doc() -> DidDoc {
         let doc = serde_json::from_str::<DidDocNormalized>(DIDDOC_JSON).unwrap();
         doc.to_did_doc().unwrap()
+    }
+
+    #[test]
+    fn deserialize_verification_method_string_and_object() {
+        let json = r#"["my_verification_method", {"id":"some_obj_id","controller":"aoeu","type":"JsonWebKey2020","publicKeyJwk":{"kty":"EC","crv":"P-256","x":"N4hbTf7x1eWwjqHOQpAB469BwLYfFzIw7QbSa-vv8VM","y":"eebnhG9Fmmw2OwW4BPdKJMKm8wGgo18yp_Q2FpvU57U","kid":"auth-key-01"}}] "#;
+
+        let methods: Vec<DocVerificationMethod> = serde_json::from_str(json).unwrap();
+        assert_eq!(2, methods.len());
+
+        let DocVerificationMethod::String(string_method) = &methods[0] else {
+            panic!("Expected 1st method to be string")
+        };
+        assert_eq!("my_verification_method", string_method);
+
+        let DocVerificationMethod::VerificationMethod(verification_method) = &methods[1] else {
+            panic!("Expected 2nd method to be object")
+        };
+        assert_eq!("some_obj_id", verification_method.id);
     }
 }

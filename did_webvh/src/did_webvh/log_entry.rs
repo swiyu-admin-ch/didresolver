@@ -4,7 +4,8 @@ use std::str::FromStr;
 
 use chrono::{DateTime, SecondsFormat, Utc, serde::ts_seconds};
 use did_sidekicks::{
-    did_doc::{DidDoc, DidDocNormalized},
+    did_doc::DidDoc,
+    did_doc::DidDocNormalized,
     ed25519::Ed25519VerifyingKey,
     errors::DidResolverError,
     jcs_sha256_hasher::JcsSha256Hasher,
@@ -208,7 +209,7 @@ impl DidLogEntry {
         // 4. remove Data Integrity proof from the log entry
         let entry = Self {
             // SAFETY: allowed as it's only used for serialization.
-            version: unsafe { DidLogVersion::new_forced(prev_version_id.into()) },
+            version: DidLogVersion::new_forced(prev_version_id.into()),
             version_time: self.version_time,
             parameters: self.parameters.clone(),
             did_doc: self.did_doc.clone(),
@@ -280,6 +281,8 @@ impl DidLogEntry {
 impl FromStr for DidLogEntry {
     type Err = DidResolverError;
 
+    #[expect(clippy::indexing_slicing, reason = "..")]
+    #[inline]
     fn from_str(line: &str) -> Result<Self, Self::Err> {
         #[derive(Deserialize)]
         struct ParsableDidLogEntry {
@@ -296,13 +299,24 @@ impl FromStr for DidLogEntry {
             pub did_doc: DidDocNormalized,
         }
 
-        let log = serde_json::from_str::<ParsableDidLogEntry>(line)
+        let entry: Value = serde_json::from_str(line)
+            .map_err(|err| DidResolverError::DeserializationFailed(err.to_string()))?;
+        let did_doc_json = entry[DID_LOG_ENTRY_STATE].to_owned();
+
+        let proof =
+            match DataIntegrityProof::from_json_string(entry[DID_LOG_ENTRY_PROOF].to_string()) {
+                Ok(prf) => prf,
+                Err(err) => {
+                    return Err(DidResolverError::DeserializationFailed(format!(
+                        "Failed to deserialize data integrity proof due to: {err}"
+                    )));
+                }
+            };
+
+        let log = serde_json::from_value::<ParsableDidLogEntry>(entry)
             .map_err(|err| {
                 DidResolverError::DeserializationFailed(format!("Invalid log entry: {err}"))
             })
-            .map_err(|err| DidResolverError::DeserializationFailed(err.to_string()))?;
-
-        let entry: Value = serde_json::from_str(line)
             .map_err(|err| DidResolverError::DeserializationFailed(err.to_string()))?;
 
         // https://identity.foundation/didwebvh/v1.0/#the-did-log-file:
@@ -316,17 +330,7 @@ impl FromStr for DidLogEntry {
             })?
             .to_utc();
 
-        let proof =
-            match DataIntegrityProof::from_json_string(entry[DID_LOG_ENTRY_PROOF].to_string()) {
-                Ok(prf) => prf,
-                Err(err) => {
-                    return Err(DidResolverError::DeserializationFailed(format!(
-                        "Failed to deserialize data integrity proof due to: {err}"
-                    )));
-                }
-            };
-
-        Ok(DidLogEntry {
+        Ok(Self {
             version: log.version,
             version_time,
             parameters: log.parameters,
@@ -335,7 +339,7 @@ impl FromStr for DidLogEntry {
                     "Deserialization of DID document failed due to: {err}"
                 ))
             })?,
-            did_doc_json: entry[DID_LOG_ENTRY_STATE].to_owned(),
+            did_doc_json,
             proof: Some(vec![proof]),
         })
     }
