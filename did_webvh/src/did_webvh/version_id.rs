@@ -42,11 +42,18 @@ impl FromStr for DidLogVersion {
             Ok(index) => index,
             Err(err) => {
                 return Err(DidResolverError::DeserializationFailed(format!(
-                    "VersionID must start with an integer: {}",
+                    "Version id must start with an integer: {}",
                     err
                 )));
             }
         };
+
+        if split.1.is_empty() {
+            return Err(DidResolverError::DeserializationFailed(
+                "EntryHash must not be empty.".into(),
+            ));
+        }
+
         Ok(Self {
             id: s.to_owned(),
             index,
@@ -80,7 +87,7 @@ impl<'de> Deserialize<'de> for DidLogVersion {
 
             #[inline]
             fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
-                formatter.write_str("a versionId in the format '<version_index>-<hash>'")
+                formatter.write_str("a versionId in the format '<version number>-<entryHash>'")
             }
 
             #[inline]
@@ -96,4 +103,57 @@ impl<'de> Deserialize<'de> for DidLogVersion {
     }
 }
 
-// TODO@MP write tests for parsing versionID
+#[cfg(test)]
+mod test {
+    use std::str::FromStr;
+
+    use rstest::rstest;
+    use serde::{Deserialize, Serialize};
+
+    use crate::did_webvh::version_id::DidLogVersion;
+
+    #[test]
+    fn parse_version_id_from_json() {
+        let version_id = "1-hash";
+        let raw_json = r#"{"version_id": "1-hash"}"#;
+        #[derive(Deserialize, Serialize)]
+        struct Foo {
+            version_id: DidLogVersion,
+        }
+
+        let parsed_json: Foo = serde_json::from_str(raw_json).unwrap();
+        assert_eq!(version_id, parsed_json.version_id.id)
+    }
+
+    #[rstest]
+    #[case("", Err("to contain '-'"))]
+    #[case("Hello World", Err("to contain '-'"))]
+    #[case("-", Err("must start with an integer"))]
+    #[case("0-", Err("EntryHash must not be empty"))]
+    #[case("-10-{SCID}", Err("must start with an integer"))]
+    #[case("0-{SCID}", Ok((0, "{SCID}")))]
+    #[case("1-QmdFXCA7RgH2NszV3WgnbemHqLxpXeE66FswLjpTC2hcvV", Ok((1, "QmdFXCA7RgH2NszV3WgnbemHqLxpXeE66FswLjpTC2hcvV")))]
+    fn version_id_from_str(#[case] version_id: &str, #[case] result: Result<(usize, &str), &str>) {
+        let version = DidLogVersion::from_str(version_id);
+        match (version, result) {
+            (Ok(version), Ok((index, hash))) => {
+                assert_eq!(index, version.index);
+                assert_eq!(hash, version.hash);
+            }
+            (Err(err), Err(message)) => {
+                assert!(
+                    err.to_string().contains(message),
+                    "Expected err to contain '{}': {}",
+                    message,
+                    err.to_string()
+                );
+            }
+            (Ok(_), Err(_)) => panic!("Expected parsing of {} to fail.", version_id),
+            (Err(err), Ok(_)) => panic!(
+                "Parsing of {} unexpectedly failed with: {}",
+                version_id,
+                err.to_string()
+            ),
+        }
+    }
+}
