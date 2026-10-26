@@ -14,7 +14,6 @@ use did_sidekicks::{
     did_resolver::DidResolver,
     errors::DidResolverError,
 };
-use log_entry::DidLogEntry;
 use method_parameters::{WebVerifiableHistoryDidMethodParameters, hash_update_key};
 use regex::Regex;
 use url::Url;
@@ -22,6 +21,19 @@ use url::Url;
 pub mod log_entry;
 pub mod method_parameters;
 pub mod version_id;
+
+#[expect(
+    clippy::useless_attribute,
+    reason = "to fix the false positive of the below expect"
+)]
+#[expect(clippy::pub_use, reason = "To ensure backwards compatibility")]
+pub use log_entry::*;
+#[expect(
+    clippy::useless_attribute,
+    reason = "to fix the false positive of the below expect"
+)]
+#[expect(clippy::pub_use, reason = "To ensure backwards compatibility")]
+pub use version_id::*;
 
 #[expect(
     clippy::useless_attribute,
