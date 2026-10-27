@@ -621,7 +621,11 @@ mod test {
         old_params.prerotation = None;
         new_params.prerotation = Some(true);
         assert!(old_params.merge_from(&new_params).is_err());
-        assert_trust_did_web_error(old_params.merge_from(&new_params), DidResolverErrorKind::InvalidDidParameter, "Invalid 'prerotation'");
+        assert_trust_did_web_error(
+            old_params.merge_from(&new_params),
+            DidResolverErrorKind::InvalidDidParameter,
+            "Invalid 'prerotation'",
+        );
         old_params.prerotation = Some(false);
         new_params.prerotation = Some(false);
         assert!(old_params.merge_from(&new_params).is_ok());

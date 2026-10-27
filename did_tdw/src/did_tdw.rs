@@ -477,24 +477,18 @@ impl TryFrom<String> for TrustDidWebDidLog {
                                             format!("Deserialization of DID document failed due to: {err}")
                                         ))
                                     };
-
-                                    match serde_json::from_str::<DidDoc>(&did_doc_json) {
-                                        Ok(did_doc) => did_doc,
-                                        Err(_) => {
-                                            match serde_json::from_str::<DidDocNormalized>(&did_doc_json) {
-                                                Ok(did_doc_alt) => {
-                                                    match did_doc_alt.to_did_doc() {
-                                                        Ok(doc) => doc,
-                                                        Err(err) => return Err(DidResolverError::DeserializationFailed(format!(
-                                                            "Deserialization of DID document failed due to: {err}"
-                                                        ))),
-                                                    }
-                                                }
-                                                Err(err) => return Err(DidResolverError::DeserializationFailed(
-                                                    format!("Missing DID document: {err}")
-                                                ))
+                                    match serde_json::from_str::<DidDocNormalized>(&did_doc_json) {
+                                        Ok(did_doc_alt) => {
+                                            match did_doc_alt.to_did_doc() {
+                                                Ok(doc) => doc,
+                                                Err(err) => return Err(DidResolverError::DeserializationFailed(format!(
+                                                    "Deserialization of DID document failed due to: {err}"
+                                                ))),
                                             }
                                         }
+                                        Err(err) => return Err(DidResolverError::DeserializationFailed(
+                                            format!("Missing DID document: {err}")
+                                        ))
                                     }
                                 } else {
                                     return Err(DidResolverError::DeserializationFailed(
