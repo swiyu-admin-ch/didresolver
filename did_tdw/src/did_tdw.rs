@@ -367,7 +367,6 @@ impl TryFrom<String> for TrustDidWebDidLog {
         let mut prev_entry: Option<Arc<DidLogEntry>> = None;
 
         let mut is_deactivated = false;
-        //let now= Local::now();
         let now = Utc::now();
 
         let did_log_entries = did_log
@@ -383,14 +382,17 @@ impl TryFrom<String> for TrustDidWebDidLog {
                     // CAUTION: It is assumed that the did:tdw JSON schema conformity check (see above) 
                     //          have already been ensured at this point! 
                     //          Therefore, at this point, the current DID log entry may be considered fully JSON-schema-compliant, so...
-                    let entry: JsonValue = serde_json::from_str(line).unwrap();     // ...no panic is expected here
+                    let entry: JsonValue = serde_json::from_str(line).map_err(|err| DidResolverError::InvalidDidLog(format!("Did log is an invalid json: {err}")))?;
+                    let JsonValue::Array(entry) = entry else {
+                        return Err(DidResolverError::InvalidDidLog("Root element of did log entry must be an array.".into()));
+                    };
                     let version_id = entry[0].as_str().unwrap().to_owned(); // ...or here
 
                     // Since v0.2 (see https://identity.foundation/trustdidweb/v0.3/#didtdw-version-changelog):
                     //            The new versionId takes the form <versionNumber>-<entryHash>, where <version number> is the incrementing integer of version of the entry: 1, 2, 3, etc.
-                    let version_index: usize = version_id.split_once("-")
-                        .map(|(index, _)| index.parse::<usize>().unwrap()) // no panic is expected here...
-                        .unwrap(); // ...or here (as the entry has already been validated)
+                    let version_index = version_id.split_once('-')
+                       .map(|(index, _)| index.parse::<usize>().map_err(|err| DidResolverError::InvalidDidLog(format!("Failed to parse version number: {err}"))))
+                       .ok_or_else(|| DidResolverError::InvalidDidLog("Expected versionId to contain '-'".into()))??;
 
                     if prev_entry.is_none() && version_index != 1
                         || prev_entry.is_some() && (version_index - 1).ne(&prev_entry.to_owned().unwrap().version_index) {
