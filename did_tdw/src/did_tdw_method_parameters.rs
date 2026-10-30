@@ -222,7 +222,13 @@ impl TrustDidWebDidMethodParameters {
             (_, Some(false)) => Some(false),
             (_, None) => current_params.prerotation
         };
-        self.next_keys = new_params.next_keys.or(current_params.next_keys);
+        if let Some(next_keys) = new_params.next_keys
+            && !next_keys.is_empty()
+        {
+            return Err(DidResolverError::InvalidDidParameter(
+                "Unsupported non-empty 'nextKeyHashes' DID parameter.".to_owned(),
+            ));
+        }
 
         self.witnesses = match new_params.witnesses {
             Some(witnesses) => {
@@ -621,7 +627,11 @@ mod test {
         old_params.prerotation = None;
         new_params.prerotation = Some(true);
         assert!(old_params.merge_from(&new_params).is_err());
-        assert_trust_did_web_error(old_params.merge_from(&new_params), DidResolverErrorKind::InvalidDidParameter, "Invalid 'prerotation'");
+        assert_trust_did_web_error(
+            old_params.merge_from(&new_params),
+            DidResolverErrorKind::InvalidDidParameter,
+            "Invalid 'prerotation'",
+        );
         old_params.prerotation = Some(false);
         new_params.prerotation = Some(false);
         assert!(old_params.merge_from(&new_params).is_ok());
@@ -633,7 +643,7 @@ mod test {
         old_params = base_params.clone();
         new_params = base_params.clone();
         new_params.next_keys = Some(vec!["newUpdateKeyHash".to_string()]);
-        assert!(old_params.merge_from(&new_params).is_ok());
+        assert!(old_params.merge_from(&new_params).is_err());
         new_params.next_keys = None;
         assert!(old_params.merge_from(&new_params).is_ok());
         new_params.next_keys = Some(vec![]);
