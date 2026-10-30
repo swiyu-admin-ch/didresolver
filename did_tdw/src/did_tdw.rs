@@ -382,8 +382,7 @@ impl TryFrom<String> for TrustDidWebDidLog {
                     // CAUTION: It is assumed that the did:tdw JSON schema conformity check (see above) 
                     //          have already been ensured at this point! 
                     //          Therefore, at this point, the current DID log entry may be considered fully JSON-schema-compliant, so...
-                    let entry: JsonValue = serde_json::from_str(line).map_err(|err| DidResolverError::InvalidDidLog(format!("Did log is an invalid json: {err}")))?;
-                    let JsonValue::Array(entry) = entry else {
+                    let JsonValue::Array(entry) = serde_json::from_str(line).map_err(|err| DidResolverError::InvalidDidLog(format!("Did log is an invalid json: {err}")))? else {
                         return Err(DidResolverError::InvalidDidLog("Root element of did log entry must be an array.".into()));
                     };
                     let version_id = entry[0].as_str().unwrap().to_owned(); // ...or here
