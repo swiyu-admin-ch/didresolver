@@ -97,7 +97,7 @@ pub struct VerificationMethod {
 
 impl VerificationMethod {
     #[inline]
-    #[deprecated]
+    #[deprecated(note = "Multibase keys not allowed by swiss profile anchor 1.0")]
     pub const fn new(
         id: String,
         controller: String,
@@ -222,7 +222,7 @@ impl<'de> Deserialize<'de> for DocVerificationMethod {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[expect(clippy::exhaustive_structs, reason = "..")]
 pub struct DidDoc {
-    #[deprecated]
+    #[deprecated(note = "Property not supported by the swiss profile anchor 1.0 specification")]
     #[serde(rename = "@context", skip_serializing_if = "Vec::is_empty", default)]
     pub context: Vec<String>,
     pub id: String,
@@ -273,7 +273,7 @@ pub struct DidDoc {
 #[derive(Deserialize, Serialize, Clone, Debug)]
 #[expect(clippy::exhaustive_structs, reason = "..")]
 pub struct DidDocNormalized {
-    #[deprecated(note = "no longer supported")]
+    #[deprecated(note = "Property not supported by the swiss profile anchor 1.0 specification")]
     #[serde(rename = "@context", skip_serializing_if = "Vec::is_empty", default)]
     pub context: Vec<String>,
     pub id: String,
@@ -438,7 +438,7 @@ pub struct DidDocExtended {
 }
 
 impl DidDoc {
-    #[deprecated]
+    #[deprecated(note = "Property not supported by the swiss profile anchor 1.0 specification")]
     #[inline]
     pub fn get_context(&self) -> Vec<String> {
         self.context.clone()

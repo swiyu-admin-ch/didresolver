@@ -3,7 +3,7 @@ members = ["did", "did_sidekicks", "did_tdw", "did_webvh"]
 resolver = "3"
 
 [workspace.package]
-version = "2.9.0-SNAPSHOT"
+version = "2.11.0-SNAPSHOT"
 edition = "2024"
 description = "DID resolver for DID methods did:tdw and did:webvh"
 authors = ["Vladica Stojic", "Marcel Pfeuti", "Frithjof Hoppe", "Jonas Niestroj"]
@@ -82,7 +82,7 @@ debug = true
 # S optimizes for size, but less aggresive than z.
 # The benchmark results also yielded better results than with 2.
 opt-level = "s"
-strip = true
+strip = "debuginfo" # Must not be symbols, as those are required by UniFFI bindings
 lto = true
 codegen-units = 1
 panic = "abort"

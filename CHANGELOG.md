@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Next
 
 ### Added
+
+### Fixed
+
+### Changed
+
+## [2.10.0] - 2026-10-21
+
+### Added
 - Support for verification method type `JsonWebKey` `(#1293)`
 
 ### Fixed
