@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 ### Fixed
+- Regression regarding SCID linkage between webvh and did document `(#1516)`
 
 ### Changed
 
