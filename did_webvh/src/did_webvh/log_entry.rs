@@ -54,8 +54,9 @@ pub struct DidLogEntry {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proof: Option<Vec<DataIntegrityProof>>,
 
+    /// The parsed json of the original did log entry used for generating the entry hash.
     #[serde(skip)]
-    pub json: Value,
+    pub did_log_json: Value,
 }
 
 impl DidLogEntry {
@@ -66,7 +67,7 @@ impl DidLogEntry {
         version_time: DidLogVersionTime,
         parameters: WebVerifiableHistoryDidMethodParameters,
         did_doc: DidDoc,
-        json: Value,
+        did_log_json: Value,
         proof: DataIntegrityProof,
     ) -> Self {
         Self {
@@ -75,7 +76,7 @@ impl DidLogEntry {
             parameters,
             did_doc,
             proof: Some(vec![proof]),
-            json,
+            did_log_json,
         }
     }
 
@@ -89,7 +90,7 @@ impl DidLogEntry {
         let scid = params.validate_initial()?;
 
         #[expect(clippy::pattern_type_mismatch, reason = "false positive")]
-        let Value::Object(values) = &self.json else {
+        let Value::Object(values) = &self.did_log_json else {
             return Err(DidResolverError::InvalidDataIntegrityProof(
                 "DID log must be a JSON object.".to_owned(),
             ));
@@ -216,7 +217,7 @@ impl DidLogEntry {
     }
 
     fn to_log_entry_line(&self, prev_version_id: &str) -> Result<Value, DidResolverError> {
-        let Value::Object(mut values) = self.json.clone() else {
+        let Value::Object(mut values) = self.did_log_json.clone() else {
             return Err(DidResolverError::InvalidDidLog(
                 "DID Log must be a json object".to_owned(),
             ));
@@ -334,7 +335,7 @@ impl FromStr for DidLogEntry {
                 ))
             })?,
             proof: Some(vec![proof]),
-            json: entry,
+            did_log_json: entry,
         })
     }
 }
