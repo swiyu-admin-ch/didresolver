@@ -369,6 +369,12 @@ mod test {
         "did:webvh:QmT3TR3M4yj9UQ4QtkNPtNthTrJTDxFcufD5bCq1T6zUah:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
         "DID log must not be bigger than"
     )]
+    #[case(
+       include_str!("../test_data/generated_by_didtoolbox_java/unhappy_path/scid_mismatch.jsonl"),
+      "did:webvh:QmT4kPBFsHpJKvvvxgFUYxnSGPMeaQy1HWwyXMHj8NjLuy:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#my-auth-key-01",
+      "supplied inside the document id does not match the webvh SCID",
+
+    )]
     fn test_read_invalid_did_webvh(
         #[case] did_log: &str,
         #[case] did_url: &str,

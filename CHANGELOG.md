@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+## [2.10.1] - 2026-11-06
+
+### Fixed
+- Regression regarding SCID linkage between webvh and did document `(#1516)`
+
 ## [2.10.0] - 2026-10-21
 
 ### Added

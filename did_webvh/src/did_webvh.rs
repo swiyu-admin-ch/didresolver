@@ -354,6 +354,9 @@ impl WebVerifiableHistoryDidLog {
                 }));
             }
 
+            // Verify the entryHash
+            entry.verify_version_id_integrity(prev_version_id.as_str())?;
+
             // validate version time
             if entry.version_time.lt(&prev_version_time) {
                 return Err(DidResolverError::InvalidDidLog(
@@ -367,6 +370,17 @@ impl WebVerifiableHistoryDidLog {
                 ));
             }
             prev_version_time = entry.version_time;
+
+            // MUST parse state.id of every entry and check that the SCIDs match
+            let did_id = WebVerifiableHistoryId::parse_did_webvh(entry.did_doc.get_id())
+                .map_err(|err| DidResolverError::InvalidMethodSpecificId(format!("{err}")))?;
+            if did_id.get_scid().as_bytes() != params.get_scid().as_bytes() {
+                return Err(DidResolverError::InvalidDataIntegrityProof(format!(
+                    "The SCID '{}' supplied inside the document id does not match the webvh SCID: '{}'",
+                    did_id.get_scid(),
+                    params.get_scid(),
+                )));
+            }
 
             // for 2nd entry onwards specific validations
             if let Some(prev_doc) = prev_did_doc.as_ref() {
@@ -421,9 +435,6 @@ impl WebVerifiableHistoryDidLog {
 
             // Verify data integrity proof
             entry.verify_data_integrity_proof(&update_keys)?;
-
-            // Verify the entryHash
-            entry.verify_version_id_integrity(prev_version_id.as_str())?;
 
             // Without key rotation, new update keys only take effect for following log entries
             if let Some(new_update_keys) = entry.parameters.update_keys
