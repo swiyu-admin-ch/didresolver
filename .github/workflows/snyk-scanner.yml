@@ -41,7 +41,7 @@ jobs:
       - uses: psastras/sbom-rs/actions/install-cargo-sbom@9ecc460b937ac5558c4f8ebebc9e07d2bdbef67b # cargo-sbom-v0.10.0
       - name: Generate sbom
         run: cargo-sbom  > didresolver.spdx.json
-      - uses: snyk/actions/setup@8e119fbb6c251787721d34ba683ed48eba792766 # master
+      - uses: snyk/actions/setup@11b673cfb4b0dc0d860a1323caa199d54950dcce # master
       - name: Snyk monitor 
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -77,7 +77,7 @@ jobs:
           	exit -1
           fi
       - name: Upload code analysis results
-        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4
+        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
         with:
           sarif_file: didresolver.sarif
           category: snyk

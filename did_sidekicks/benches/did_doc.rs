@@ -1,5 +1,5 @@
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
-use did_sidekicks::did_doc::{DidDocNormalized, VerificationMethod, VerificationType};
+use did_sidekicks::did_doc::{DidDocNormalized, DocVerificationMethod, VerificationMethod, VerificationType};
 use rand::seq::SliceRandom;
 
 pub fn criterion_benchmark_to_did_doc(c: &mut Criterion) {
@@ -21,15 +21,15 @@ pub fn criterion_benchmark_to_did_doc(c: &mut Criterion) {
         .iter()
         .map(|size| {
             let methods: Vec<_> = (0..*size)
-                .map(|i| VerificationMethod {
+                .map(|i| DocVerificationMethod::VerificationMethod(VerificationMethod {
                      id: format!("did:webvh:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#{}", i),
                     controller: i.to_string(),
                     verification_type: VerificationType::Multikey,
                     public_key_multibase: Some(format!("multibase key {}", size)),
                     public_key_jwk: None,
-                })
+                }))
                 .collect();
-            let method_references: Vec<_> = (0..*size).map(|i| format!("did:webvh:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#{}", i)).collect();
+            let method_references: Vec<_> = (0..*size).map(|i| DocVerificationMethod::String(format!("did:webvh:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#{}", i))).collect();
             let mut doc_normalized = DidDocNormalized {
                 context: Vec::new(),
                 id: format!("Document with {} verification methods", size),
@@ -56,7 +56,7 @@ pub fn criterion_benchmark_to_did_doc(c: &mut Criterion) {
     for (size, document) in documents {
         group.bench_function(BenchmarkId::new("DidDoc_document_conversion", size), |b| {
             b.iter(|| {
-                let doc = document.to_did_doc().unwrap();
+                let doc = document.clone().to_did_doc().unwrap();
                 let _ = doc;
             })
         });
@@ -64,8 +64,5 @@ pub fn criterion_benchmark_to_did_doc(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(
-    benches,
-    criterion_benchmark_to_did_doc,
-);
+criterion_group!(benches, criterion_benchmark_to_did_doc,);
 criterion_main!(benches);
