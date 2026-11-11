@@ -375,6 +375,11 @@ mod test {
       "supplied inside the document id does not match the webvh SCID",
 
     )]
+    #[case( // key pre-rotation is active: entry 2 rotates to the announced next key (valid signature) but sets no new nextKeyHashes
+        include_str!("../test_data/manually_created/unhappy_path/missing_next_key_hashes_during_prerotation.jsonl"),
+        "did:webvh:QmT43hYjMsj9jXXd9iKePusJBvQjopN21fCHsfpiyWqChC:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+        "Illegal next key hash detected",
+    )]
     fn test_read_invalid_did_webvh(
         #[case] did_log: &str,
         #[case] did_url: &str,
