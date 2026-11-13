@@ -2,7 +2,7 @@
 
 use std::str::FromStr;
 
-use chrono::{DateTime, SecondsFormat, Utc, serde::ts_seconds};
+use chrono::{DateTime, Utc, serde::ts_seconds};
 use did_sidekicks::{
     did_doc::DidDoc,
     did_doc::DidDocNormalized,
@@ -15,7 +15,7 @@ use did_sidekicks::{
     },
 };
 use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
+use serde_json::{Map, Value};
 
 use super::{
     method_parameters::WebVerifiableHistoryDidMethodParameters, version_id::DidLogVersion,
@@ -50,12 +50,13 @@ pub struct DidLogEntry {
     #[serde(rename = "state")]
     pub did_doc: DidDoc,
 
-    #[serde(skip)]
-    pub did_doc_json: Value,
-
     #[serde(rename = "proof")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proof: Option<Vec<DataIntegrityProof>>,
+
+    /// The parsed json of the original did log entry used for generating the entry hash.
+    #[serde(skip)]
+    pub did_log_json: Value,
 }
 
 impl DidLogEntry {
@@ -66,7 +67,7 @@ impl DidLogEntry {
         version_time: DidLogVersionTime,
         parameters: WebVerifiableHistoryDidMethodParameters,
         did_doc: DidDoc,
-        did_doc_json: Value,
+        did_log_json: Value,
         proof: DataIntegrityProof,
     ) -> Self {
         Self {
@@ -74,8 +75,8 @@ impl DidLogEntry {
             version_time,
             parameters,
             did_doc,
-            did_doc_json,
             proof: Some(vec![proof]),
+            did_log_json,
         }
     }
 
@@ -88,7 +89,13 @@ impl DidLogEntry {
         let mut params = self.parameters.clone();
         let scid = params.validate_initial()?;
 
-        let original_scid = self.build_original_scid(&scid).map_err(|err| {
+        #[expect(clippy::pattern_type_mismatch, reason = "false positive")]
+        let Value::Object(values) = &self.did_log_json else {
+            return Err(DidResolverError::InvalidDataIntegrityProof(
+                "DID log must be a JSON object.".to_owned(),
+            ));
+        };
+        let original_scid = Self::build_original_scid(values.clone(), &scid).map_err(|err| {
             DidResolverError::InvalidDataIntegrityProof(format!(
                 "Failed to build original SCID: {err}"
             ))
@@ -173,15 +180,7 @@ impl DidLogEntry {
             }
 
             // use entire DidLogEntry for signature
-            let did_log_entry = Self {
-                version: self.version.clone(),
-                version_time: self.version_time,
-                parameters: self.parameters.clone(),
-                did_doc: self.did_doc.clone(),
-                did_doc_json: self.did_doc_json.clone(),
-                proof: None,
-            }
-            .to_log_entry_line()?;
+            let did_log_entry = self.to_log_entry_line(self.version.id.as_str())?;
 
             let doc_hash = JcsSha256Hasher::default()
                 .encode_hex_json_value(&did_log_entry)
@@ -207,16 +206,7 @@ impl DidLogEntry {
         // 3 Set the versionId in the entry object to be the versionId from the previous log entry.
         //   If this is the first entry in the log, set the value to <scid>, the value of the SCID of the DID.
         // 4. remove Data Integrity proof from the log entry
-        let entry = Self {
-            // SAFETY: allowed as it's only used for serialization.
-            version: DidLogVersion::new_forced(prev_version_id.into()),
-            version_time: self.version_time,
-            parameters: self.parameters.clone(),
-            did_doc: self.did_doc.clone(),
-            did_doc_json: self.did_doc_json.clone(),
-            proof: None,
-        };
-        let entry_json = entry.to_log_entry_line()?;
+        let entry_json = self.to_log_entry_line(prev_version_id)?;
         // 5 calculate  the hash string
         let calculated_hash = JcsSha256Hasher::default()
             .base58btc_encode_multihash_json_value(&entry_json)
@@ -226,55 +216,61 @@ impl DidLogEntry {
         Ok(calculated_hash)
     }
 
-    #[expect(
-        clippy::indexing_slicing,
-        reason = "panic-free indexing ensured in code"
-    )]
-    fn to_log_entry_line(&self) -> Result<Value, DidResolverError> {
-        let did_doc_json_value = self.did_doc_json.clone();
-
-        let version_time = self
-            .version_time
-            .to_owned()
-            .to_rfc3339_opts(SecondsFormat::Secs, true);
-
-        let mut entry = json!({
-            DID_LOG_ENTRY_VERSION_ID: self.version.id,
-            DID_LOG_ENTRY_VERSION_TIME: version_time,
-            DID_LOG_ENTRY_PARAMETERS: self.parameters,
-            DID_LOG_ENTRY_STATE: did_doc_json_value,
-        });
-
-        if let Some(proof) = self.proof.to_owned() {
-            let Some(first_proof) = proof.first() else {
-                return Err(DidResolverError::InvalidDataIntegrityProof(
-                    "Proof is empty.".to_owned(),
-                ));
-            };
-
-            entry[DID_LOG_ENTRY_PROOF] = json!(vec![first_proof.to_json_value()]);
+    fn to_log_entry_line(&self, prev_version_id: &str) -> Result<Value, DidResolverError> {
+        let Value::Object(mut values) = self.did_log_json.clone() else {
+            return Err(DidResolverError::InvalidDidLog(
+                "DID Log must be a json object".to_owned(),
+            ));
+        };
+        values.insert(
+            DID_LOG_ENTRY_VERSION_ID.to_owned(),
+            Value::String(prev_version_id.to_owned()),
+        );
+        let Some(Value::Array(proofs)) = values.remove(DID_LOG_ENTRY_PROOF) else {
+            return Err(DidResolverError::InvalidDataIntegrityProof(
+                "Proof is empty.".to_owned(),
+            ));
+        };
+        if proofs.is_empty() {
+            return Err(DidResolverError::InvalidDataIntegrityProof(
+                "Proof is empty.".to_owned(),
+            ));
         }
 
-        Ok(entry)
+        Ok(Value::Object(values))
     }
 
-    fn build_original_scid(&self, scid: &String) -> serde_json::Result<String> {
-        let did_doc_with_placeholder_scid = str::replace(
-            self.did_doc_json.to_string().as_str(),
-            scid,
-            SCID_PLACEHOLDER,
+    #[inline]
+    #[expect(clippy::single_call_fn, reason = "encapsulate logic")]
+    fn build_original_scid(
+        mut values: Map<String, Value>,
+        scid: &String,
+    ) -> serde_json::Result<String> {
+        values.remove(DID_LOG_ENTRY_PROOF);
+        values.insert(
+            DID_LOG_ENTRY_VERSION_ID.to_owned(),
+            Value::String(SCID_PLACEHOLDER.to_owned()),
+        );
+        let did_doc_with_placeholder_scid = values
+            .get(DID_LOG_ENTRY_STATE)
+            .unwrap_or(&Value::Null)
+            .to_string()
+            .replace(scid, SCID_PLACEHOLDER);
+        values.insert(
+            DID_LOG_ENTRY_STATE.to_owned(),
+            serde_json::from_str::<Value>(did_doc_with_placeholder_scid.as_str())?,
         );
 
-        let entry_with_placeholder_without_proof = json!({
-           DID_LOG_ENTRY_VERSION_ID: SCID_PLACEHOLDER,
-           DID_LOG_ENTRY_VERSION_TIME: self.version_time,
-           DID_LOG_ENTRY_PARAMETERS: serde_json::from_str::<Value>(str::replace(serde_json::to_string(&self.parameters)?.as_str(), scid, SCID_PLACEHOLDER).as_str())?,
-           DID_LOG_ENTRY_STATE :     serde_json::from_str::<Value>(did_doc_with_placeholder_scid.as_str())?,
-        });
-
-        let hash = JcsSha256Hasher::default()
-            .base58btc_encode_multihash_json_value(&entry_with_placeholder_without_proof)?;
-        Ok(hash)
+        let did_parameters_with_placeholder_scid = values
+            .get(DID_LOG_ENTRY_PARAMETERS)
+            .unwrap_or(&Value::Null)
+            .to_string()
+            .replace(scid, SCID_PLACEHOLDER);
+        values.insert(
+            DID_LOG_ENTRY_PARAMETERS.to_owned(),
+            serde_json::from_str::<Value>(did_parameters_with_placeholder_scid.as_str())?,
+        );
+        JcsSha256Hasher::default().base58btc_encode_multihash_json_value(&Value::Object(values))
     }
 }
 
@@ -301,7 +297,6 @@ impl FromStr for DidLogEntry {
 
         let entry: Value = serde_json::from_str(line)
             .map_err(|err| DidResolverError::DeserializationFailed(err.to_string()))?;
-        let did_doc_json = entry[DID_LOG_ENTRY_STATE].to_owned();
 
         let proof =
             match DataIntegrityProof::from_json_string(entry[DID_LOG_ENTRY_PROOF].to_string()) {
@@ -313,7 +308,7 @@ impl FromStr for DidLogEntry {
                 }
             };
 
-        let log = serde_json::from_value::<ParsableDidLogEntry>(entry)
+        let log = serde_json::from_value::<ParsableDidLogEntry>(entry.clone())
             .map_err(|err| {
                 DidResolverError::DeserializationFailed(format!("Invalid log entry: {err}"))
             })
@@ -339,8 +334,59 @@ impl FromStr for DidLogEntry {
                     "Deserialization of DID document failed due to: {err}"
                 ))
             })?,
-            did_doc_json,
             proof: Some(vec![proof]),
+            did_log_json: entry,
         })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use std::str::FromStr;
+
+    use rstest::rstest;
+    use serde_json::{Value, json};
+
+    use crate::did_webvh::{DidLogEntry, SCID_PLACEHOLDER};
+
+    #[rstest]
+    fn entry_hash_accounts_for_unsupported_fields() {
+        let mut did_log = json!({
+            "versionId": "1-SCID",
+            "versionTime": "2026-11-03T06:24:32Z",
+            "parameters": {
+                "method": "did:webvh:1.0",
+                "scid": SCID_PLACEHOLDER.to_owned(),
+                "updateKeys": [
+                    "z6MkiFBLvXjD9QWCUCmgF7jzD9ZCTL8rMvYDKoUNU4TEzP55",
+                ],
+                "portable": false
+            },
+            "state": {
+                "id": format!(
+                   "did:webvh:{}:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+                   SCID_PLACEHOLDER,
+                ),
+                "profile_version": "swiss-profile-anchor:1.0.0",
+            },
+            "proof": [
+                {
+                    "type": "DataIntegrityProof",
+                    "cryptosuite": "eddsa-jcs-2022",
+                    "created": "2026-11-03T06:24:32Z",
+                    "verificationMethod": "did:key:z6MkiFBLvXjD9QWCUCmgF7jzD9ZCTL8rMvYDKoUNU4TEzP55#z6MkiFBLvXjD9QWCUCmgF7jzD9ZCTL8rMvYDKoUNU4TEzP55",
+                    "proofPurpose": "assertionMethod",
+                    "proofValue": "z2KTb6zrPiAAJFVtiK5AWyZgC1XTxZVhaux4KMwWdTzxAcYCcD2jMn9nQbNVvbNU7sHrTynadPsfDpdHXn4RTYthH"
+                }
+            ],
+        });
+        let log1 = DidLogEntry::from_str(did_log.to_string().as_str()).unwrap();
+        let hash1 = log1.calculate_entry_hash(SCID_PLACEHOLDER).unwrap();
+
+        did_log["parameters"]["foo"] = Value::String("bar".to_owned());
+        let log2 = DidLogEntry::from_str(did_log.to_string().as_str()).unwrap();
+        let hash2 = log2.calculate_entry_hash(SCID_PLACEHOLDER).unwrap();
+        // Hashes shouldn't match as hash2 has the additional field foo
+        assert_ne!(hash1, hash2);
     }
 }
