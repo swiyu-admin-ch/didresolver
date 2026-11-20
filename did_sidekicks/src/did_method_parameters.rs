@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+//! Representation of generic values within method parameters of a DID log.
+
 use crate::errors::DidSidekicksError;
 use serde_json::Value;
 

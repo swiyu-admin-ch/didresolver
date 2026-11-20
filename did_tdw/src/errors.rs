@@ -33,7 +33,7 @@ impl TrustDidWebIdResolutionError {
 
 /// TrustDidWebIdResolutionError kind.
 ///
-/// Each [`TrustDidWebIdResolutionError`] has a kind provided by the [`TrustDidWebIdResolutionErrorKind::kind`] method.
+/// Each [`TrustDidWebIdResolutionError`] has a kind provided by the [`TrustDidWebIdResolutionError::kind`] method.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[expect(clippy::exhaustive_enums, reason = "..")]
 pub enum TrustDidWebIdResolutionErrorKind {
@@ -123,7 +123,7 @@ impl From<DidResolverError> for TrustDidWebError {
 
 /// TrustDidWebError kind.
 ///
-/// Each [`TrustDidWebError`] has a kind provided by the [`TrustDidWebErrorKind::kind`] method.
+/// Each [`TrustDidWebError`] has a kind provided by the [`TrustDidWebError::kind`] method.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[expect(clippy::exhaustive_enums, reason = "..")]
 pub enum TrustDidWebErrorKind {

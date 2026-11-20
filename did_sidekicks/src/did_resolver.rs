@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+//! Common functionality to be implemented by a did resolver.
+
 use crate::did_doc::DidDoc;
 use crate::did_method_parameters::DidMethodParameter;
 use crate::errors::DidResolverError;
@@ -8,10 +10,10 @@ use std::sync::Arc;
 
 /// A simple model of a generic `DID` resolver regardless of specification.
 ///
-/// The trait is `dyn` compatible, as elaborated at https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility.
+/// The trait is `dyn` compatible, as elaborated at <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>.
 pub trait DidResolver {
     // CAUTION Beware of "dyn" compatibility for traits,
-    //         as elaborated at https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility
+    //         as elaborated at <https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility>
 
     /// The getter for a [`DidDoc`] object collected during the resolution process.
     fn get_did_doc_obj(&self) -> Result<DidDoc, DidResolverError>;

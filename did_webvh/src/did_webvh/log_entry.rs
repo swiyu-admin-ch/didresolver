@@ -31,30 +31,34 @@ pub const DID_LOG_ENTRY_STATE: &str = "state";
 pub const DID_LOG_ENTRY_PROOF: &str = "proof";
 
 /// Entry in a did log file as shown here
-/// https://identity.foundation/didwebvh/v1.0/#term:did-log-entry.
+/// <https://identity.foundation/didwebvh/v1.0/#term:did-log-entry>.
 #[expect(clippy::exhaustive_structs, reason = "..")]
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct DidLogEntry {
-    /// Since v0.2 (see https://identity.foundation/didwebvh/v1.0/#didwebvh-version-changelog):
-    ///            The new versionId takes the form <version number>-<entryHash>, where <version number> is the incrementing integer of version of the entry: 1, 2, 3, etc.
+    /// Since v0.2, see <https://identity.foundation/didwebvh/v1.0/#didwebvh-version-changelog>:
+    ///            The new versionId takes the form `<version number>-<entryHash>`, where version number is the incrementing integer of version of the entry: 1, 2, 3, etc.
     #[serde(rename = "versionId")]
     pub version: DidLogVersion,
 
+    /// Timestamp in RFC3339 format, dating when the log entry was created.
     #[serde(rename = "versionTime")]
     #[serde(with = "ts_seconds")]
     pub version_time: DidLogVersionTime,
 
+    /// Method parameters of the DID log entry.
     #[serde(rename = "parameters")]
     pub parameters: WebVerifiableHistoryDidMethodParameters,
 
+    /// The did doc contained within the log entry.
     #[serde(rename = "state")]
     pub did_doc: DidDoc,
 
+    /// Data integrity proofs of the DID log entry.
     #[serde(rename = "proof")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proof: Option<Vec<DataIntegrityProof>>,
 
-    /// The parsed json of the original did log entry used for generating the entry hash.
+    /// The parsed json of the originally supplied DID log entry.
     #[serde(skip)]
     pub did_log_json: Value,
 }

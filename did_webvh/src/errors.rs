@@ -31,9 +31,9 @@ impl WebVerifiableHistoryIdResolutionError {
     }
 }
 
-/// [`WebVerfiableHistoryIdResolutionError`]'s kind.
+/// [`WebVerifiableHistoryIdResolutionError`]'s kind.
 ///
-/// Each [`WebVerifiableHistoryIdResolutionError`] has a kind provided by the [`WebVerifiableHistoryIdResolutionErrorKind::kind`] method.
+/// Each [`WebVerifiableHistoryIdResolutionError`] has a kind provided by the [`WebVerifiableHistoryIdResolutionError::kind`] method.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[expect(clippy::exhaustive_enums, reason = "..")]
 pub enum WebVerifiableHistoryIdResolutionErrorKind {

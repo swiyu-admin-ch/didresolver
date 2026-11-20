@@ -1,5 +1,7 @@
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
-use did_sidekicks::did_doc::{DidDocNormalized, DocVerificationMethod, VerificationMethod, VerificationType};
+use did_sidekicks::did_doc::{
+    DidDocNormalized, DocVerificationMethod, VerificationMethod, VerificationType,
+};
 use rand::seq::SliceRandom;
 
 pub fn criterion_benchmark_to_did_doc(c: &mut Criterion) {

@@ -1,5 +1,10 @@
 // SPDX-License-Identifier: MIT
 
+//! Implementation of the [did webvh 1.0 specification](https://identity.foundation/didwebvh/next/).
+//!
+//! It provides functionality for the did to https transformation and the read (resolve) operation.
+//! Create, update, and deactivate are NOT supported.
+
 use std::{collections::HashMap, str::FromStr as _, sync::Arc};
 
 use crate::{
@@ -69,7 +74,7 @@ lazy_static! {
     Regex::new(HAS_PORT_REGEX_STR).unwrap();
 }
 
-/// As specified at https://identity.foundation/didwebvh/v1.0/#method-specific-identifier:
+/// As specified at <https://identity.foundation/didwebvh/v1.0/#method-specific-identifier>:
 ///
 /// "The did:webvh method-specific identifier contains both the self-certifying identifier (SCID) for the DID,
 /// and a fully qualified domain name (with an optional path) that is secured by a TLS/SSL certificate."
@@ -79,6 +84,7 @@ pub struct WebVerifiableHistoryId {
 }
 
 impl WebVerifiableHistoryId {
+    /// Name of the did webvh method.
     pub const DID_METHOD_NAME: &'static str = "webvh";
 
     /// Yet another UniFFI-compliant method.
@@ -91,11 +97,13 @@ impl WebVerifiableHistoryId {
         Self::try_from(did_webvh)
     }
 
+    /// Returns the SCID of the resolved did.
     #[inline]
     pub fn get_scid(&self) -> String {
         self.scid.clone()
     }
 
+    /// Returns the URL of the resolved did.
     #[inline]
     pub fn get_url(&self) -> String {
         self.url.clone()
@@ -107,7 +115,7 @@ impl TryFrom<String> for WebVerifiableHistoryId {
     type Error = WebVerifiableHistoryIdResolutionError;
 
     /// It basically implements the 'The DID to HTTPS Transformation',
-    /// as specified by https://identity.foundation/didwebvh/v1.0/#the-did-to-https-transformation.
+    /// as specified by the [did to https transformation](https://identity.foundation/didwebvh/v1.0/#the-did-to-https-transformation).
     #[inline]
     #[expect(
         clippy::indexing_slicing,
@@ -499,7 +507,7 @@ pub struct WebVerifiableHistory {
 }
 
 impl WebVerifiableHistory {
-    /// Delivers the fully qualified DID identifier (as [`String`]) of the DID log previously supplied via [`WebVerifiableHistory::read`] constructor.
+    /// Delivers the fully qualified DID identifier (as [`String`]) of the DID log previously supplied via [`WebVerifiableHistory::resolve`] constructor.
     ///
     /// Yet another UniFFI-compliant method.
     #[inline]
@@ -507,7 +515,7 @@ impl WebVerifiableHistory {
         self.did.clone()
     }
 
-    /// Delivers the very same DID log (as [`String`]) previously supplied via [`WebVerifiableHistory::read`] constructor.
+    /// Delivers the very same DID log (as [`String`]) previously supplied via [`WebVerifiableHistory::resolve`] constructor.
     ///
     /// Yet another UniFFI-compliant method.
     #[inline]
@@ -515,7 +523,7 @@ impl WebVerifiableHistory {
         self.did_log.clone()
     }
 
-    /// Delivers the fully qualified DID document (as [`String`]) contained within the DID log previously supplied via [`WebVerifiableHistory::read`] constructor.
+    /// Delivers the fully qualified DID document (as [`String`]) contained within the DID log previously supplied via [`WebVerifiableHistory::resolve`] constructor.
     ///
     /// Yet another UniFFI-compliant method.
     #[inline]
@@ -523,26 +531,23 @@ impl WebVerifiableHistory {
         self.did_doc.clone()
     }
 
-    /// Delivers the fully qualified DID document (as [`DidDoc`]) contained within the DID log previously supplied via [`WebVerifiableHistory::read`] constructor.
+    /// Delivers the fully qualified DID document (as [`DidDoc`]) contained within the DID log previously supplied via [`WebVerifiableHistory::resolve`] constructor.
     fn get_did_doc_obj(&self) -> DidDoc {
         self.did_doc_obj.clone()
     }
 
-    /// The thread-safe version of [`WebVerifiableHistory::get_did_doc_obj`].
-    ///
-    /// Yet another UniFFI-compliant getter.
+    /// Delivers the fully qualified DID document (as [`DidDoc`]) contained within the DID log previously supplied via [`WebVerifiableHistory::resolve`] constructor.
     #[inline]
     pub fn get_did_doc_obj_thread_safe(&self) -> Arc<DidDoc> {
         Arc::new(self.get_did_doc_obj())
     }
 
+    /// Returns a copy of the method parameters of the did log.
     fn get_did_method_parameters_obj(&self) -> WebVerifiableHistoryDidMethodParameters {
         self.did_method_parameters.clone()
     }
 
-    /// The thread-safe version of [`WebVerifiableHistory::get_did_method_parameters_obj`].
-    ///
-    /// Yet another UniFFI-compliant getter.
+    /// Returns a copy of the method parameters of the did log.
     #[inline]
     pub fn get_did_method_parameters(&self) -> Arc<WebVerifiableHistoryDidMethodParameters> {
         Arc::new(self.get_did_method_parameters_obj())

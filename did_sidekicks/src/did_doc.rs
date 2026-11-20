@@ -1,24 +1,25 @@
 // SPDX-License-Identifier: MIT
 
+//! Implementation of the [DID Document 1.0](https://www.w3.org/TR/did-1.0/) and [Swiss Profile Anchor 1.0](https://swiyu-admin-ch.github.io/specifications/swiss-profile-anchor/) specification.
+
 use crate::did_method_parameters::DidMethodParameter;
 use crate::errors::DidSidekicksError;
 use serde::{Deserialize, Serialize, de};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
-/// Limit of 1 MiB, following that of the registry.
+/// Max file size limit for did logs of 1MiB.
 // IMPORTANT: used in DID:TDW & DID:WEBVH, so if this value changes, the error messages there MUST
 // also be updated.
 pub const MAX_DID_LOG_FILE_SIZE: usize = 1024 * 1024;
 // String here to easily be updated with changes to MAX_DID_LOG_FILE_SIZE
 const MAX_DID_DOC_FILE_SIZE_ERROR_MESSAGE: &str = "DID document must be smaller than 1MiB";
 
-/// An entry in DID log file as shown here
-/// https://bcgov.github.io/trustdidweb/#term:did-log-entry.
-
-// Implement basic properties related to EC algorithm
-// https://www.rfc-editor.org/rfc/rfc7517#section-4
-// https://www.rfc-editor.org/rfc/rfc7518.html#section-6.2.1
+/// Struct representation of a JWK for <https://www.rfc-editor.org/rfc/rfc7517#section-4>.
+///
+/// It supports only fields related to Ed25519 and EC keys.
+/// See <https://www.rfc-editor.org/rfc/rfc7517#section-4> and <https://www.rfc-editor.org/rfc/rfc7518.html#section-6.2.1>
+/// for more information.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[expect(clippy::exhaustive_structs, reason = "..")]
 pub struct Jwk {
@@ -40,6 +41,8 @@ pub struct Jwk {
     pub key_ops: Option<Vec<String>>,
 }
 
+/// Types of verification material. Note that only JsonWebKey2020 and JsonWebKey are supported for
+/// as verification methods within the document.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[expect(
     clippy::exhaustive_enums,
@@ -71,7 +74,7 @@ impl core::fmt::Display for VerificationType {
     }
 }
 
-// See https://www.w3.org/TR/did-core/#verification-methods
+/// Verification method struct as specified in <https://www.w3.org/TR/did-core/#verification-methods>.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[expect(clippy::exhaustive_structs, reason = "..")]
 pub struct VerificationMethod {
@@ -96,6 +99,7 @@ pub struct VerificationMethod {
 }
 
 impl VerificationMethod {
+    /// Creates a new verification method with the provided values.
     #[inline]
     #[deprecated(note = "Multibase keys not allowed by swiss profile anchor 1.0")]
     pub const fn new(
@@ -113,6 +117,7 @@ impl VerificationMethod {
         }
     }
 
+    /// Validates the verification method and ensures that the method is controlled by the document id.
     fn validate(&self, document_id: &str) -> Result<(), DidSidekicksError> {
         if !self.controller.is_empty() && self.controller != document_id {
             return Err(DidSidekicksError::InvalidDidDocument(format!(
@@ -155,7 +160,7 @@ impl VerificationMethod {
     }
 }
 
-/// Container for parsing verification method of a did doc allowing to either be a string or a verification method object.
+/// Wrapper for parsing verification method of a did doc, allowing to either be a string or a verification method object.
 #[derive(Debug, Clone)]
 #[expect(clippy::large_enum_variant, reason = "")]
 #[non_exhaustive]
@@ -216,9 +221,8 @@ impl<'de> Deserialize<'de> for DocVerificationMethod {
     }
 }
 
-// See      https://www.w3.org/TR/did-core/#dfn-did-documents
-// Examples https://www.w3.org/TR/did-core/#did-documents
-// According to https://www.w3.org/TR/did-core/#did-document-properties
+/// Did document as specified in <https://www.w3.org/TR/did-core/#dfn-did-documents> and
+/// <https://www.w3.org/TR/did-core/#did-document-properties>.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[expect(clippy::exhaustive_structs, reason = "..")]
 pub struct DidDoc {
@@ -267,11 +271,9 @@ pub struct DidDoc {
     pub profile_version: Option<String>,
 }
 
-// See      https://www.w3.org/TR/did-core/#dfn-did-documents
-// Examples https://www.w3.org/TR/did-core/#did-documents
-// According to https://www.w3.org/TR/did-core/#did-document-properties
-#[derive(Deserialize, Serialize, Clone, Debug)]
+/// Did document as used for parsing from a string.
 #[expect(clippy::exhaustive_structs, reason = "..")]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct DidDocNormalized {
     #[deprecated(note = "Property not supported by the swiss profile anchor 1.0 specification")]
     #[serde(rename = "@context", skip_serializing_if = "Vec::is_empty", default)]
@@ -323,6 +325,8 @@ pub struct DidDocNormalized {
 }
 
 impl DidDocNormalized {
+    /// Converts into a did doc, executing did method within the document, resolving methods
+    /// referenced as string into references to the object itself.
     #[inline]
     pub fn to_did_doc(self) -> Result<DidDoc, DidSidekicksError> {
         let verification_methods = self
@@ -517,7 +521,7 @@ impl DidDoc {
             .chain(self.key_agreement.iter())
     }
 
-    /// The deserialization-based constructor. It attempts to deserialize an instance of type `[`DidDoc`] from a string of JSON text.
+    /// The deserialization-based constructor. It attempts to deserialize an instance of type [`DidDoc`] from a string of JSON text.
     ///
     /// # Errors
     ///

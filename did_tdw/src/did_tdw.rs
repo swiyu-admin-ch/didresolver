@@ -28,7 +28,7 @@ use url_escape;
 
 pub const SCID_PLACEHOLDER: &str = "{SCID}";
 
-/// Regex to check if a domain follows the assumption described in https://www.rfc-editor.org/rfc/rfc952.html
+/// Regex to check if a domain follows the assumption described in <https://www.rfc-editor.org/rfc/rfc952.html>
 /// Allowed are lowercase letters (a-z), digits (0-9) dash (-) and period (.). Periods are only allowed to
 /// delimit components.
 static DOMAIN_REGEX_STR: &str = r"^[\-a-z0-9]+(\.[\-a-z0-9]+)*$";
@@ -62,12 +62,12 @@ pub use did_sidekicks::did_doc::MAX_DID_LOG_FILE_SIZE;
 const MAX_DID_LOG_FILE_SIZE_ERROR_MESSAGE: &str = "DID log must not be bigger than 1MiB";
 
 /// Entry in a did log file as shown here
-/// https://identity.foundation/didwebvh/v0.3/#the-did-log-file.
+/// <https://identity.foundation/didwebvh/v0.3/#the-did-log-file>.
 #[expect(clippy::exhaustive_structs, reason = "..")]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DidLogEntry {
-    /// Since v0.2 (see https://identity.foundation/didwebvh/v0.3/#didtdw-version-changelog):
-    ///            The new versionId takes the form <version number>-<entryHash>, where <version number> is the incrementing integer of version of the entry: 1, 2, 3, etc.
+    /// Since v0.2 (see <https://identity.foundation/didwebvh/v0.3/#didtdw-version-changelog>):
+    ///            The new versionId takes the form `<version number>-<entryHash>`, where `version number` is the incrementing integer of version of the entry: 1, 2, 3, etc.
     pub version_id: String,
     #[serde(skip)]
     pub version_index: usize,
@@ -192,9 +192,9 @@ impl DidLogEntry {
     /// The new versionId takes the form \<version number\>-\<entryHash\>, where \<version number\> is the incrementing integer of version of the entry: 1, 2, 3, etc.
     #[inline]
     pub fn build_version_id(&self) -> Result<String, DidResolverError> {
-        // Since v0.2 (see https://identity.foundation/trustdidweb/v0.3/#didtdw-version-changelog):
+        // Since v0.2 (see <https://identity.foundation/trustdidweb/v0.3/#didtdw-version-changelog>):
         //            The new versionId takes the form <version number>-<entry_hash>, where <version number> is the incrementing integer of version of the entry: 1, 2, 3, etc.
-        // Also see https://identity.foundation/trustdidweb/v0.3/#the-did-log-file:
+        // Also see <https://identity.foundation/trustdidweb/v0.3/#the-did-log-file>:
         //            A Data Integrity Proof across the entry, signed by a DID authorized to update the DIDDoc, using the versionId as the challenge.
         let prev_version_id = match self.prev_entry.to_owned() {
             Some(entry) => entry.version_id.to_owned(),
@@ -387,7 +387,7 @@ impl TryFrom<String> for TrustDidWebDidLog {
                     };
                     let version_id = entry[0].as_str().unwrap().to_owned(); // ...or here
 
-                    // Since v0.2 (see https://identity.foundation/trustdidweb/v0.3/#didtdw-version-changelog):
+                    // Since v0.2 (see <https://identity.foundation/trustdidweb/v0.3/#didtdw-version-changelog>):
                     //            The new versionId takes the form <versionNumber>-<entryHash>, where <version number> is the incrementing integer of version of the entry: 1, 2, 3, etc.
                     let version_index = version_id.split_once('-')
                        .map(|(index, _)| index.parse::<usize>().map_err(|err| DidResolverError::InvalidDidLog(format!("Failed to parse version number: {err}"))))
@@ -398,9 +398,9 @@ impl TryFrom<String> for TrustDidWebDidLog {
                         return Err(DidResolverError::DeserializationFailed("Version numbers (`versionId`) must be in a sequence of positive consecutive integers.".to_owned()));
                     }
 
-                    // https://identity.foundation/didwebvh/v0.3/#the-did-log-file:
+                    // <https://identity.foundation/didwebvh/v0.3/#the-did-log-file>:
                     // The `versionTime` (as stated by the DID Controller) of the entry,
-                    // in ISO8601 format (https://identity.foundation/didwebvh/v0.3/#term:iso8601).
+                    // in [ISO8601 format](https://identity.foundation/didwebvh/v0.3/#term:iso8601).
                     let version_time = entry[1].as_str()
                         .map(|str| DateTime::parse_from_rfc3339(str)
                             .unwrap() // no panic is expected here...
@@ -452,7 +452,7 @@ impl TryFrom<String> for TrustDidWebDidLog {
 
                     is_deactivated = current_params.to_owned().is_some_and(|params| params.deactivated.is_some_and(|deact| deact));
                     if is_deactivated {
-                        // https://identity.foundation/didwebvh/v0.3/#deactivate-revoke:
+                        // <https://identity.foundation/didwebvh/v0.3/#deactivate-revoke>:
                         // To deactivate the DID, the DID Controller SHOULD add to the DID log entry parameters the item "deactivated": true.
                         // A DID MAY update the DIDDoc further to indicate the deactivation of the DID,
                         // such as including an empty updateKeys list ("updateKeys": []) in the parameters,
@@ -686,7 +686,7 @@ impl core::fmt::Display for TrustDidWebDidLog {
     }
 }
 
-/// As specified at https://identity.foundation/trustdidweb/#method-specific-identifier:
+/// As specified at <https://identity.foundation/trustdidweb/#method-specific-identifier>:
 ///
 /// "The did:tdw method-specific identifier contains both the self-certifying identifier (SCID) for the DID,
 /// and a fully qualified domain name (with an optional path) that is secured by a TLS/SSL certificate."
@@ -725,7 +725,7 @@ impl TryFrom<String> for TrustDidWebId {
     type Error = TrustDidWebIdResolutionError;
 
     /// It basically implements the 'The DID to HTTPS Transformation',
-    /// as specified by https://identity.foundation/didwebvh/v0.3/#the-did-to-https-transformation.
+    /// as specified by <https://identity.foundation/didwebvh/v0.3/#the-did-to-https-transformation>.
     #[inline]
     #[expect(
         clippy::indexing_slicing,
@@ -762,7 +762,7 @@ impl TryFrom<String> for TrustDidWebId {
             ));
         };
 
-        // https://identity.foundation/didwebvh/v0.3/#the-did-to-https-transformation:
+        // <https://identity.foundation/didwebvh/v0.3/#the-did-to-https-transformation>:
         // 1. Remove the literal did:tdw: prefix from the DID, leaving the method specific identifier.
         // 2. Remove the SCID by removing the text up to and including the first colon (<scid>:) from the method-specific identifier and continue processing.
         // 3. Replace : with / in the method-specific identifier to obtain the fully qualified domain name and optional path.
@@ -771,7 +771,7 @@ impl TryFrom<String> for TrustDidWebId {
         // 5. If the domain contains a port, percent decode the colon.
         let decoded_url = domain_and_optional_path.replace("%3A", ":"); // Decode percent-encoded byte '%3A' (the percent-encoded semicolon (':') char/byte)
 
-        // 6. Generate an HTTPS URL to the expected location of the DIDDoc by prepending https://.
+        // 6. Generate an HTTPS URL to the expected location of the DIDDoc by prepending [`https://`].
         let url_string = format!("https://{decoded_url}");
 
         let mut url = match Url::parse(&url_string) {
@@ -928,9 +928,7 @@ impl TrustDidWeb {
         self.did_doc_obj.clone()
     }
 
-    /// The thread-safe version of [`TrustDidWeb::get_did_doc_obj`].
-    ///
-    /// Yet another UniFFI-compliant getter.
+    /// Returns the parsed did document.
     #[inline]
     pub fn get_did_doc_obj_thread_safe(&self) -> Arc<DidDoc> {
         Arc::new(self.get_did_doc_obj())
@@ -940,9 +938,7 @@ impl TrustDidWeb {
         self.did_method_parameters.clone()
     }
 
-    /// The thread-safe version of [`TrustDidWeb::get_did_method_parameters_obj`].
-    ///
-    /// Yet another UniFFI-compliant getter.
+    /// The thread-safe function to get the method parameters.
     #[inline]
     pub fn get_did_method_parameters(&self) -> Arc<TrustDidWebDidMethodParameters> {
         Arc::new(self.get_did_method_parameters_obj())

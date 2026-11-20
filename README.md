@@ -43,22 +43,22 @@ The library can be used either directly in rust as is or through the different b
 ### Rust
 
 The library can be used directly in rust by adding the following dependency to your `Cargo.toml`:
-````toml
+```toml
 [dependencies]
 # Alternatively, feel free to so use tag=<ANY_EXISTING_VERSION> instead of branch="main"
 didresolver = { git="https://github.com/swiyu-admin-ch/didresolver.git", branch="main" }
+# For retrieving the did log from the registry
 ureq = "3.0.12"
 
 # Optional: For manipulating the json content in the example
 serde_json = "1.0.215"
-````
+```
 
 ### Additional language bindings
 
 > General information how the bindings are generated can be found in the [UniFFI user guide](https://mozilla.github.io/uniffi-rs/latest/)
 
 The library is also available in other languages. Please consult the documentation of the subsequent repositories for more information:
-- [Examples](https://github.com/swiyu-admin-ch/didresolver-examples)
 - [Kotlin / Java](https://github.com/swiyu-admin-ch/didresolver-kotlin)
 - [Kotlin for android](https://github.com/swiyu-admin-ch/didresolver-kotlin-android)
 - [Swift](https://github.com/swiyu-admin-ch/didresolver-swift)
@@ -108,6 +108,7 @@ Such structure may be easily obtained by simply running `cargo-modules structure
 crate didresolver
 └── mod did: pub
     ├── struct Did: pub
+    │   ├── fn as_string: pub
     │   ├── fn get_https_url: pub
     │   ├── fn get_method: pub
     │   ├── fn get_parts: pub
@@ -122,7 +123,10 @@ crate didresolver
     │   └── fn new_did_resolver_impl: pub(self)
     ├── enum DidResolveError: pub
     │   └── const fn kind: pub
-    └── enum DidResolveErrorKind: pub
+    ├── enum DidResolveErrorKind: pub
+    ├── struct FRAGMENT_REGEX: pub(self)
+    │   └── fn initialize: pub(self)
+    └── fn get_did_from_absolute_kid: pub
 ```
 
 ## Internal dependencies

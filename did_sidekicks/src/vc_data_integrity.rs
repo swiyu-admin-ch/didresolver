@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+//! Implementation a data integrity proof according to [vc-di-eddsa](https://www.w3.org/TR/vc-di-eddsa/).
+
 use crate::ed25519::*;
 use crate::errors::DidSidekicksError;
 use crate::errors::DidSidekicksError::{
@@ -16,6 +18,7 @@ use serde_json::{
     Value::String as JsonString, from_str as json_from_str, json,
 };
 
+/// List of crypto suites.
 #[derive(Clone, Debug)]
 #[expect(
     clippy::exhaustive_enums,
@@ -44,7 +47,7 @@ impl core::fmt::Display for CryptoSuiteType {
     }
 }
 
-/// As specified by https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022.
+/// As specified by <https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022>.
 #[derive(Clone)]
 #[expect(clippy::exhaustive_structs, reason = "..")]
 pub struct CryptoSuiteProofOptions {
@@ -58,14 +61,14 @@ pub struct CryptoSuiteProofOptions {
 }
 
 impl CryptoSuiteProofOptions {
-    /// The UniFFI-compliant empty (default) constructor, aligned with [`eddsa-jcs-2022`], hence:
+    /// The UniFFI-compliant empty (default) constructor, aligned with `eddsa-jcs-2022`, hence:
     ///
     /// - `proof_type: "DataIntegrityProof"`
     /// - `crypto_suite: "eddsa-jcs-2022"`
     /// - `created: <current datetime>`
     /// - `proof_purpose: "authentication"`
     ///
-    /// [`eddsa-jcs-2022` proof-configuration]: https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022
+    /// eddsa-jcs-2022` proof-configuration <https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022>.
     #[inline]
     pub fn build() -> Self {
         Self::default()
@@ -145,14 +148,14 @@ impl CryptoSuiteProofOptions {
 }
 
 impl Default for CryptoSuiteProofOptions {
-    /// The default constructor aligned with [`eddsa-jcs-2022`], hence:
+    /// The default constructor aligned with `eddsa-jcs-2022`, hence:
     ///
     /// - `proof_type: "DataIntegrityProof"`
     /// - `crypto_suite: "eddsa-jcs-2022"`
     /// - `created: <current datetime>`
     /// - `proof_purpose: "authentication"`
     ///
-    /// [`eddsa-jcs-2022` proof-configuration]: https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022
+    /// eddsa-jcs-2022` proof-configuration: <https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022>.
     #[inline]
     fn default() -> Self {
         Self {
@@ -167,9 +170,9 @@ impl Default for CryptoSuiteProofOptions {
     }
 }
 
-/// See https://www.w3.org/TR/vc-data-integrity/#dataintegrityproof.
+/// See <https://www.w3.org/TR/vc-data-integrity/#dataintegrityproof>.
 ///
-/// For EdDSA Cryptosuites v1.0 suites, see https://www.w3.org/TR/vc-di-eddsa/#dataintegrityproof.
+/// For EdDSA Cryptosuites v1.0 suites, see <https://www.w3.org/TR/vc-di-eddsa/#dataintegrityproof>.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[expect(clippy::exhaustive_structs, reason = "..")]
 pub struct DataIntegrityProof {
@@ -395,16 +398,16 @@ impl DataIntegrityProof {
 /// This is the main entry point for proof generation and validation of a given verifiable credential.
 ///
 /// Function in this class are based on algorithm section in the vc-data-integrity spec
-/// https://www.w3.org/TR/vc-data-integrity/#algorithms.
+/// <https://www.w3.org/TR/vc-data-integrity/#algorithms>.
 pub trait VCDataIntegrity {
-    /// As specified by https://www.w3.org/TR/vc-data-integrity/#add-proof.
+    /// As specified by <https://www.w3.org/TR/vc-data-integrity/#add-proof>.
     fn add_proof_to_json_value(
         &self,
         unsecured_data_document: &JsonValue, // map that contains no proof values
         options: &CryptoSuiteProofOptions,
     ) -> Result<JsonValue, DidSidekicksError>;
 
-    /// As specified by https://www.w3.org/TR/vc-data-integrity/#verify-proof.
+    /// As specified by <https://www.w3.org/TR/vc-data-integrity/#verify-proof>.
     fn verify_proof(
         &self,
         proof: &DataIntegrityProof,
@@ -412,13 +415,13 @@ pub trait VCDataIntegrity {
     ) -> Result<(), DidSidekicksError>;
 }
 
-/// The [`eddsa-jcs-2022`] cryptographic suite.
+/// The `eddsa-jcs-2022` cryptographic suite.
 ///
-/// It takes an input document, canonicalizes the document using the JSON Canonicalization Scheme [`RFC8785`],
+/// It takes an input document, canonicalizes the document using the JSON Canonicalization Scheme `RFC8785`,
 /// and then cryptographically hashes and signs the output resulting in the production of a data integrity proof.
 ///
-/// [`eddsa-jcs-2022`]: https://w3c.github.io/vc-di-eddsa/#eddsa-jcs-2022
-/// [`RFC8785`]: https://www.rfc-editor.org/rfc/rfc8785
+/// eddsa-jcs-2022: <https://w3c.github.io/vc-di-eddsa/#eddsa-jcs-2022>
+/// RFC8785: <https://www.rfc-editor.org/rfc/rfc8785>.
 pub struct EddsaJcs2022Cryptosuite {
     verifying_key: Ed25519VerifyingKey,
     signing_key: Option<Ed25519SigningKey>,
@@ -481,8 +484,8 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
     ///
     /// # Errors
     ///
-    /// - [`VCDataIntegrityProofVerificationError`] w.r.t. https://www.w3.org/TR/vc-di-eddsa/#transformation-eddsa-jcs-2022
-    /// - [`VCDataIntegrityProofTransformationError`] w.r.t. https://www.w3.org/TR/vc-di-eddsa/#transformation-eddsa-jcs-2022:
+    /// - [`VCDataIntegrityProofVerificationError`] w.r.t. <https://www.w3.org/TR/vc-di-eddsa/#transformation-eddsa-jcs-2022>
+    /// - [`VCDataIntegrityProofTransformationError`] w.r.t. <https://www.w3.org/TR/vc-di-eddsa/#transformation-eddsa-jcs-2022>
     ///
     /// # Panics
     ///
@@ -501,7 +504,7 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
             panic!("the cryptosuite object features no signing key required for proof creation")
         }
 
-        // According to https://www.w3.org/TR/vc-di-eddsa/#transformation-eddsa-jcs-2022:
+        // According to <https://www.w3.org/TR/vc-di-eddsa/#transformation-eddsa-jcs-2022>:
         // 1) If options.type is not set to the string DataIntegrityProof and options.cryptosuite is not set to the string eddsa-jcs-2022,
         //    an error MUST be raised that SHOULD convey an error type of PROOF_VERIFICATION_ERROR.
         if options.proof_type != "DataIntegrityProof" {
@@ -516,7 +519,7 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
             )));
         }
 
-        // See https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022
+        // See <https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022>
         let mut proof_without_proof_value = json!({
             "type": options.proof_type,
             "cryptosuite": options.crypto_suite.to_string(),
@@ -529,20 +532,20 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
             proof_without_proof_value["challenge"] = json!(challenge);
         }
 
-        // According to https://www.w3.org/TR/vc-di-eddsa/#create-proof-eddsa-jcs-2022:
+        // According to <https://www.w3.org/TR/vc-di-eddsa/#create-proof-eddsa-jcs-2022>:
         // 2) If unsecuredDocument.@context is present, set proof.@context to unsecuredDocument.@context.
         if let Some(ctx) = options.context.to_owned() {
             proof_without_proof_value["@context"] = json!(ctx);
         }
 
-        // According to https://www.w3.org/TR/vc-di-eddsa/#hashing-eddsa-jcs-2022:
+        // According to <https://www.w3.org/TR/vc-di-eddsa/#hashing-eddsa-jcs-2022>:
         // 1) Let transformedDocumentHash be the result of applying the SHA-256 (SHA-2 with 256-bit output)
         //    cryptographic hashing algorithm [RFC6234] to the transformedDocument.transformedDocumentHash will be exactly 32 bytes in size.
         // 2) Let proofConfigHash be the result of applying the SHA-256 (SHA-2 with 256-bit output)
         //    cryptographic hashing algorithm [RFC6234] to the canonicalProofConfig.proofConfigHash will be exactly 32 bytes in size.
         // 3) Let hashData be the result of joining proofConfigHash (the first hash) with transformedDocumentHash (the second hash).
         //
-        // According to https://www.w3.org/TR/vc-di-eddsa/#proof-serialization-eddsa-jcs-2022:
+        // According to <https://www.w3.org/TR/vc-di-eddsa/#proof-serialization-eddsa-jcs-2022>:
         // 2) Let proofBytes be the result of applying the Edwards-Curve Digital Signature Algorithm (EdDSA) [RFC8032],
         //    using the Ed25519 variant (Pure EdDSA), with hashData as the data to be signed using the private key specified by privateKeyBytes.
         //    proofBytes will be exactly 64 bytes in size.
@@ -569,7 +572,7 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
     ///
     /// # Errors
     ///
-    /// - [`VCDataIntegrityProofTransformationError`] w.r.t. https://www.w3.org/TR/vc-di-eddsa/#transformation-eddsa-jcs-2022:
+    /// - [`VCDataIntegrityProofTransformationError`] w.r.t. <https://www.w3.org/TR/vc-di-eddsa/#transformation-eddsa-jcs-2022>:
     /// - [`DidSidekicksError::KeySignatureError`] if verification of a signature on a hex message
     ///   with this verification key fails (see [`Ed25519VerifyingKey::verify_strict_from_hex`])
     #[inline]
