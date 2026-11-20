@@ -83,10 +83,10 @@ impl TrustDidWebDidMethodParameters {
         }
     }
 
-    /// Validation against all the criteria described in https://identity.foundation/didwebvh/v0.3/#didtdw-did-method-parameters.
+    /// Validation against all the criteria described in <https://identity.foundation/didwebvh/v0.3/#didtdw-did-method-parameters>.
     ///
     /// Furthermore, the relevant Swiss profile checks are also taken into account here:
-    /// https://github.com/e-id-admin/open-source-community/blob/main/tech-roadmap/swiss-profile.md#didtdwdidwebvh.
+    /// <https://swiyu-admin-ch.github.io/specifications/swiss-profile-anchor/>.
     #[inline]
     pub fn validate_initial(&self) -> Result<(), DidResolverError> {
         if let Some(method) = self.method.to_owned() {
@@ -259,7 +259,7 @@ impl TrustDidWebDidMethodParameters {
         Ok(())
     }
 
-    /// As specified by https://identity.foundation/didwebvh/v0.3/#deactivate-revoke.
+    /// As specified by <https://identity.foundation/didwebvh/v0.3/#deactivate-revoke>.
     #[inline]
     pub fn deactivate(&mut self) {
         self.update_keys = Some(vec![]);
@@ -418,7 +418,7 @@ impl TryInto<HashMap<String, Arc<DidMethodParameter>>> for TrustDidWebDidMethodP
     }
 }
 
-/// As defined by https://identity.foundation/trustdidweb/v0.3/#didtdw-did-method-parameters.
+/// As defined by <https://identity.foundation/trustdidweb/v0.3/#didtdw-did-method-parameters>.
 const DID_METHOD_PARAMETER_VERSION: &str = "did:tdw:0.3";
 
 #[cfg(test)]

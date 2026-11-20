@@ -1,6 +1,8 @@
+// SPDX-License-Identifier: MIT
+
+//! Helpers functions for Ed25519 cryptography.
 use base64::Engine as _;
 use base64::prelude::BASE64_URL_SAFE_NO_PAD;
-// SPDX-License-Identifier: MIT
 use serde_json::Value;
 use std::path::Path;
 use std::sync::Arc;
@@ -31,7 +33,7 @@ use rand::rngs::OsRng;
 ///
 /// Furthermore, the type supports (de)serialization w.r.t [Multibase Data Format].
 ///
-/// [Multibase Data Format]: https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html
+/// Multibase Data Format: <https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html>.
 #[derive(Clone)]
 pub struct Ed25519Signature {
     signature: Signature,
@@ -103,22 +105,22 @@ impl MultiBaseConvertible for Ed25519Signature {
 ///
 /// Furthermore, the type supports (de)serialization w.r.t [Multibase Data Format].
 ///
-/// [RFC8032 § 5.1.5]: https://www.rfc-editor.org/rfc/rfc8032#section-5.1.5
-/// [Multibase Data Format]: https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html
+/// RFC8032 § 5.1.5: <https://www.rfc-editor.org/rfc/rfc8032#section-5.1.5>
+/// Multibase Data Format: <https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html>.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Ed25519SigningKey {
     signing_key: SigningKey,
 }
 
 impl MultiBaseConvertible for Ed25519SigningKey {
-    /// As specified by [Multikey]:
+    /// As specified by `Multikey`:
     ///
     /// The encoding of an Ed25519 secret key MUST start with the two-byte prefix 0x8026 (the varint expression of 0x1300),
     /// followed by the 32-byte secret key data. The resulting 34-byte value MUST then be encoded using the base-58-btc alphabet,
-    /// according to Section 2.4 Multibase (https://www.w3.org/TR/controller-document/#multibase-0),
+    /// according to Section 2.4 Multibase (<https://www.w3.org/TR/controller-document/#multibase-0>),
     /// and then prepended with the base-58-btc Multibase header (z).
     ///
-    /// [Multikey]: https://www.w3.org/TR/controller-document/#Multikey
+    /// Multikey: <https://www.w3.org/TR/controller-document/#Multikey>.
     #[inline]
     fn to_multibase(&self) -> String {
         let signing_key_bytes = self.signing_key.to_bytes();
@@ -129,14 +131,14 @@ impl MultiBaseConvertible for Ed25519SigningKey {
         MultibaseEncoderDecoder::default().encode_base58btc(&signing_key_with_prefix)
     }
 
-    /// As specified by [Multikey]:
+    /// As specified by `Multikey`:
     ///
     /// The encoding of an Ed25519 secret key MUST start with the two-byte prefix 0x8026 (the varint expression of 0x1300),
     /// followed by the 32-byte secret key data. The resulting 34-byte value MUST then be encoded using the base-58-btc alphabet,
-    /// according to Section 2.4 Multibase (https://www.w3.org/TR/controller-document/#multibase-0),
+    /// according to Section 2.4 Multibase (<https://www.w3.org/TR/controller-document/#multibase-0>),
     /// and then prepended with the base-58-btc Multibase header (z).
     ///
-    /// [Multikey]: https://www.w3.org/TR/controller-document/#Multikey
+    /// Multikey: <https://www.w3.org/TR/controller-document/#Multikey>.
     #[inline]
     fn from_multibase(multibase: &str) -> Result<Self, DidSidekicksError> {
         let mut signing_key_buff: [u8; SECRET_KEY_LENGTH + 2] = [0; SECRET_KEY_LENGTH + 2];
@@ -268,20 +270,20 @@ impl Ed25519SigningKey {
 ///
 /// Furthermore, the type supports (de)serialization w.r.t [Multibase Data Format].
 ///
-/// [RFC8032 § 5.1.5]: https://www.rfc-editor.org/rfc/rfc8032#section-5.1.5
-/// [Multibase Data Format]: https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html
+/// RFC8032 § 5.1.5: <https://www.rfc-editor.org/rfc/rfc8032#section-5.1.5>
+/// Multibase Data Format: <https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html>.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Ed25519VerifyingKey {
     verifying_key: VerifyingKey,
 }
 
 impl MultiBaseConvertible for Ed25519VerifyingKey {
-    /// As specified by [Multikey]:
+    /// As specified by `Multikey`:
     ///
     /// The encoding of an Ed25519 public key MUST start with the two-byte prefix 0xed01 (the varint expression of 0xed),
     /// followed by the 32-byte public key data.
     /// The resulting 34-byte value MUST then be encoded using the base-58-btc alphabet,
-    /// according to Section 2.4 Multibase (https://www.w3.org/TR/controller-document/#multibase-0),
+    /// according to Section 2.4 [Multibase](https://www.w3.org/TR/controller-document/#multibase-0),
     /// and then prepended with the base-58-btc Multibase header (z).
     ///
     /// [Multikey]: https://www.w3.org/TR/controller-document/#Multikey
@@ -295,15 +297,15 @@ impl MultiBaseConvertible for Ed25519VerifyingKey {
         MultibaseEncoderDecoder::default().encode_base58btc(&public_key_with_prefix)
     }
 
-    /// As specified by [Multikey]:
+    /// As specified by `Multikey`:
     ///
     /// The encoding of an Ed25519 public key MUST start with the two-byte prefix 0xed01 (the varint expression of 0xed),
     /// followed by the 32-byte public key data.
     /// The resulting 34-byte value MUST then be encoded using the base-58-btc alphabet,
-    /// according to Section 2.4 Multibase (https://www.w3.org/TR/controller-document/#multibase-0),
+    /// according to Section 2.4 [Multibase](https://www.w3.org/TR/controller-document/#multibase-0),
     /// and then prepended with the base-58-btc Multibase header (z).
     ///
-    /// [Multikey]: https://www.w3.org/TR/controller-document/#Multikey
+    /// Multikey: <https://www.w3.org/TR/controller-document/#Multikey>.
     #[inline]
     fn from_multibase(multibase: &str) -> Result<Self, DidSidekicksError> {
         let mut verifying_key_buff: [u8; PUBLIC_KEY_LENGTH + 2] = [0; PUBLIC_KEY_LENGTH + 2];

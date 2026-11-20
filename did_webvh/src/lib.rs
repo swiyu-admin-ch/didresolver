@@ -4,7 +4,6 @@
 //!
 //! - General util structs reused by other libraries of swiyu-admin-ch
 //! - DID Web + Verifiable History (did:webvh) as [specified](https://identity.foundation/didwebvh/v1.0/)
-//!
 
 extern crate core;
 
@@ -29,13 +28,13 @@ use did_webvh::*;
 #[allow(unused_imports, reason = "required by the UniFFI compiler!")]
 #[expect(clippy::allow_attributes, reason = "..")]
 use did_webvh_jsonschema::*;
+use did_webvh_method_parameters::*;
 #[allow(unused_imports, reason = "required by the UniFFI compiler!")]
 #[expect(clippy::allow_attributes, reason = "..")]
 use errors::*;
 #[allow(unused_imports, reason = "required by the UniFFI compiler!")]
 #[expect(clippy::allow_attributes, reason = "..")]
 use method_parameters as did_webvh_method_parameters; // rename for backwards compatibility
-use did_webvh_method_parameters::*;
 
 uniffi::include_scaffolding!("did_webvh");
 

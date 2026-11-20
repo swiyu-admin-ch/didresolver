@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 
-//! This project implements the following things:
+//! Core components used by other swiyu-admin-ch.
 //!
-//! - General util structs reused by other libraries of swiyu-admin-ch
-//!
+//! Provides implementation for standards used by multiple DID methods.
 
 extern crate core;
 
@@ -22,7 +21,6 @@ pub mod vc_data_integrity;
 #[allow(unused_imports, reason = "required by the UniFFI compiler!")]
 #[expect(clippy::allow_attributes, reason = "..")]
 use did_doc::*;
-//use ed25519::*;
 use did_jsonschema::*;
 #[allow(unused_imports, reason = "required by the UniFFI compiler!")]
 #[expect(clippy::allow_attributes, reason = "..")]
