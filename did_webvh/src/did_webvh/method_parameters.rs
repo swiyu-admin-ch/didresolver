@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 
-// See https://identity.foundation/didwebvh/v1.0/#didwebvh-did-method-parameters
+// See <https://identity.foundation/didwebvh/v1.0/#didwebvh-did-method-parameters>
 #[expect(clippy::exhaustive_structs, reason = "..")]
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct WebVerifiableHistoryDidMethodParameters {
@@ -38,12 +38,12 @@ pub struct WebVerifiableHistoryDidMethodParameters {
     pub next_keys: Option<Vec<String>>,
 
     /// A JSON object declaring the set of witnesses and threshold number of witness proofs required to update the DID.
-    /// For more info see https://identity.foundation/didwebvh/v1.0/#the-witness-parameter.
+    /// For more info see <https://identity.foundation/didwebvh/v1.0/#the-witness-parameter>.
     #[serde(default)]
     #[serde(rename = "witness", skip_serializing_if = "Option::is_none")]
     pub witness: Option<Witness>,
 
-    /// An optional entry whose value is a JSON array containing a list of URLs ([RFC9110]) that have notified the DID Controller that they are willing to watch the DID. See the Watchers section of this specification for more details.
+    /// An optional entry whose value is a JSON array containing a list of URLs (RFC9110) that have notified the DID Controller that they are willing to watch the DID. See the Watchers section of this specification for more details.
     #[serde(rename = "watchers", default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub watchers: Option<Vec<String>>,
@@ -96,10 +96,10 @@ impl WebVerifiableHistoryDidMethodParameters {
         }
     }
 
-    /// Validation against all the criteria and sets default values described in https://identity.foundation/didwebvh/v1.0/#didwebvh-did-method-parameters.
+    /// Validation against all the criteria and sets default values described in <https://identity.foundation/didwebvh/v1.0/#didwebvh-did-method-parameters>.
     ///
     /// Furthermore, the relevant Swiss profile checks are also taken into account here:
-    /// https://github.com/e-id-admin/open-source-community/blob/main/tech-roadmap/swiss-profile.md#didtdwdidwebvh.
+    /// <https://github.com/e-id-admin/open-source-community/blob/main/tech-roadmap/swiss-profile.md#didtdwdidwebvh>.
     #[inline]
     pub fn validate_initial(&mut self) -> Result<String, DidResolverError> {
         let Some(method) = self.method.as_ref() else {
@@ -314,7 +314,7 @@ impl WebVerifiableHistoryDidMethodParameters {
         Ok(())
     }
 
-    /// As specified by https://identity.foundation/didwebvh/v0.3/#deactivate-revoke.
+    /// As specified by <https://identity.foundation/didwebvh/v0.3/#deactivate-revoke>.
     #[inline]
     pub fn deactivate(&mut self) {
         self.update_keys = Some(vec![]);

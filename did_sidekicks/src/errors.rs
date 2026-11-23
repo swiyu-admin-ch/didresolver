@@ -1,5 +1,10 @@
 // SPDX-License-Identifier: MIT
 
+//! Collection of erros for DID sidekicks components.
+
+#[expect(unused_imports, clippy::unused_trait_names, reason = "Used in rust doc comment")]
+use crate::did_resolver::DidResolver;
+
 /// Yet another UniFFI-compliant error.
 ///
 /// Resembles ssi::dids::resolution::Error.
@@ -50,13 +55,13 @@ pub enum DidSidekicksError {
     /// Non-existing key referenced in the DID document.
     #[error("non-existing key referenced in the DID document: {0}")]
     NonExistingKeyReferenced(String),
-    /// A request to generate a proof failed, as specified by https://www.w3.org/TR/vc-data-integrity/#processing-errors.
+    /// A request to generate a proof failed, as specified by <https://www.w3.org/TR/vc-data-integrity/#processing-errors>.
     #[error("a request to generate a proof failed: {0}")]
     VCDataIntegrityProofGenerationError(String),
-    /// An error was encountered during proof verification, as specified by https://www.w3.org/TR/vc-data-integrity/#processing-errors.
+    /// An error was encountered during proof verification, as specified by <https://www.w3.org/TR/vc-data-integrity/#processing-errors>.
     #[error("an error was encountered during proof verification: {0}")]
     VCDataIntegrityProofVerificationError(String),
-    /// An error was encountered during the transformation process, as specified by https://www.w3.org/TR/vc-data-integrity/#processing-errors.
+    /// An error was encountered during the transformation process, as specified by <https://www.w3.org/TR/vc-data-integrity/#processing-errors>.
     #[error("an error was encountered during the transformation process: {0}")]
     VCDataIntegrityProofTransformationError(String),
 }
@@ -94,7 +99,7 @@ impl DidSidekicksError {
 
 /// TrustDidWebError kind.
 ///
-/// Each [`DidSidekicksError`] has a kind provided by the [`DidSidekicksErrorKind::kind`] method.
+/// Each [`DidSidekicksError`] has a kind provided by the [`DidSidekicksError::kind`] method.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[expect(
     clippy::exhaustive_enums,
@@ -171,7 +176,7 @@ impl DidResolverError {
 
 /// WebVerfiableHistoryError kind.
 ///
-/// Each [`DidResolverError`] has a kind provided by the [`DidResolverErrorErrorKind::kind`] method.
+/// Each [`DidResolverError`] has a kind provided by the [`DidResolverError::kind`] method.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[expect(
     clippy::exhaustive_enums,

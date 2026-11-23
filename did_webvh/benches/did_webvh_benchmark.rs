@@ -8,6 +8,7 @@ use std::fs;
 use std::hint::black_box;
 use std::path::Path;
 
+/// Benchmarks the did webvh resolution.
 #[expect(clippy::panic, reason = "..")]
 pub fn criterion_benchmark_did_webvh(c: &mut Criterion) {
     let inputs = [5, 10, 50, 100, 200, 300, 400];
@@ -42,6 +43,7 @@ pub fn criterion_benchmark_did_webvh(c: &mut Criterion) {
     group.finish();
 }
 
+/// Benchmarks the did webvh json schema validation.
 #[expect(clippy::panic, reason = "..")]
 pub fn criterion_benchmark_did_webvh_jsonschema(c: &mut Criterion) {
     let inputs = [5, 10, 50, 100, 200, 300, 400];

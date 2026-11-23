@@ -7,6 +7,7 @@ use did_tdw::did_tdw_jsonschema::TrustDidWebDidLogEntryJsonSchema;
 use std::fs;
 use std::path::Path;
 
+/// Benchmarks the did tdw resolution.
 pub fn criterion_benchmark_did_tdw(c: &mut Criterion) {
     let inputs = [5, 10, 50, 100, 200, 300, 400];
 
@@ -40,6 +41,7 @@ pub fn criterion_benchmark_did_tdw(c: &mut Criterion) {
     group.finish();
 }
 
+/// Benchmarks the did tdw json schema validation.
 pub fn criterion_benchmark_did_tdw_jsonschema(c: &mut Criterion) {
     let inputs = [5, 10, 50, 100, 200, 300, 400];
 

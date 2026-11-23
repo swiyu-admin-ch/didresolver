@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+//! Json schema helpers.
+
 use std::sync::Arc;
 use thiserror::Error;
 
@@ -17,8 +19,10 @@ use serde_json::from_str as json_from_str;
     reason = "further enum variants may be added in the future"
 )]
 pub enum DidLogEntryValidatorError {
+    /// The supplied JSON did not match the schema.
     #[error("the supplied JSON instance is not a valid DID log: {0}")]
     ValidationError(String),
+    /// The supplied JSON could not be deserialized.
     #[error("the supplied JSON instance cannot be deserialized: {0}")]
     DeserializationError(String),
 }
@@ -47,7 +51,7 @@ pub enum DidLogEntryValidatorErrorKind {
     DeserializationError,
 }
 
-/// W.r.t. any of specification versions available at https://identity.foundation/didwebvh.
+/// W.r.t. any of specification versions available at <https://identity.foundation/didwebvh>.
 ///
 /// A UniFFI-compliant trait.
 #[uniffi::trait_interface]

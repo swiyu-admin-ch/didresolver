@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: MIT
 
+//! Collection for DID specific models within a JSON.
+
 use chrono::{DateTime, Local};
 use core::cmp::Ordering;
 use jsonschema::{Keyword, ValidationError, paths::Location};
 use serde_json::{Map, Value};
 
 /// Yet another custom [`Keyword`] trait implementation able to validate if a JSON array represents
-/// a regular `didwebvh` DID log entry (as defined by https://identity.foundation/didwebvh/v0.3/#overview).
+/// a regular `didwebvh` [DID log entry](https://identity.foundation/didwebvh/v0.3/#overview).
 ///
-/// This [`Keyword`] trait implementation validates instances according to https://identity.foundation/didwebvh/v0.3/#overview.
+/// This [`Keyword`] trait implementation validates instances according to <https://identity.foundation/didwebvh/v0.3/#overview>.
 #[expect(clippy::exhaustive_structs, reason = "..")]
 pub struct DidLogEntryKeyword;
 
@@ -40,7 +42,7 @@ impl DidLogEntryKeyword {
 }
 
 impl<'a> Keyword<'a> for DidLogEntryKeyword {
-    /// Validate instance according to https://identity.foundation/didwebvh/v0.3/#overview - each DID log entry includes a JSON array of five items:
+    /// Validate instance according to <https://identity.foundation/didwebvh/v0.3/#overview> - each DID log entry includes a JSON array of five items:
     ///
     /// 1. The `versionId` of the entry, a value that combines the version number (starting at 1 and incrementing by one per version), a literal dash -, and a hash of the entry. The entry hash calculation links each entry to its predecessor in a ledger-like chain.
     /// 2. The `versionTime` (as stated by the DID Controller) of the entry.
@@ -65,7 +67,7 @@ impl<'a> Keyword<'a> for DidLogEntryKeyword {
 
     /// Validate instance and return a boolean result.
     ///
-    /// Instance is validated according to https://identity.foundation/didwebvh/v0.3/#overview - each DID log entry includes a JSON array of five items:
+    /// Instance is validated according to <https://identity.foundation/didwebvh/v0.3/#overview> - each DID log entry includes a JSON array of five items:
     ///
     /// 1. The `versionId` of the entry, a value that combines the version number (starting at 1 and incrementing by one per version), a literal dash -, and a hash of the entry. The entry hash calculation links each entry to its predecessor in a ledger-like chain.
     /// 2. The `versionTime` (as stated by the DID Controller) of the entry.
@@ -104,7 +106,7 @@ impl<'a> Keyword<'a> for DidLogEntryKeyword {
 /// Yet another custom [`Keyword`] trait implementation.
 ///
 /// It is able to validate the rule in regard to `versionTime` DID log entry item
-/// (as defined by https://confluence.bit.admin.ch/display/EIDTEAM/DID+Log+Conformity+Check).
+/// (as defined by <https://confluence.bit.admin.ch/display/EIDTEAM/DID+Log+Conformity+Check>).
 #[expect(clippy::exhaustive_structs, reason = "..")]
 pub struct DidVersionTimeKeyword;
 

@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 
+//! Functionality for working with keys in the [multibase data format](https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html).
+
 use crate::errors::DidSidekicksError;
 use bs58::{Alphabet as Alphabet58, decode as base58_decode, encode as base58_encode};
 use core::cmp::PartialEq;
 
-/// See https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html#appendix-D.1.
+/// See <https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html#appendix-D.1>.
 pub const BASE58BTC_MULTIBASE_IDENTIFIER: &str = "z";
 
 /// The trait describes type conversion w.r.t [Multibase Data Format](https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html).
@@ -32,7 +34,7 @@ pub trait MultiBaseConvertible {
         Self: Sized;
 }
 
-/// See https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html#appendix-D.1.
+/// See <https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html#appendix-D.1>.
 #[derive(PartialEq, Eq, Debug)]
 #[expect(
     clippy::exhaustive_enums,
@@ -44,7 +46,7 @@ pub enum MultibaseAlgorithm {
 }
 
 /// A helper capable of encoding/decoding data in Multibase format according to
-/// https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html.
+/// <https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html>.
 pub struct MultibaseEncoderDecoder {
     algorithm: MultibaseAlgorithm,
     alphabet: &'static Alphabet58,

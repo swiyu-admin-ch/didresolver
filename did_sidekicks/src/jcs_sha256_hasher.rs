@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+//! Implementation of a JCS [hasher](https://www.rfc-editor.org/info/rfc8785/) using SHA-256.
+
 use crate::errors::DidSidekicksError;
 use crate::errors::DidSidekicksError::JscHashingFailed;
 use bs58::{Alphabet as Alphabet58, encode as base58_encode};
