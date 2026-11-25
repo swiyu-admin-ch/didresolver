@@ -39,6 +39,14 @@ pub struct Jwk {
     pub key_use: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub key_ops: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub x5u: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub x5c: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub x5t: Option<String>,
+    #[serde(rename = "x5t#S256", skip_serializing_if = "Option::is_none")]
+    pub x5t_s256: Option<String>,
 }
 
 /// Types of verification material. Note that only JsonWebKey2020 and JsonWebKey are supported for
@@ -751,7 +759,9 @@ mod test {
         non_snake_case,
         reason = "consistent naming for test in form type_function_description_expectedResult"
     )]
-    use super::*;
+    use crate::jcs_sha256_hasher::JcsSha256Hasher;
+
+use super::*;
     use rstest::rstest;
     use serde_json::{Value as JsonValue, json};
     use std::assert_matches;
@@ -1093,6 +1103,26 @@ mod test {
     }
 
     #[test]
+    fn jwk_serialization_keeps_fields() {
+        let jwk = r#"{
+    "kty": "OKP",
+    "kid": "-1909572257",
+    "alg": "EdDSA",
+    "crv": "Ed25519",
+    "x": "XWxGtApfcqmKI7p0OKnF5JSEWMVoLsytFXLEP7xZ_l8",
+    "use": "sig",
+    "x5t": "4pNenEBLv0JpLIdugWxQkOsZcK0",
+    "x5c": ["MIIDQjCCAiqgAwIBAgIGATz/FuLiMA0GCSqGSIb3DQEBBQUAMGIxCzAJBgNVBAYTAlVTMQswCQYDVQQIEwJDTzEPMA0GA1UEBxMGRGVudmVyMRwwGgYDVQQKExNQaW5nIElkZW50aXR5IENvcnAuMRcwFQYDVQQDEw5CcmlhbiBDYW1wYmVsbDAeFw0xMzAyMjEyMzI5MTVaFw0xODA4MTQyMjI5MTVaMGIxCzAJBgNVBAYTAlVTMQswCQYDVQQIEwJDTzEPMA0GA1UEBxMGRGVudmVyMRwwGgYDVQQKExNQaW5nIElkZW50aXR5IENvcnAuMRcwFQYDVQQDEw5CcmlhbiBDYW1wYmVsbDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAL64zn8/QnHYMeZ0LncoXaEde1fiLm1jHjmQsF/449IYALM9if6amFtPDy2yvz3YlRij66s5gyLCyO7ANuVRJx1NbgizcAblIgjtdf/u3WG7K+IiZhtELto/A7Fck9Ws6SQvzRvOE8uSirYbgmj6He4iO8NCyvaK0jIQRMMGQwsU1quGmFgHIXPLfnpnfajr1rVTAwtgV5LEZ4Iel+W1GC8ugMhyr4/p1MtcIM42EA8BzE6ZQqC7VPqPvEjZ2dbZkaBhPbiZAS3YeYBRDWm1p1OZtWamT3cEvqqPpnjL1XyW+oyVVkaZdklLQp2Btgt9qr21m42f4wTw+Xrp6rCKNb0CAwEAATANBgkqhkiG9w0BAQUFAAOCAQEAh8zGlfSlcI0o3rYDPBB07aXNswb4ECNIKG0CETTUxmXl9KUL+9gGlqCz5iWLOgWsnrcKcY0vXPG9J1r9AqBNTqNgHq2G03X09266X5CpOe1zFo+Owb1zxtp3PehFdfQJ610CDLEaS9V9Rqp17hCyybEpOGVwe8fnk+fbEL2Bo3UPGrpsHzUoaGpDftmWssZkhpBJKVMJyf/RuP2SmmaIzmnw9JiSlYhzo4tpzd5rFXhjRbg4zW9C+2qok+2+qDM1iJ684gPHMIY8aLWrdgQTxkumGmTqgawR+N5MDtdPTEQ0XfIBc2cJEUyMTY5MPvACWpkA6SdS4xSvdXK3IVfOWA=="],
+    "x5t#S256":"4pNenEBLv0JpLIdugWxQkOsZcK0"
+}"#;
+        let parsed_jwk: Jwk = serde_json::from_str(jwk).unwrap();
+        let serialized_jwk = serde_json::to_string(&parsed_jwk).unwrap();
+        let original_hash = JcsSha256Hasher::build().encode_hex(jwk);
+        let serialized_hash = JcsSha256Hasher::build().encode_hex(&serialized_jwk);
+        assert_eq!(original_hash, serialized_hash);
+    }
+
+    #[test]
     fn verificationMethod_validate_withInvalidMethodType_returnsErr() {
         let document_id = "did:webvh:scid:example.com";
         let verification_method = VerificationMethod {
@@ -1120,6 +1150,10 @@ mod test {
             y: Some("A4JwAyrpKxtsNLX50A0pQ_4G2AYO-NJw0dzne11xUj0".into()),
             key_use: None,
             key_ops: None,
+            x5u: None,
+            x5c: None,
+            x5t: None,
+            x5t_s256: None,
         }
     }
 

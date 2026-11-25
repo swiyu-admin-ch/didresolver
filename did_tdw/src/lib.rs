@@ -338,6 +338,10 @@ mod test {
         "test_data/generated_by_didtoolbox_java/v400_did.jsonl",
         "did:tdw:QmPsui8ffosRTxUBP8vJoejauqEUGvhmWe77BNo1StgLk7:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
     )]
+    #[case(
+        "test_data/eddsa25519_tdw.jsonl",
+        "did:tdw:QmfGgzytkDtzo8hG8hPj2rNVkDDLLEayma1JAy5Zj49c7v:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
+    )]
     fn test_resolve_did_tdw(#[case] did_log_raw_filepath: String, #[case] did_url: String) {
         let did_log_raw = fs::read_to_string(Path::new(&did_log_raw_filepath)).unwrap();
 
