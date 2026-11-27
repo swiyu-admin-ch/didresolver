@@ -8,11 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Next
 
 ### Added
+- Support for more fields in JWKs (`x5u`, `x5c`, `x5t`, & `x5t#S256`) `(#1602)`
 
 ### Fixed
 - DID:WEBVH now also takes into account unsupported fields when calculating the entry hash `(#1208)`
 
 ### Changed
+- Ed25519 JWK must have "Ed25519"  as "alg" `(#1602)`
 
 ## [2.10.1] - 2026-11-06
 

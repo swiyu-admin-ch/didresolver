@@ -264,7 +264,6 @@
             },
             "alg": {
               "enum": [
-                "EdDSA",
                 "Ed25519"
               ],
               "$comment": "Identifies the algorithm intended for use with the key. It is a case-sensitive ASCII string. Use of this member is OPTIONAL."

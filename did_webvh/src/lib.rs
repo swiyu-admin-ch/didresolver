@@ -325,16 +325,8 @@ mod test {
         "did:webvh:QmQG4LEzoF7HWJCVcQgiCGQF8F6UgDUzjCp6iEoZAQTWc5:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
     )]
     #[case(
-        "test_data/manually_created/eddsa25519.jsonl",
-        "did:webvh:QmdrU9GiDUUVTvh3xo6uMorUZgF71RMBSa1GkdMNSYa2FA:test.ch"
-    )]
-    #[case(
         "test_data/manually_created/eddsa25519_alg_ed25519.jsonl",
         "did:webvh:QmTkJ3r2i5aRTrmQierZmBZECxWe3N8y9zRfQeLyMXy2ew:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
-    )]
-    #[case(
-        "test_data/manually_created/eddsa25519_alg_eddsa.jsonl",
-        "did:webvh:Qmey4wiY6dqiJSzJruRaEdA1ZjaL6WkP6aqSWkYTCiZvvP:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085"
     )]
     #[case( // Related with below case to test file size validation, this log is between 1MB and 1MiB
         "test_data/generated_by_didtoolbox_java/v475_did.jsonl",
@@ -386,6 +378,11 @@ mod test {
         include_str!("../test_data/manually_created/unhappy_path/missing_next_key_hashes_during_prerotation.jsonl"),
         "did:webvh:QmT43hYjMsj9jXXd9iKePusJBvQjopN21fCHsfpiyWqChC:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
         "Illegal next key hash detected",
+    )]
+    #[case(
+        include_str!("../test_data/manually_created/eddsa25519_alg_eddsa.jsonl"),
+        "did:webvh:Qmey4wiY6dqiJSzJruRaEdA1ZjaL6WkP6aqSWkYTCiZvvP:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+        "the supplied JSON instance is not a valid DID log",
     )]
     fn test_read_invalid_did_webvh(
         #[case] did_log: &str,
